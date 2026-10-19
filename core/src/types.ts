@@ -110,6 +110,7 @@ export interface ChoiceOption {
   crane_note?: string;                  // KP: appended to the crane row description
   compatible?: string[];                // item ids this option fits (like AccessoryVariant.compatible)
   default_for?: string[];               // the option is the standard one (no surcharge, no note) with these items
+  photo?: string;                       // picture for the configurator tree and the admin (generator/assets path)
 }
 export interface Choice {
   id: string;

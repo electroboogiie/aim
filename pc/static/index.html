@@ -23,10 +23,16 @@
     <div id="editBanner" class="banner" hidden></div>
     <div class="kit-tabs" id="kitTabs"></div>
 
-    <div class="card featured-card">
-      <div class="card-head"><h2>Основні КП</h2><span class="hint">готові комплекти з ваших КП з кранами BMF 650, 720 і 750</span></div>
-      <div id="featured" class="featured"></div>
-      <label class="inline other-presets">Інші КП з архіву <select id="preset"><option value="">— обрати —</option></select></label>
+    <div class="pick-grid">
+      <div class="card ready-card">
+        <div class="card-head"><h2>Готові комплекти</h2><span class="hint">з ваших КП · від базового до повного · ціни поточні</span></div>
+        <div id="ready" class="ready"></div>
+        <label class="inline other-presets">Архів КП <select id="preset"><option value="">— обрати —</option></select></label>
+      </div>
+      <div class="card tree-card">
+        <div class="card-head"><h2>Збірка гілками</h2><span class="hint">основа → кран → захват → розподільник → допи · клік по фото — перегляд</span></div>
+        <div class="tree-scroll"><div id="tree" class="tree"></div></div>
+      </div>
     </div>
 
     <div class="conf-grid">

@@ -14,6 +14,7 @@ const KNOWN_GAPS: Record<string, string> = {
   "bmf720_kit_2024-10-09": "2024 KP prints only a total (776 000 UAH, oil 80 l); all catalog prices are 2025-2026, the earliest point is used.",
   "bmf650_kit_2026-03-17": "KP prints base + tank as one row (174 500 UAH); catalog base 160 000 + tank 18 500 = 178 500.",
   "bmf650_kit_2026-02-25": "KP prints base + tank + oil + pump + seat as one row (223 266 UAH); the pump has no price in the catalog.",
+  "bmf720_kit_2025-08-07": "KP prints base + tank + oil 90 l + pump + seat as one row (213 100 UAH); the pump has no price in the catalog and the other parts are 2026 prices.",
   "bmf750_kit_2026-05-20": "KP row 242 525 UAH also contains a pump and a mounting kit, which have no catalog price.",
 };
 

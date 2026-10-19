@@ -194,37 +194,182 @@ function applyPreset(p) {
 }
 function presetKey(p) { const sl = p.selection.slots; return [sl.crane, sl.trailer, sl.conversion].join("|"); }
 function presetTotal(p) {
-  try { return core.quote(cat, settings, { eur: null, source: "none" }, { kit_type: p.kit_type, selection: core.presetSelection(p, cat), date: core.todayIso() }).total_uah; }
+  try { const q = core.quote(cat, settings, { eur: null, source: "none" }, { kit_type: p.kit_type, selection: core.presetSelection(p, cat), date: core.todayIso() });
+    return q.total_uah ? (q.complete === false ? uah(q.total_uah) + " *" : uah(q.total_uah)) : null; }
   catch { return null; }
 }
-function renderFeatured() {
-  const box = $("#featured"); box.innerHTML = "";
-  const list = cat.presets.filter((p) => p.kit_type === S.kt.id && !p.archived)
-    .sort((a, b) => (b.source.date || "").localeCompare(a.source.date || ""));
-  const seen = new Set(), feat = [];
-  for (const p of list) {
-    const cr = core.itemById(cat, p.selection.slots.crane);
-    const k = presetKey(p);
-    if (cr?.featured && !seen.has(k)) { seen.add(k); feat.push(p); }
-  }
-  const model = (p) => core.itemById(cat, p.selection.slots.crane)?.model || "";
-  feat.sort((a, b) => model(a).localeCompare(model(b)) || (a.selection.slots.trailer || "").localeCompare(b.selection.slots.trailer || ""));
-  for (const p of feat) {
-    const cr = core.itemById(cat, p.selection.slots.crane), tr = core.itemById(cat, p.selection.slots.trailer || p.selection.slots.conversion || "");
-    const photo = (S.kt.id === "crane_kit" ? cr?.photo : tr?.photo || cr?.photo);
-    const t = presetTotal(p);
-    box.append(h("button", { class: "fcard" + (S.preset === p.id ? " on" : ""), onclick: () => applyPreset(p) },
-      h("span", { class: "tag" }, "основна"),
-      photo ? h("img", { src: asset(photo), loading: "lazy" }) : h("div", { style: "height:120px;background:#222" }),
-      h("div", { class: "fb" }, h("div", { class: "model" }, core.kitTitle(cat, S.kt, p.selection)),
-        h("div", { class: "sub" }, p.title.replace(/^.*?\(/, "(").replace(/[()]/g, "")),
-        h("div", { class: "price" }, t ? uah(t) : "ціна за запитом"))));
-  }
-  if (!feat.length) box.append(h("div", { class: "hint" }, "Для цього комплекту немає основних КП з кранами 650, 720 або 750."));
-  const ps = $("#preset"); ps.innerHTML = ""; ps.append(h("option", { value: "" }, "— обрати —"));
-  for (const p of list.filter((x) => !feat.includes(x))) ps.append(h("option", { value: p.id }, p.title));
-  ps.value = S.preset && !feat.some((x) => x.id === S.preset) ? S.preset : "";
+// ready kits: grouped by crane (and trailer), inside a group from the base kit to the fullest; marks show which positions each has
+const SLOT_SHORT = { base: "Основа", tank: "Бак", oil: "Олива", seat: "Місце", heat_exchanger: "Тепло", pump: "Насос" };
+const markSlots = (kt) => kt.slots.filter((s) => !s.required && !(kt.title_slots || []).includes(s.id));
+function presetExtras(p, kt) {
+  const sel = p.selection, items = core.selectedItems(cat, kt, core.presetSelection(p, cat)).map((x) => x.item);
+  let n = markSlots(kt).filter((s) => sel.slots[s.id]).length + (sel.accessories || []).length;
+  for (const ch of kt.choices) { const v = sel.choices?.[ch.id]; if (v && v !== core.choiceDefault(cat, ch, items)) n++; }
+  return n;
 }
+function choiceMarks(p, kt) {
+  const items = core.selectedItems(cat, kt, core.presetSelection(p, cat)).map((x) => x.item);
+  return kt.choices.filter((ch) => !ch.slot || p.selection.slots[ch.slot]).map((ch) => {
+    const v = p.selection.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
+    const o = ch.options.find((x) => x.value === v);
+    return o && v !== core.choiceDefault(cat, ch, items) ? o.title : null;
+  }).filter(Boolean);
+}
+function renderFeatured() {
+  const box = $("#ready"); box.innerHTML = "";
+  const kt = S.kt;
+  const list = cat.presets.filter((p) => p.kit_type === kt.id && !p.archived);
+  const marks = markSlots(kt);
+  const groups = new Map();
+  for (const p of list) { const k = presetKey(p); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); }
+  const crOf = (p) => core.itemById(cat, p.selection.slots.crane);
+  const gl = [...groups.values()].sort((a, b) => (crOf(b[0])?.featured ? 1 : 0) - (crOf(a[0])?.featured ? 1 : 0)
+    || (crOf(a[0])?.model || "").localeCompare(crOf(b[0])?.model || "") || (a[0].selection.slots.trailer || "").localeCompare(b[0].selection.slots.trailer || ""));
+  for (const g of gl) {
+    g.forEach((p) => (p._n = presetExtras(p, kt)));
+    g.sort((a, b) => a._n - b._n || (b.source.date || "").localeCompare(a.source.date || ""));
+    const latest = [...g].sort((a, b) => (b.source.date || "").localeCompare(a.source.date || ""))[0];
+    const cr = crOf(g[0]), tr = core.itemById(cat, g[0].selection.slots.trailer || g[0].selection.slots.conversion || "");
+    const photo = kt.id === "crane_kit" ? cr?.photo : tr?.photo || cr?.photo;
+    const head = h("div", { class: "rg-head" + (cr?.featured ? " main" : "") }, photo ? lbImg(asset(photo), null, { alt: cr?.model || "" }) : h("span"),
+      h("b", {}, [tr?.model, cr?.model].filter(Boolean).join(" + ") || "без крана"), cr?.featured ? h("span", { class: "badge" }, "основний кран") : null);
+    const rows = h("div", { class: "rg-rows" });
+    if (marks.length) rows.append(h("div", { class: "rg-marks-h" }, h("span"), h("div", { class: "marks" }, marks.map((s) => h("i", { title: s.title }, SLOT_SHORT[s.id] || s.title.split(" ")[0]))), h("span")));
+    for (const p of g) {
+      const t = presetTotal(p), cm = choiceMarks(p, kt);
+      rows.append(h("button", { class: "rg-row" + (S.preset === p.id ? " on" : ""), onclick: () => applyPreset(p) },
+        h("span", { class: "lvl", title: "кількість допів" }, p._n ? "+" + p._n : "база"),
+        h("div", { class: "rg-mid" },
+          marks.length ? h("div", { class: "marks" }, marks.map((s) => h("i", { class: p.selection.slots[s.id] ? "y" : "", title: s.title + (p.selection.slots[s.id] ? ": є" : ": немає") }, p.selection.slots[s.id] ? "✓" : "·"))) : null,
+          h("div", { class: "meta" }, h("small", {}, (p.source.date ? "КП " + core.formatDate(p.source.date) : "без дати") + (cm.length ? " · " + cm.join(", ") : "")),
+            p === latest && cr?.featured ? h("span", { class: "tag" }, "основна") : null)),
+        h("b", { class: "price", title: t?.endsWith("*") ? "частина позицій — за запитом" : "" }, t || "за запитом")));
+    }
+    box.append(h("div", { class: "rgroup" }, head, rows));
+  }
+  if (!gl.length) box.append(h("p", { class: "hint" }, "Готових КП для цього комплекту ще немає — зберіть його гілками праворуч."));
+  const ps = $("#preset"); ps.innerHTML = ""; ps.append(h("option", { value: "" }, "— обрати —"));
+  for (const p of cat.presets.filter((x) => x.kit_type === kt.id && x.archived)) ps.append(h("option", { value: p.id }, p.title));
+  ps.value = S.preset && cat.presets.find((x) => x.id === S.preset)?.archived ? S.preset : "";
+  ps.parentElement.hidden = ps.options.length < 2;
+}
+
+// ------------------------------------------------------------------ branch tree: base -> crane -> grapple -> valve -> extras
+function itemPriceText(it) {
+  if (!it) return "";
+  if (it.price?.mode !== "ref") return "за запитом";
+  return it.unit ? `${uah(it.price.uah)} / ${it.unit.per} ${it.unit.name}` : uah(it.price.uah);
+}
+function switchBase(ktId, slotId, itemId) {
+  const prev = S.sel, prevKt = S.kt;
+  if (prevKt.id !== ktId) {
+    S.kt = core.kitTypeById(cat, ktId);
+    let sel = core.defaultSelection(S.kt, cat);
+    const cs = S.kt.slots.find((s) => s.id === "crane");
+    if (cs && prev.slots.crane && cs.candidates.includes(prev.slots.crane)) sel.slots.crane = prev.slots.crane;
+    for (const ch of S.kt.choices) if (prev.choices?.[ch.id] && ch.options.some((o) => o.value === prev.choices[ch.id])) sel.choices[ch.id] = prev.choices[ch.id];
+    S.sel = sel; S.manual = {}; S.kitPrice = null; S.qty = {};
+  }
+  if (slotId) S.sel = { ...S.sel, slots: { ...S.sel.slots, [slotId]: itemId } };
+  S.sel = core.reconcileSelection(cat, ktId, S.sel, slotId || "crane");
+  if (prevKt.id !== ktId) S.sel.accessories = baseAccessories();
+  S.preset = null;
+  renderKitTabs(); renderFeatured(); renderConf();
+}
+function tnode({ photo, title, sub, mark, markCls = "", on, dis, why, onclick, cls = "" }) {
+  return h("div", { class: `tnode ${cls}` + (on ? " on" : "") + (dis ? " dis" : ""), title: why || title, onclick: dis ? null : onclick },
+    photo ? lbImg(asset(photo), null, { alt: title }) : h("div", { class: "ph" }, "фото"),
+    h("div", { class: "tt" }, h("b", {}, title), sub ? h("small", {}, sub) : null, mark ? h("span", { class: "mk " + markCls }, mark) : null));
+}
+function renderTree() {
+  const box = $("#tree"); if (!box) return; box.innerHTML = "";
+  const kt = S.kt, sel = S.sel;
+  const items = core.selectedItems(cat, kt, sel).map((x) => x.item);
+  const cols = [];
+  // 1. base: own trailers / BMF trailers / truck / crane kit without trailer
+  const base = [];
+  for (const k of kitTypes()) {
+    const ts = k.slots.find((s) => s.id === "trailer" || s.id === "conversion");
+    if (!ts) { base.push(tnode({ photo: core.itemById(cat, "base_outriggers_720")?.photo || "prod/tile_base.png", title: "Кран у комплекті", sub: "без причепа, на основі", on: kt.id === k.id, onclick: () => switchBase(k.id) })); continue; }
+    for (const id of ts.candidates) {
+      const it = core.itemById(cat, id); if (!it) continue;
+      base.push(tnode({ photo: it.photo, title: it.model || it.title, sub: KIT_SHORT[k.id], mark: k.price_display === "bundle" ? "" : itemPriceText(it),
+        on: kt.id === k.id && sel.slots[ts.id] === id, onclick: () => switchBase(k.id, ts.id, id) }));
+    }
+  }
+  cols.push(["Основа", base]);
+  // 2. crane
+  const cs = craneSlot();
+  if (cs) {
+    const cands = core.slotCandidates(cat, kt.id, "crane", sel).map((c) => {
+      const t = core.reconcileSelection(cat, kt.id, { ...sel, slots: { ...sel.slots, crane: c.id } }, "crane");
+      const errs = core.validateSelection(cat, { kit_type: kt.id, selection: t });
+      return { ...c, allowed: !errs.length, reason: errs[0] || "" };
+    }).sort((a, b) => (b.item?.featured ? 1 : 0) - (a.item?.featured ? 1 : 0));
+    const nodes = cands.map((c) => tnode({ photo: c.item?.photo, title: c.item?.model || c.id, sub: c.item?.featured ? "основний" : "", mark: kt.price_display === "bundle" ? "" : itemPriceText(c.item),
+      on: sel.slots.crane === c.id, dis: !c.allowed, why: c.reason, onclick: () => setSlot("crane", c.id) }));
+    if (!cs.required) nodes.push(tnode({ title: "без крана", on: !sel.slots.crane, onclick: () => setSlot("crane", null) }));
+    cols.push(["Кран", nodes]);
+  }
+  // 3. crane-bound choices (захват, розподільник)
+  const setChoice = (id, v) => { S.sel = { ...S.sel, choices: { ...S.sel.choices, [id]: v } }; S.preset = null; renderConf(); renderFeatured(); };
+  const optMark = (o) => core.choiceIsStandard(o, items) ? ["★ базовий", "std"] : o.price_uah ? ["+" + uah(o.price_uah), ""] : o.on_request ? ["доплата за запитом", "req"] : ["без доплати", ""];
+  const restChoices = [];
+  for (const ch of kt.choices) {
+    if (ch.slot && !sel.slots[ch.slot]) continue;
+    if (ch.slot !== "crane") { restChoices.push(ch); continue; }
+    const cur = sel.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
+    const nodes = ch.options.filter((o) => core.choiceOptionFits(cat, o, items)).map((o) => { const [m, mc] = optMark(o);
+      return tnode({ photo: o.photo, title: o.title.replace(/ — .*$/, ""), sub: o.title.includes(" — ") ? o.title.replace(/^.*? — /, "") : "", mark: m, markCls: mc, on: cur === o.value, onclick: () => setChoice(ch.id, o.value) }); });
+    cols.push([ch.title.replace(/ \(.*\)$/, "").replace(/ крана$/, ""), nodes]);
+  }
+  // 4. extras: optional positions (toggle) with their own choices under them, then the kit's other choices
+  const extras = [];
+  for (const s of markSlots(kt)) {
+    const cur = sel.slots[s.id];
+    const it = core.itemById(cat, cur || s.default || s.candidates[0]);
+    const cands = core.slotCandidates(cat, kt.id, s.id, sel);
+    const pick = (cands.find((c) => c.allowed && c.id === s.default) || cands.find((c) => c.allowed))?.id;
+    const node = tnode({ photo: it?.photo, title: s.title, sub: cur && it?.unit ? `${S.qty[it.id] ?? it.unit.default} ${it.unit.name}` : "", mark: cur ? "✓ в комплекті" : "+ " + itemPriceText(it), markCls: cur ? "std" : "",
+      on: !!cur, dis: !pick && !cur, cls: "tog", onclick: () => setSlot(s.id, cur ? null : pick) });
+    const subs = restChoices.filter((ch) => ch.slot === s.id);
+    extras.push(subs.length && cur ? h("div", { class: "tgrp" }, node, subs.map((ch) => miniChoice(ch, items, setChoice))) : node);
+  }
+  for (const ch of restChoices.filter((c) => !c.slot || !markSlots(kt).some((s) => s.id === c.slot))) extras.push(h("div", { class: "tgrp solo" }, h("div", { class: "tg-t" }, ch.title), miniChoice(ch, items, setChoice)));
+  if (extras.length) cols.push(["Допи", extras]);
+  for (const [title, nodes] of cols) box.append(h("div", { class: "tcol" }, h("div", { class: "tc-h" }, title), h("div", { class: "tc-b" }, nodes)));
+  requestAnimationFrame(drawTreeLinks);
+}
+function miniChoice(ch, items, setChoice) {
+  const cur = S.sel.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
+  return h("div", { class: "mini" }, ch.options.filter((o) => core.choiceOptionFits(cat, o, items)).map((o) => h("button", { class: cur === o.value ? "on" : "", title: o.price_uah ? "+" + uah(o.price_uah) : o.on_request && !core.choiceIsStandard(o, items) ? "доплата за запитом" : "",
+    onclick: (e) => { e.stopPropagation(); setChoice(ch.id, o.value); } }, o.photo ? h("img", { src: asset(o.photo), alt: "" }) : null, o.title)));
+}
+function drawTreeLinks() {
+  const box = $("#tree"); if (!box) return;
+  const old = box.querySelector("svg"); if (old) old.remove();
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("width", box.scrollWidth); svg.setAttribute("height", box.scrollHeight);
+  const r0 = box.getBoundingClientRect();
+  const cols = $$(".tcol", box);
+  const anchor = (el, side) => { const r = el.getBoundingClientRect(); return [side === "r" ? r.right - r0.left : r.left - r0.left, r.top - r0.top + Math.min(r.height / 2, 28)]; };
+  for (let i = 0; i < cols.length - 1; i++) {
+    const from = $(".tc-b > .tnode.on", cols[i]); if (!from) continue;
+    const [x1, y1] = anchor(from, "r");
+    for (const to of $$(".tc-b > .tnode, .tc-b > .tgrp", cols[i + 1])) {
+      if (to.classList.contains("dis")) continue;
+      const on = to.classList.contains("on") || to.classList.contains("solo") || !!to.querySelector(":scope > .tnode.on");
+      const [x2, y2] = anchor(to, "l"), mx = (x1 + x2) / 2;
+      const p = document.createElementNS(NS, "path");
+      p.setAttribute("d", `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`);
+      p.setAttribute("class", on ? "on" : "off");
+      svg.append(p);
+    }
+  }
+  box.append(svg);
+}
+window.addEventListener("resize", () => requestAnimationFrame(drawTreeLinks));
 function setSlot(slotId, val) {
   S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, slots: { ...S.sel.slots, [slotId]: val || null } }, slotId);
   S.preset = null; renderConf(); renderFeatured();
@@ -274,12 +419,12 @@ function renderConf() {
   for (const ch of S.kt.choices) {
     if (ch.slot && !S.sel.slots[ch.slot]) continue;
     const opts = ch.options.filter((o) => core.choiceOptionFits(cat, o, items));
-    const sel = h("select", { onchange: (e) => { S.sel = { ...S.sel, choices: { ...S.sel.choices, [ch.id]: e.target.value } }; renderConf(); } },
+    const sel = h("select", { onchange: (e) => { S.sel = { ...S.sel, choices: { ...S.sel.choices, [ch.id]: e.target.value } }; S.preset = null; renderConf(); renderFeatured(); } },
       opts.map((o) => h("option", { value: o.value }, o.title + (core.choiceIsStandard(o, items) ? " — базовий" : o.price_uah ? ` (+${core.formatUah(o.price_uah)})` : o.on_request ? " — доплата за запитом" : ""))));
     sel.value = S.sel.choices?.[ch.id] ?? ch.default;
     chb.append(h("label", {}, ch.title, sel));
   }
-  renderAccs(); renderQuote(); renderStyleChips();
+  renderAccs(); renderQuote(); renderStyleChips(); renderTree();
 }
 function renderAccs() {
   const box = $("#accs"); box.innerHTML = "";
@@ -336,7 +481,7 @@ function renderQuote() {
     $("#kitPriceBox").append(h("label", { class: "inline" }, "Ціна комплекту в адмінці: " + uah(q.kit_price_uah ?? null) + ". Фінальна, ₴:",
       h("input", { type: "number", value: S.kitPrice ?? "", placeholder: "як у адмінці", style: "width:140px", onchange: (e) => { S.kitPrice = num(e.target.value); renderQuote(); } })));
   }
-  $("#total").textContent = q.complete === false ? uah(q.total_uah) + " *" : uah(q.total_uah);
+  $("#total").textContent = !q.total_uah ? "за запитом" : q.complete === false ? uah(q.total_uah) + " *" : uah(q.total_uah);
   if (q.complete === false) warn.append(h("li", {}, "* не всі позиції мають ціну — сума неповна"));
   for (const w of q.warnings.filter((w) => !/Курс EUR|індекс металу|опорн/i.test(w))) warn.append(h("li", {}, w));
 }
@@ -594,6 +739,17 @@ function moveIn(ovObj, ids, id, dir) {
   if (i < 0 || j < 0 || j >= order.length) return;
   [order[i], order[j]] = [order[j], order[i]]; ovObj.order = order;
 }
+/** Photo cell: thumbnail (click = view), ✎ uploads a new photo (the old one goes to versions), ↺ opens versions. */
+function photoCell({ key, path, title, set, kind = "tile", rerender }) {
+  const nh = (admin.photo_history[key] || []).length;
+  const pv = (p) => `/api/preview/item?${qs({ style: admin.style || "dark", path: p, kind })}`;
+  return h("div", { class: "pcell" + (path ? "" : " empty") },
+    path ? lbImg(asset(path), [{ src: asset(path), label: "Оригінал" }, { src: pv(path), label: "Як у КП" }], { alt: title })
+      : h("button", { class: "add", title: "Додати фото", onclick: () => filePick((p) => { set(p); saveAdmin(); rerender(); }) }, "＋ фото"),
+    path ? h("div", { class: "pc-acts" },
+      h("button", { title: "Інше фото", onclick: () => filePick((p) => { remember(key, { path }); set(p); saveAdmin(); rerender(); }) }, "✎"),
+      nh ? h("button", { title: "Версії фото", onclick: () => versionsDialog(`${title}: версії фото`, key, { path }, (v) => pv(v.path), (v) => { set(v.path); rerender(); }) }, "↺" + nh) : null) : null);
+}
 function itemThumb(it, kind = "tile") {
   if (!it?.photo) return h("div", { class: "thumb none" }, "без фото");
   const pv = `/api/preview/item?${qs({ style: admin.style || "dark", path: it.photo, kind })}`;
@@ -615,7 +771,7 @@ function renderKitEditor() {
     const set = (patch) => { const e = ((K.edits ??= {})[s.id] ??= {}); Object.assign(e, patch); if (custom) Object.assign(K.custom.find((x) => x.id === s.id), patch); saveAdmin(); renderKitEditor(); };
     list.append(h("div", { class: "ed-row" + (base ? "" : " off") },
       h("div", { class: "ord" }, h("button", { title: "вище", onclick: () => { moveIn(K, ids, s.id, -1); saveAdmin(); renderKitEditor(); } }, "▲"), h("button", { title: "нижче", onclick: () => { moveIn(K, ids, s.id, 1); saveAdmin(); renderKitEditor(); } }, "▼")),
-      itemThumb(it),
+      photoCell({ key: "item:" + it?.id, path: it?.photo, title: s.title, set: (p) => { for (const id of s.candidates) if (core.itemById(cat, id)?.title === it.title) admin.photos.items[id] = p; }, rerender: renderKitEditor }),
       h("div", { class: "ed-main" }, h("input", { value: s.title, onchange: (e) => set({ title: e.target.value || s.title }) }),
         h("div", { class: "chips" }, s.candidates.map((id) => h("span", { class: "chip" + (id === s.default ? " on" : "") }, core.itemById(cat, id)?.title || id))),
         s.priced ? h("small", { class: "hint", style: "margin:0" }, "ціна окремо, додається до ціни комплекту") : null),
@@ -669,7 +825,7 @@ function renderChoiceEditor() {
     const values = ch.options.map((o) => o.value);
     const ed = (v) => ((E.edits ??= {})[v] ??= {});
     const custom = (v) => (E.custom || []).some((x) => x.value === v);
-    const tbl = h("table", { class: "opt-table" }, h("thead", {}, h("tr", {}, h("th", {}), h("th", {}, "Варіант"), h("th", {}, "Текст в описі КП"), h("th", { class: "num" }, "Доплата, ₴"),
+    const tbl = h("table", { class: "opt-table" }, h("thead", {}, h("tr", {}, h("th", {}), h("th", {}, "Фото"), h("th", {}, "Варіант"), h("th", {}, "Текст в описі КП"), h("th", { class: "num" }, "Доплата, ₴"),
       craneBound ? cranes.map((c) => h("th", { class: "cr" }, c.model)) : h("th", { class: "cr" }, "Базовий"), h("th"))));
     const tb = h("tbody"); tbl.append(tb);
     for (const o of ch.options) {
@@ -686,6 +842,7 @@ function renderChoiceEditor() {
       };
       tb.append(h("tr", {},
         h("td", {}, h("div", { class: "ord" }, h("button", { class: "icon sm", onclick: () => { moveIn(E, values, o.value, -1); saveAdmin(); renderChoiceEditor(); } }, "▲"), h("button", { class: "icon sm", onclick: () => { moveIn(E, values, o.value, 1); saveAdmin(); renderChoiceEditor(); } }, "▼"))),
+        h("td", {}, photoCell({ key: `ch:${id}:${o.value}`, path: o.photo, title: o.title, kind: "card", set: (p) => { if (custom(o.value)) E.custom.find((x) => x.value === o.value).photo = p; else ed(o.value).photo = p; }, rerender: renderChoiceEditor })),
         h("td", {}, h("input", { value: o.title, onchange: (e) => { ed(o.value).title = e.target.value; saveAdmin(); } })),
         h("td", {}, h("input", { value: o.short || "", onchange: (e) => { ed(o.value).short = e.target.value; saveAdmin(); } })),
         h("td", { class: "num" }, h("input", { type: "number", value: o.price_uah ?? "", placeholder: o.on_request ? "за запитом" : "0", style: "width:110px",

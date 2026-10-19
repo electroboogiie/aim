@@ -161,6 +161,13 @@
     "group": "bmf_cranes",
     "history": [
      {
+      "uah": 633100,
+      "date": "2025-08-07",
+      "eur_rate_ref": null,
+      "metal_index_ref": null,
+      "source": "КП BMF720 у комплекті місце оператора лапи бак 1.pptx (надіслано 19.10.2026), рядок крана 633 100 ₴, станом на 07.08.2025"
+     },
+     {
       "uah": 686000,
       "date": "2025-08-24",
       "eur_rate_ref": null,
@@ -1041,7 +1048,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,15"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c20",
@@ -1060,7 +1068,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,2"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c24",
@@ -1080,7 +1089,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,24"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c27",
@@ -1099,7 +1109,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,27"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       }
      ]
     },
@@ -1125,7 +1136,8 @@
         "valve": "6/8 XY",
         "valve_flow_l": "55"
        },
-       "crane_note": "розподільник 6/8 XY"
+       "crane_note": "розподільник 6/8 XY",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "v48xyz",
@@ -1146,7 +1158,8 @@
        "crane_specs": {
         "valve": "4/8 XYZ"
        },
-       "crane_note": "розподільник 4/8 XYZ"
+       "crane_note": "розподільник 4/8 XYZ",
+       "photo": "acc_rv/01_valve_4-8xyz.png"
       },
       {
        "value": "v28xy_onoff",
@@ -1162,7 +1175,8 @@
        "crane_specs": {
         "valve": "2/8 XY el. On/Off"
        },
-       "crane_note": "розподільник 2/8 XY el. On/Off"
+       "crane_note": "розподільник 2/8 XY el. On/Off",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "hpc",
@@ -1175,7 +1189,8 @@
        "crane_specs": {
         "valve": "HPC, пілотні джойстики"
        },
-       "crane_note": "розподільник з пілотними джойстиками HPC"
+       "crane_note": "розподільник з пілотними джойстиками HPC",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "dpx",
@@ -1191,7 +1206,8 @@
        "crane_specs": {
         "valve": "Walvoil DPX 100/8"
        },
-       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC"
+       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_p70",
@@ -1207,7 +1223,8 @@
        "crane_specs": {
         "valve": "Parker P70"
        },
-       "crane_note": "електричний розподільник Parker P70"
+       "crane_note": "електричний розподільник Parker P70",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_p70_wireless",
@@ -1223,7 +1240,8 @@
        "crane_specs": {
         "valve": "Parker P70 Wireless"
        },
-       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)"
+       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_l90",
@@ -1239,7 +1257,8 @@
        "crane_specs": {
         "valve": "Parker L90"
        },
-       "crane_note": "електричний розподільник Parker L90"
+       "crane_note": "електричний розподільник Parker L90",
+       "photo": "acc/01_valves.jpg"
       }
      ]
     },
@@ -1252,12 +1271,14 @@
       {
        "value": "rear",
        "title": "пряме (заднє)",
-       "short": "Пряме (заднє) розташування"
+       "short": "Пряме (заднє) розташування",
+       "photo": "prod/tile_seat.png"
       },
       {
        "value": "side",
        "title": "бокове",
-       "short": "Бокове розташування"
+       "short": "Бокове розташування",
+       "photo": "prod/tile_seat.png"
       }
      ]
     }
@@ -1322,7 +1343,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,15"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c20",
@@ -1341,7 +1363,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,2"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c24",
@@ -1361,7 +1384,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,24"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c27",
@@ -1380,7 +1404,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,27"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       }
      ]
     },
@@ -1406,7 +1431,8 @@
         "valve": "6/8 XY",
         "valve_flow_l": "55"
        },
-       "crane_note": "розподільник 6/8 XY"
+       "crane_note": "розподільник 6/8 XY",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "v48xyz",
@@ -1427,7 +1453,8 @@
        "crane_specs": {
         "valve": "4/8 XYZ"
        },
-       "crane_note": "розподільник 4/8 XYZ"
+       "crane_note": "розподільник 4/8 XYZ",
+       "photo": "acc_rv/01_valve_4-8xyz.png"
       },
       {
        "value": "v28xy_onoff",
@@ -1443,7 +1470,8 @@
        "crane_specs": {
         "valve": "2/8 XY el. On/Off"
        },
-       "crane_note": "розподільник 2/8 XY el. On/Off"
+       "crane_note": "розподільник 2/8 XY el. On/Off",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "hpc",
@@ -1456,7 +1484,8 @@
        "crane_specs": {
         "valve": "HPC, пілотні джойстики"
        },
-       "crane_note": "розподільник з пілотними джойстиками HPC"
+       "crane_note": "розподільник з пілотними джойстиками HPC",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "dpx",
@@ -1472,7 +1501,8 @@
        "crane_specs": {
         "valve": "Walvoil DPX 100/8"
        },
-       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC"
+       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_p70",
@@ -1488,7 +1518,8 @@
        "crane_specs": {
         "valve": "Parker P70"
        },
-       "crane_note": "електричний розподільник Parker P70"
+       "crane_note": "електричний розподільник Parker P70",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_p70_wireless",
@@ -1504,7 +1535,8 @@
        "crane_specs": {
         "valve": "Parker P70 Wireless"
        },
-       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)"
+       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_l90",
@@ -1520,7 +1552,8 @@
        "crane_specs": {
         "valve": "Parker L90"
        },
-       "crane_note": "електричний розподільник Parker L90"
+       "crane_note": "електричний розподільник Parker L90",
+       "photo": "acc/01_valves.jpg"
       }
      ]
     },
@@ -1555,22 +1588,26 @@
      "options": [
       {
        "value": "w500_45_22_5",
-       "title": "500/45-22,5"
+       "title": "500/45-22,5",
+       "photo": "acc_rv/06_wheel.jpg"
       },
       {
        "value": "w400_60_15_5",
        "title": "400/60-15,5",
-       "on_request": true
+       "on_request": true,
+       "photo": "acc_rv/06_wheel.jpg"
       },
       {
        "value": "w500_50_17",
        "title": "500/50-17",
-       "on_request": true
+       "on_request": true,
+       "photo": "acc_rv/06_wheel.jpg"
       },
       {
        "value": "w550_45_22_5",
        "title": "550/45-22,5",
-       "on_request": true
+       "on_request": true,
+       "photo": "acc_rv/06_wheel.jpg"
       }
      ]
     },
@@ -1582,13 +1619,15 @@
       {
        "value": "4",
        "title": "4 коники",
-       "short": "4 коники"
+       "short": "4 коники",
+       "photo": "acc_rv/07_poles.png"
       },
       {
        "value": "5",
        "title": "5 коників",
        "short": "5 коників",
-       "on_request": true
+       "on_request": true,
+       "photo": "acc_rv/07_poles.png"
       }
      ]
     },
@@ -1600,12 +1639,14 @@
       {
        "value": "rear",
        "title": "пряме (заднє)",
-       "short": "пряме (заднє) місце оператора"
+       "short": "пряме (заднє) місце оператора",
+       "photo": "prod/tile_seat.png"
       },
       {
        "value": "side",
        "title": "бокове",
-       "short": "бокове місце оператора"
+       "short": "бокове місце оператора",
+       "photo": "prod/tile_seat.png"
       }
      ]
     }
@@ -1676,7 +1717,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,15"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c20",
@@ -1695,7 +1737,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,2"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c24",
@@ -1715,7 +1758,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,24"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c27",
@@ -1734,7 +1778,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,27"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       }
      ]
     },
@@ -1760,7 +1805,8 @@
         "valve": "6/8 XY",
         "valve_flow_l": "55"
        },
-       "crane_note": "розподільник 6/8 XY"
+       "crane_note": "розподільник 6/8 XY",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "v48xyz",
@@ -1781,7 +1827,8 @@
        "crane_specs": {
         "valve": "4/8 XYZ"
        },
-       "crane_note": "розподільник 4/8 XYZ"
+       "crane_note": "розподільник 4/8 XYZ",
+       "photo": "acc_rv/01_valve_4-8xyz.png"
       },
       {
        "value": "v28xy_onoff",
@@ -1797,7 +1844,8 @@
        "crane_specs": {
         "valve": "2/8 XY el. On/Off"
        },
-       "crane_note": "розподільник 2/8 XY el. On/Off"
+       "crane_note": "розподільник 2/8 XY el. On/Off",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "hpc",
@@ -1810,7 +1858,8 @@
        "crane_specs": {
         "valve": "HPC, пілотні джойстики"
        },
-       "crane_note": "розподільник з пілотними джойстиками HPC"
+       "crane_note": "розподільник з пілотними джойстиками HPC",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "dpx",
@@ -1826,7 +1875,8 @@
        "crane_specs": {
         "valve": "Walvoil DPX 100/8"
        },
-       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC"
+       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_p70",
@@ -1842,7 +1892,8 @@
        "crane_specs": {
         "valve": "Parker P70"
        },
-       "crane_note": "електричний розподільник Parker P70"
+       "crane_note": "електричний розподільник Parker P70",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_p70_wireless",
@@ -1858,7 +1909,8 @@
        "crane_specs": {
         "valve": "Parker P70 Wireless"
        },
-       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)"
+       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_l90",
@@ -1874,7 +1926,8 @@
        "crane_specs": {
         "valve": "Parker L90"
        },
-       "crane_note": "електричний розподільник Parker L90"
+       "crane_note": "електричний розподільник Parker L90",
+       "photo": "acc/01_valves.jpg"
       }
      ]
     }
@@ -1977,7 +2030,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,15"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c20",
@@ -1996,7 +2050,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,2"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c24",
@@ -2016,7 +2071,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,24"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       },
       {
        "value": "c27",
@@ -2035,7 +2091,8 @@
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,27"
-       }
+       },
+       "photo": "acc_rv/02_grapple_forest.jpg"
       }
      ]
     },
@@ -2061,7 +2118,8 @@
         "valve": "6/8 XY",
         "valve_flow_l": "55"
        },
-       "crane_note": "розподільник 6/8 XY"
+       "crane_note": "розподільник 6/8 XY",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "v48xyz",
@@ -2082,7 +2140,8 @@
        "crane_specs": {
         "valve": "4/8 XYZ"
        },
-       "crane_note": "розподільник 4/8 XYZ"
+       "crane_note": "розподільник 4/8 XYZ",
+       "photo": "acc_rv/01_valve_4-8xyz.png"
       },
       {
        "value": "v28xy_onoff",
@@ -2098,7 +2157,8 @@
        "crane_specs": {
         "valve": "2/8 XY el. On/Off"
        },
-       "crane_note": "розподільник 2/8 XY el. On/Off"
+       "crane_note": "розподільник 2/8 XY el. On/Off",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "hpc",
@@ -2111,7 +2171,8 @@
        "crane_specs": {
         "valve": "HPC, пілотні джойстики"
        },
-       "crane_note": "розподільник з пілотними джойстиками HPC"
+       "crane_note": "розподільник з пілотними джойстиками HPC",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "dpx",
@@ -2127,7 +2188,8 @@
        "crane_specs": {
         "valve": "Walvoil DPX 100/8"
        },
-       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC"
+       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_p70",
@@ -2143,7 +2205,8 @@
        "crane_specs": {
         "valve": "Parker P70"
        },
-       "crane_note": "електричний розподільник Parker P70"
+       "crane_note": "електричний розподільник Parker P70",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_p70_wireless",
@@ -2159,7 +2222,8 @@
        "crane_specs": {
         "valve": "Parker P70 Wireless"
        },
-       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)"
+       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)",
+       "photo": "acc/01_valves.jpg"
       },
       {
        "value": "parker_l90",
@@ -2175,7 +2239,8 @@
        "crane_specs": {
         "valve": "Parker L90"
        },
-       "crane_note": "електричний розподільник Parker L90"
+       "crane_note": "електричний розподільник Parker L90",
+       "photo": "acc/01_valves.jpg"
       }
      ]
     }
@@ -2320,6 +2385,40 @@
      }
     ],
     "note": "Основа з аутригерами та місцем оператора — один рядок КП (169 270 ₴)."
+   }
+  },
+  {
+   "id": "bmf720_kit_2025-08-07",
+   "title": "BMF 720 з основою, баком, оливою, насосом і місцем оператора (КП 07.08.2025)",
+   "kit_type": "crane_kit",
+   "selection": {
+    "slots": {
+     "crane": "bmf720",
+     "base": "base_outriggers_720",
+     "tank": "tank",
+     "oil": "oil_90l",
+     "seat": "seat",
+     "heat_exchanger": null,
+     "pump": "pump"
+    },
+    "choices": {},
+    "accessories": []
+   },
+   "source": {
+    "file": "КП BMF720 у комплекті місце оператора лапи бак 1.pptx (надіслано 19.10.2026; та сама комплектація — КП 27.05.2025, 835 600 ₴)",
+    "date": "2025-08-07",
+    "total_uah": 846200,
+    "rows": [
+     {
+      "title": "Гідравлічний кран-маніпулятор BMF 720",
+      "price_uah": 633100
+     },
+     {
+      "title": "Основа із аутригерами, баком та місцем оператора",
+      "price_uah": 213100
+     }
+    ],
+    "note": "Основа: платформа з аутригерами, гідробак в зборі з оливою 90 л, насос 65 л, місце оператора — один рядок КП."
    }
   },
   {
