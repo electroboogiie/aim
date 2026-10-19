@@ -127,3 +127,20 @@ def chart_for(profile, crane):
     if crane.get('id') in charts: return charts[crane['id']]
     t = (crane.get('specs') or {}).get('torque_knm')
     return (p.get('chart_by_torque') or {}).get(t) or charts.get('default')
+
+# BMF trailers (kit bmf_trailer_crane): drawings and cut-out from the bmf.ee technical charts, photos from the
+# bmf.ee gallery (assets/bmf_trailers, prepared once from the bmf-clone image archives). (path, focus x, focus y)
+TRAILERS = {
+    'bmf8t2': dict(no='8T2', side='bmf_trailers/bmf8t2_side.png', rear='bmf_trailers/bmf8t2_rear.png',
+                   cutout='bmf_trailers/bmf8t2_cutout.png', work=('bmf_trailers/bmf8t2_work.jpg', 0.45, 0.5),
+                   cover=('bmf_trailers/bmf8t2_end.jpg', 0.5, 0.45), end=('bmf_trailers/bmf8t2_work.jpg', 0.45, 0.5)),
+    'bmf10t2': dict(no='10T2', side='bmf_trailers/bmf10t2_side.png', rear='bmf_trailers/bmf10t2_rear.png',
+                    cutout='bmf_trailers/bmf10t2_cutout.png', work=('bmf_trailers/bmf10t2_work.jpg', 0.5, 0.5),
+                    cover=('bmf_trailers/bmf10t2_end.jpg', 0.5, 0.45), end=('bmf_trailers/bmf10t2_work.jpg', 0.5, 0.5)),
+    'bmf14t2': dict(no='14T2', side='bmf_trailers/bmf14t2_side.png', rear='bmf_trailers/bmf14t2_rear.png',
+                    cutout='bmf_trailers/bmf14t2_cutout.png', work=('bmf_trailers/bmf14t2_work.jpg', 0.5, 0.5),
+                    cover=('bmf_trailers/bmf14t2_work.jpg', 0.5, 0.45), end=('bmf_trailers/bmf14t2_end.jpg', 0.5, 0.5)),
+    'bmf17t2': dict(no='17T2', side='bmf_trailers/bmf17t2_side.png', rear='bmf_trailers/bmf17t2_rear.png',
+                    cutout='bmf_trailers/bmf17t2_cutout.png', work=('bmf_trailers/bmf17t2_work.jpg', 0.5, 0.5),
+                    cover=('bmf_trailers/bmf17t2_work.jpg', 0.5, 0.45), end=('bmf_trailers/bmf17t2_end.jpg', 0.5, 0.5)),
+}

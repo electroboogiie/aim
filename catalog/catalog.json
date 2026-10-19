@@ -408,7 +408,7 @@
    "price": {
     "mode": "on_request"
    },
-   "kp_profile": null,
+   "kp_profile": "bmf8t2",
    "source": "drive_kp/КП 8Т2+650 (02.04.2026) механ. розпод..pptx і блютус. розпод..pptx, слайди 2 і 4; height_mm, wheels_options, frame_ext_mm, bolsters і сумісність з кранами — bmf.ee (www.bmf.ee/products/trailers/bmf8t2, перевірено 18.10.2026). Окремої ціни причепа немає.",
    "needs_confirmation": [
     "price",
@@ -420,7 +420,8 @@
    "compatible": [
     "bmf650",
     "bmf720"
-   ]
+   ],
+   "photo": "bmf_trailers/bmf8t2_cutout.png"
   },
   {
    "id": "bmf10t2",
@@ -456,7 +457,7 @@
    "price": {
     "mode": "on_request"
    },
-   "kp_profile": null,
+   "kp_profile": "bmf10t2",
    "source": "reference/kp/kp_text.md: CP/Комерційні пропозиції/КП 10Т2+650 (07.04.2026).pptx, слайди 2 і 4 (у drive_kp цього файлу немає); height_mm, wheels_options, frame_ext_mm, bolsters і сумісність з кранами — bmf.ee (www.bmf.ee/products/trailers/bmf10t2, перевірено 18.10.2026). Окремої ціни причепа немає.",
    "needs_confirmation": [
     "price",
@@ -471,7 +472,8 @@
     "bmf720",
     "bmf750",
     "bmf850"
-   ]
+   ],
+   "photo": "bmf_trailers/bmf10t2_cutout.png"
   },
   {
    "id": "bmf14t2_pro_l",
@@ -507,7 +509,7 @@
    "price": {
     "mode": "on_request"
    },
-   "kp_profile": null,
+   "kp_profile": "bmf14t2",
    "source": "drive_kp/КП 14Т2+720 (09.06.2026).pptx, слайди 2 і 4; payload_kg, wheels, height_mm, chassis, axle, load_area_m2, frame_ext_mm, bolsters і сумісність з кранами — bmf.ee (www.bmf.ee/products/trailers/bmf14t2, перевірено 18.10.2026): таблиця КП друкує «Вантажопідйомність 10000» і «Колесо 500/45-22,5» (як у шаблоні НПЛ-10), а текст тієї ж КП — «до 14 т». Окремої ціни причепа немає.",
    "needs_confirmation": [
     "price",
@@ -524,7 +526,8 @@
     "bmf750",
     "bmf850",
     "bmf905"
-   ]
+   ],
+   "photo": "bmf_trailers/bmf14t2_cutout.png"
   },
   {
    "id": "bmf17t2",
@@ -559,7 +562,7 @@
    "price": {
     "mode": "on_request"
    },
-   "kp_profile": null,
+   "kp_profile": "bmf17t2",
    "source": "drive_kp/КП 17Т2+750 (тех. Характеристики).pptx, слайди 2 і 4 (КП без ціни й дати); height_mm, wheels_options, frame_ext_mm, bolsters і сумісність з кранами — bmf.ee (www.bmf.ee/products/trailers/bmf17t2, перевірено 18.10.2026). Маси з КП (споряджена 3500, повна 20 500 кг) не внесено: 3500 кг збігається з шаблоном НПЛ-10. Окремої ціни немає.",
    "needs_confirmation": [
     "price",
@@ -573,7 +576,8 @@
     "bmf750",
     "bmf850",
     "bmf905"
-   ]
+   ],
+   "photo": "bmf_trailers/bmf17t2_cutout.png"
   },
   {
    "id": "base_outriggers_650",
@@ -1178,7 +1182,11 @@
       {
        "value": "parker_p70_wireless",
        "title": "електричний Parker P70; FE; FP; Wireless (Bluetooth)",
-       "price_uah": 259900
+       "price_uah": 259900,
+       "crane_specs": {
+        "valve": "Parker P70 Wireless"
+       },
+       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)"
       }
      ]
     }

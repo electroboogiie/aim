@@ -94,6 +94,8 @@ export interface ChoiceOption {
   price_uah?: number;
   short?: string;                       // text for Item.desc_template
   on_request?: boolean;                 // surcharge not known yet: selecting it adds a warning
+  crane_specs?: Record<string, string>; // KP: crane characteristics this option replaces (e.g. valve)
+  crane_note?: string;                  // KP: appended to the crane row description
 }
 export interface Choice { id: string; title: string; default: string; options: ChoiceOption[] }
 
@@ -250,6 +252,7 @@ export interface KpSpec {
   title: string;
   crane: { id: string; model: string; profile: string; specs: Record<string, string>; lead?: string; lead2?: string } | null;
   npl: { brakes: string; wheels: string; stakes: string } | null;
+  trailer?: { id: string; model: string; title: string; short: string; profile: string; specs: Record<string, string> } | null;  // BMF trailer kits
   rows: KpSpecRow[];
   accessories: { group: string; title: string; desc: string; photo: string; price_text: string }[];
   total_text: string;

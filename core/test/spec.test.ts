@@ -132,3 +132,14 @@ test("offer_accessories: chosen options first, then compatible ones on request, 
   assert.ok(!spec.accessories.some((a) => a.title === leg.title), "A-type leg does not fit BMF 750");
   assert.equal(buildKpSpec(c, s, quote(c, s, noRate, npl750), meta).accessories.length, 0);
 });
+
+test("BMF trailer kit: trailer block for the generator, Parker option adds the valve to the crane row", () => {
+  const p = presetById(c, "bmf8t2_bmf650_bt_2026-04-02")!;
+  const q = quote(c, s, noRate, { kit_type: p.kit_type, selection: presetSelection(p, c), date: p.source.date });
+  const spec = buildKpSpec(c, s, q, meta);
+  assert.equal(spec.trailer?.profile, "bmf8t2");
+  assert.equal(spec.npl, null);
+  assert.equal(spec.total_text, `1${NB}614${NB}400${NB}₴`);
+  assert.equal(spec.crane?.specs.valve, "Parker P70 Wireless");
+  assert.match(spec.rows.find((r) => r.item_id === spec.crane?.id)!.desc, /Parker P70/);
+});

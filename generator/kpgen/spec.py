@@ -1,6 +1,6 @@
 # KpSpec (docs/CONTRACTS.md §5): loading and validation. Messages are for the manager (Ukrainian).
 import json, sys
-from .profiles import PROFILES
+from .profiles import PROFILES, TRAILERS
 from .raster import asset_ok
 
 MAX_ROWS = 8          # price page
@@ -95,10 +95,18 @@ def validate(spec):
         npl = dict(brakes=_s(npl.get('brakes')) or 'гідравлічна', wheels=_s(npl.get('wheels')) or '500/45-22,5',
                    stakes=_s(npl.get('stakes')) or '4', lead=_s(npl.get('lead')), lead2=_s(npl.get('lead2')))
 
+    trailer = spec.get('trailer') if npl is None else None
+    if trailer:
+        if trailer.get('profile') not in TRAILERS:
+            raise ProfileError(f"Для причепа {trailer.get('model') or trailer.get('id') or ''} немає сторінок КП "
+                               f"({trailer.get('profile')!r}). Підтримуються: {', '.join(sorted(TRAILERS))}.")
+        trailer = dict(trailer, model=_s(trailer.get('model')), title=_s(trailer.get('title')), short=_s(trailer.get('short')),
+                       specs={k: _s(v) for k, v in (trailer.get('specs') or {}).items() if v not in (None, '')})
+
     client = spec['client'] if isinstance(spec['client'], dict) else {'name': _s(spec['client'])}
     contacts = spec['contacts']
     maker = spec['maker']
-    return dict(spec, crane=crane, rows=rows, terms=terms, accessories=accs, npl=npl,
+    return dict(spec, crane=crane, rows=rows, terms=terms, accessories=accs, npl=npl, trailer=trailer or None,
                 client=dict(name=_s(client.get('name')), contact=_s(client.get('contact'))),
                 contacts=dict(phones=list(contacts.get('phones') or []), email=_s(contacts.get('email')),
                               sites=list(contacts.get('sites') or []), address=_s(contacts.get('address')),

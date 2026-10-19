@@ -1,6 +1,6 @@
 // KP spec (docs/CONTRACTS.md §5): the generator input built from a quote.
 import type { Catalog, Item, KitType, KpMeta, KpSpec, KpSpecRow, Quote, Settings } from "./types.js";
-import { SUPPORTED_PROFILES, accessoryDesc, accessoryStatus, companyById, itemById, kitTitle, kitTypeById, modelName, termById } from "./catalog.js";
+import { SUPPORTED_PROFILES, SUPPORTED_TRAILER_PROFILES, accessoryDesc, accessoryStatus, companyById, itemById, kitTitle, kitTypeById, modelName, termById } from "./catalog.js";
 import { fillTemplate, formatDate, formatPct, formatRate, formatUah, joinUk } from "./format.js";
 import { TEXT_ON_REQUEST } from "./pricing.js";
 
@@ -90,6 +90,10 @@ export function kpBlockers(c: Catalog, q: Quote): string[] {
     const lack = REQUIRED_CRANE_SPECS.filter((k) => crane.specs?.[k] === undefined || crane.specs?.[k] === "");
     if (lack.length) out.push(`У характеристиках ${modelName(crane)} бракує: ${lack.join(", ")}.`);
   }
+  const trailer = trailerOf(c, q);
+  if (trailer && trailer.family !== "npl" && (!trailer.kp_profile || !SUPPORTED_TRAILER_PROFILES.includes(trailer.kp_profile))) {
+    out.push(`Для причепа ${modelName(trailer)} ще немає сторінок КП.`);
+  }
   const n = kpRows(q).length;
   if (!n) out.push("У КП немає жодної позиції.");
   if (n > MAX_KP_ROWS) out.push(`Забагато позицій для сторінки «Вартість»: ${n} (максимум ${MAX_KP_ROWS}).`);
@@ -100,6 +104,19 @@ function kpTitle(c: Catalog, kt: KitType, q: Quote): string {
   const slots: Record<string, string | null> = {};
   for (const r of q.rows) if (r.slot) slots[r.slot] = r.item_id;
   return kitTitle(c, kt, { slots, choices: {}, accessories: [] });
+}
+
+function trailerOf(c: Catalog, q: Quote): Item | undefined {
+  return q.rows.map((r) => itemById(c, r.item_id)).find((it) => it?.kind === "trailer");
+}
+
+/** BMF trailer kits: what the generator prints on the trailer pages (specs as in the catalog). */
+function trailerBlock(c: Catalog, q: Quote): KpSpec["trailer"] {
+  const t = trailerOf(c, q);
+  if (!t || t.family === "npl" || !t.kp_profile) return null;
+  const specs: Record<string, string> = {};
+  for (const [k, v] of Object.entries(t.specs ?? {})) if (v !== null && v !== undefined && v !== "") specs[k] = String(v);
+  return { id: t.id, model: modelName(t), title: t.title, short: t.short, profile: t.kp_profile, specs };
 }
 
 function nplBlock(c: Catalog, q: Quote): KpSpec["npl"] {
@@ -146,6 +163,13 @@ export function buildKpSpec(c: Catalog, settings: Settings, q: Quote, meta: KpMe
   }
 
   const rows = kpRows(q);
+  for (const ch of q.choices) {
+    const opt = kt.choices.find((x) => x.id === ch.id)?.options.find((o) => o.value === ch.value);
+    if (!opt) continue;
+    Object.assign(specs, opt.crane_specs ?? {});
+    const row = opt.crane_note ? rows.find((r) => r.item_id === crane.id) : undefined;
+    if (row) row.desc = row.desc ? `${row.desc}; ${opt.crane_note}` : opt.crane_note!;
+  }
   const unpriced = q.price_display === "bundle" ? q.kit_price_uah === null || q.kit_price_uah === undefined
     : rows.every((r) => r.price_text === TEXT_ON_REQUEST);
   const notes: string[] = [];
@@ -164,6 +188,7 @@ export function buildKpSpec(c: Catalog, settings: Settings, q: Quote, meta: KpMe
     title: kpTitle(c, kt, q),
     crane: { id: crane.id, model: modelName(crane), profile: crane.kp_profile!, specs },
     npl: nplBlock(c, q),
+    trailer: trailerBlock(c, q),
     rows,
     accessories: kpCards(c, kt, q, meta.offer_accessories === true),
     total_text: unpriced ? TEXT_ON_REQUEST : formatUah(q.total_uah),

@@ -3,8 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import {
   SUPPORTED_PROFILES, accessoryById, accessoryDesc, defaultSelection, findBundle, itemById, kitAccessories, kitTypeById,
-  presetSelection, reconcileSelection, slotCandidates, validateCatalog, validateSelection,
-} from "../src/index.js";
+  presetSelection, reconcileSelection, slotCandidates, validateCatalog, validateSelection, SUPPORTED_TRAILER_PROFILES } from "../src/index.js";
 import type { Catalog, QuoteInput, Selection } from "../src/index.js";
 import { loadCatalog } from "./helpers.js";
 
@@ -63,7 +62,7 @@ test("every photo path exists in generator/assets", () => {
   for (const p of paths) assert.ok(existsSync(new URL(p, assets)), p);
 });
 
-test("business rules: cranes come with rotator and grapple, KP profiles only for 650/720/750", () => {
+test("business rules: cranes come with rotator and grapple, KP profiles for 650/720/750 and BMF trailers", () => {
   const cranes = c.items.filter((x) => x.kind === "crane");
   assert.ok(cranes.length >= 5);
   for (const cr of cranes) {
@@ -73,7 +72,10 @@ test("business rules: cranes come with rotator and grapple, KP profiles only for
     const want = ["bmf650", "bmf720", "bmf750"].includes(cr.id) ? cr.id : null;
     assert.equal(cr.kp_profile ?? null, want, cr.id);
   }
-  for (const it of c.items) if (it.kind !== "crane") assert.equal(it.kp_profile ?? null, null, it.id);
+  for (const it of c.items) {
+    if (it.kind === "trailer" && it.family === "bmf_trailer") assert.ok(SUPPORTED_TRAILER_PROFILES.includes(it.kp_profile ?? ""), it.id);
+    else if (it.kind !== "crane") assert.equal(it.kp_profile ?? null, null, it.id);
+  }
   assert.deepEqual([...SUPPORTED_PROFILES], ["bmf650", "bmf720", "bmf750"]);
   // the approved KP_2_v3 values for the BMF 720 and the latest user KP values for 650 / 750
   assert.equal(itemById(c, "bmf720")!.specs!.weight_kg, "710");

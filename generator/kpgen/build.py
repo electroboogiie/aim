@@ -1,15 +1,17 @@
 # KP_2_v3 engine: the user's approved KP (templates/KP_2_v3.pptx, BMF 720 kit, 8 pages) is the
 # template. Layout, fonts, colours and HUD labels stay; content comes from a KpSpec.
-# НПЛ-10 kits get two trailer pages (duplicated from the crane pages) and the own-production page;
+# НПЛ-10 kits get two trailer pages (duplicated from the crane pages) and the own-production page; BMF trailer kits
+# get the two trailer pages too (bmf.ee drawings and photos) and keep the BMF maker page;
 # accessories add an options page after the configuration page.
 import copy, io, os, re
 from PIL import Image
 from pptx import Presentation
 from pptx.enum.text import PP_ALIGN
+from pptx.util import Pt
 
 from . import raster as R
 from .cache import Cache
-from .profiles import (PROFILES, TEMPLATE_720, PHOTO_FOCUS, CARD_TWEAKS, TEMPLATE_TILES, NPL10, OWN_PRODUCTION,
+from .profiles import (PROFILES, TEMPLATE_720, PHOTO_FOCUS, CARD_TWEAKS, TEMPLATE_TILES, NPL10, OWN_PRODUCTION, TRAILERS,
                        DECAL_ANATOMY, DECAL_CONFIG, chart_for)
 from .pptx_util import (EMU, I, by_id, by_name, one, remove, put, set_lines, set_image, fit, geom, clone, dup_slide,
                         dim_box, set_size, prune_images)
@@ -22,6 +24,10 @@ GROUPS = {'crane': 'ДЛЯ КРАНА', 'trailer': 'ДЛЯ ПРИЧЕПА'}
 NPL_CHIPS = ['Гальма на вибір', 'Колеса 400/60-15.5', 'Колеса 500/50-17', 'Колеса 550/45-22.5',
              'Кількість коників', 'Колір на замовлення', 'Опції для крана: с. {opt}', 'Опції для причепа: с. {opt}']
 OPT_TITLE_CHARS = 22
+TRL_CHIPS = ['Гальма на вибір', 'Колеса на вибір', 'Коники {bolsters}', 'Подовжувач рами {frame_ext_mm} мм',
+             'Опції для крана: с. {opt}', 'Опції для причепа: с. {opt}']
+NOTE_TRL = ('Аксесуари з каталогів BMF (bmf.rv.ua, bmf.ee) для кранів і причепів, сумісні з комплектом. Ціни — за запитом: '
+            'обрані опції додаємо в КП окремими рядками.')
 NOTE_CRANE = ('Аксесуари з каталогів BMF (bmf.rv.ua, bmf.ee), сумісні з краном комплекту. Ціни — за запитом: '
               'обрані опції додаємо в КП окремими рядками.')
 NOTE_NPL = ('Аксесуари з каталогів BMF (bmf.rv.ua, bmf.ee) для кранів і причепів, сумісні з краном комплекту. Ціни — за запитом: '
@@ -43,6 +49,8 @@ class Engine:
         self.c = spec['crane']; self.cs = self.c['specs']
         self.P = PROFILES[self.c['profile']]
         self.npl = spec['npl'] is not None
+        self.trl = spec.get('trailer') if not self.npl else None
+        self.T = TRAILERS[self.trl['profile']] if self.trl else None
         self.kit = 'npl_crane' if self.npl else 'crane_kit'
         self.cache = Cache(build_dir)
 
@@ -64,7 +72,7 @@ class Engine:
         if path:
             fx, fy = self.spec['photos'].get(which + '_focus') or PHOTO_FOCUS.get(path) or ((0.5, 0.42) if which == 'cover' else (0.5, 0.5))
         else:
-            d = self.P[which][self.kit]
+            d = self.T[which] if self.T else self.P[which][self.kit]
             if d is None: return None
             path, fx, fy = d
         return self.raster(which + '_bg', maker, path, fx, fy, assets=(path,))
@@ -79,7 +87,7 @@ class Engine:
         self.crane_pages()
         seat_blob = by_id(config, 37).image.blob
         crane_blob = by_id(config, 14).image.blob
-        if self.npl: self.trailer_pages()
+        if self.npl or self.trl: self.trailer_pages()
         self.options = None
         if self.spec['accessories']:
             idx = list(prs.slides).index(config) + 1
@@ -99,7 +107,7 @@ class Engine:
         pg, c, cs, P, m = self.pages, self.c, self.cs, self.P, self.m()
         native = P.get('native')
         # 01 cover tag
-        tag = f"НПЛ-10 · 10 Т · {m}" if self.npl else f"{m} · {cs['reach_m']} M · {cs['torque_knm']} KNM"
+        tag = self.tdata()['cover_tag'] if self.npl or self.trl else f"{m} · {cs['reach_m']} M · {cs['torque_knm']} KNM"
         put(by_id(pg['cover'], 16), None, tag)
         # 02 crane manifest
         s = pg['manifest']
@@ -213,35 +221,102 @@ class Engine:
         put(by_id(s, 118), f"* без захвату і ротатора. Дані виробника, bmf.ee. Вага {self.sp('weight_kg')} кг — без опори, захвату і ротатора.")
 
     # ------------------------------------------------------------ НПЛ-10 trailer pages
+    def tdata(self):
+        """Texts and pictures of the trailer pages and the trailer cover: НПЛ-10 (own production) or a BMF trailer."""
+        if hasattr(self, '_td'): return self._td
+        m = self.m()
+        if self.npl:
+            npl = self.spec['npl']; stakes = npl['stakes']
+            fmtv = dict(wheels=npl['wheels'], stakes=stakes, brakes=npl['brakes'],
+                        stakes_text=f"{stakes} {plural(stakes, 'коник', 'коники', 'коників')}")
+            td = dict(section='// 01 — НАПІВПРИЧІП', lead=npl['lead'] or NPL10['lead'], lead2=npl['lead2'] or NPL10['lead2'],
+                      kpi=(['10 000', ' кг'], 'вантажопідйомність · об’єм 10 м³'),
+                      tiles=[(t.format(**fmtv), d) for t, d in NPL10['tiles']], label='ЛІСОВОЗ НПЛ-10',
+                      photo=NPL10['p2_photo'], spec_head=('МІЦНИЙ', 'НА 10 ТОНН.'), dims='ДОВЖИНА 6950 · ШИРИНА 2412 · ВИСОТА 2789',
+                      side=(NPL10['side'], -90), front=(NPL10['front'], 0),
+                      spec_rows=[(k.format(**fmtv), v.format(**fmtv), u) for k, v, u in NPL10['spec_rows']],
+                      note=NPL10['drawing_note'], cover_text=f'Напівпричіп-лісовоз НПЛ-10 власного виробництва з краном-маніпулятором {m}, ротатором і захватом — комплект для навантаження й вивезення деревини.',
+                      cover_kpi=NPL10['cover_kpi'], outline='НПЛ-10', cover_tag=f"НПЛ-10 · 10 Т · {m}",
+                      chips=list(NPL_CHIPS))
+        else:
+            td = self.bmf_trailer_data()
+        self._td = td
+        return td
+
+    def bmf_trailer_data(self):
+        t, T, m = self.trl, self.T, self.m(); sp = t['specs']
+        g = lambda k: (sp.get(k) or '').strip() if (sp.get(k) or '').strip() not in ('—', '-') else ''
+        digits = re.sub(r'\D', '', g('payload_kg'))
+        kg = f"{int(digits):,}".replace(',', ' ') if digits else ''
+        tons = f"{int(digits) / 1000:g}".replace('.', ',') if digits else ''
+        stakes = g('stakes')
+        stakes_text = f"{stakes} {plural(stakes, 'коник', 'коники', 'коників')}" if stakes else ''
+        wheels, wopt = g('wheels'), g('wheels_options')
+        L, W, H = g('total_length_mm'), g('width_mm'), g('height_mm')
+        dims = ', '.join(x for x in (f'довжина {L} мм' if L else '', f'ширина {W} мм' if W else '', f'висота {H} мм' if H else '') if x)
+        lead2 = ' '.join(x for x in ((dims[0].upper() + dims[1:] + '.') if dims else '',
+                                     f"Сумісні крани: {g('cranes')}." if g('cranes') else '') if x)
+        tiles = [(f'{kg} кг', 'вантажопідйомність причепа') if kg else None,
+                 (f"{g('load_length_mm')} мм", 'довжина площі навантаження') if g('load_length_mm') else None,
+                 (f"{g('load_area_m2')} м²", 'площа перерізу вантажу між кониками') if g('load_area_m2') else None,
+                 (f'Колеса {wheels}', f'на вибір також {wopt.replace(";", ",")}' if wopt else 'ходові колеса з дисками') if wheels else None,
+                 (stakes_text, f"коники {g('bolsters')}" if g('bolsters') else 'коники зі стійками') if stakes else None,
+                 ('Дві балки рами', f"шасі {g('chassis')}" + (f", вісь {g('axle')}" if g('axle') else '')) if g('chassis') else None,
+                 (f"Дишло {g('drawbar_angle_deg')}°", 'кут повороту дишла в сторони') if g('drawbar_angle_deg') else None,
+                 (f"Опори {g('legs')}", f"подовжувач рами {g('frame_ext_mm')} мм на замовлення" if g('frame_ext_mm') else 'опорні ноги причепа') if g('legs') else None,
+                 (f"Кліренс {g('clearance_mm')} мм", 'дорожній просвіт') if g('clearance_mm') else None,
+                 ('Гальма', g('brakes')) if g('brakes') else None]
+        tiles = [x for x in tiles if x][:8]
+        rows = [('Вантажопідйомність', kg, 'кг'), ('Довжина сортиментів', g('log_length_m'), 'м'),
+                ('Загальна довжина', L, 'мм'), ('Довжина площі навантаження', g('load_length_mm'), 'мм'),
+                ('Ширина', W, 'мм'), ('Висота', H, 'мм'), ('Площа навантаження', g('load_area_m2'), 'м²'),
+                ('Шасі (рама)', g('chassis'), ''), ('Вісь', g('axle'), ''), (f"Колеса ({g('wheels_qty') or '4'} шт)", wheels, ''),
+                ('Коники / стійки', stakes, 'шт'), ('Тип коників', g('bolsters'), ''), ('Кут повороту дишла', g('drawbar_angle_deg'), '°'),
+                ('Кліренс', g('clearance_mm'), 'мм'), ('Опорні ноги', g('legs'), ''), ('Подовжувач рами', g('frame_ext_mm'), 'мм'),
+                ('Гальмівна система', g('brakes'), ''),
+                ('Решітка огорожі, освітлення, номерна рамка', 'так' if g('guard_grid') == 'так' and g('lights_plate') == 'так' else '', '')]
+        rows = [r for r in rows if r[1]][:15]
+        rows += [('', '', '')] * (15 - len(rows))
+        return dict(section='// 01 — ПРИЧІП', lead=t.get('lead') or f"{t['title']}: {t['short']}.", lead2=t.get('lead2') or lead2,
+                    kpi=([kg, ' кг'], 'вантажопідйомність' + (f" · площа {g('load_area_m2')} м²" if g('load_area_m2') else '')),
+                    tiles=tiles, label=f"ЛІСОВОЗ {t['model']}", photo=T['work'], spec_head=('МІЦНИЙ', f'НА {tons} ТОНН.'),
+                    dims=' · '.join(x for x in (f'ДОВЖИНА {L}' if L else '', f'ШИРИНА {W}' if W else '', f'ВИСОТА {H}' if H else '') if x),
+                    side=(T['side'], 0), front=(T['rear'], 0), spec_rows=rows,
+                    note='* Креслення виробника (bmf.ee) для стандартної комплектації. Ширина й висота залежать від коліс; розміри можуть змінюватися виробником.',
+                    cover_text=f"{t['title']} з краном-маніпулятором {m}, ротатором і захватом — комплект для навантаження й вивезення деревини.",
+                    cover_kpi=[('01 / ВАНТАЖ', tons, '  т'), ('02 / КОНИКИ', stakes or '—', '  шт')], outline=T['no'],
+                    cover_tag=f"{t['model']} · {tons} Т · {m}",
+                    chips=[c.replace('{bolsters}', g('bolsters')).replace('{frame_ext_mm}', g('frame_ext_mm')) for c in TRL_CHIPS
+                           if ('{bolsters}' not in c or '/' in g('bolsters'))
+                           and ('{frame_ext_mm}' not in c or g('frame_ext_mm'))])
+
     def trailer_pages(self):
-        prs, pg, npl = self.prs, self.pages, self.spec['npl']
-        stakes = npl['stakes']
-        stakes_text = f"{stakes} {plural(stakes, 'коник', 'коники', 'коників')}"
-        fmtv = dict(wheels=npl['wheels'], stakes=stakes, stakes_text=stakes_text, brakes=npl['brakes'])
+        prs, pg = self.prs, self.pages
+        D = self.tdata()
         t1 = dup_slide(prs, pg['manifest'], 1)
         t2 = dup_slide(prs, pg['passport'], 2)
         self.pages.update(trailer=t1, trailer_spec=t2)
         s = t1
-        put(by_id(s, 11), '// 01 — НАПІВПРИЧІП')
+        put(by_id(s, 11), D['section'])
         put(by_id(s, 12), 'ВЕЗЕ ЛІС ТАМ,', 'ДЕ ДОРОГИ', 'ЗАКІНЧУЮТЬСЯ.')
-        put(by_id(s, 13), npl['lead'] or NPL10['lead'])
-        put(by_id(s, 14), npl['lead2'] or NPL10['lead2'])
-        put(by_id(s, 16), ['10 000', ' кг'], 'вантажопідйомність · об’єм 10 м³')
-        for n, (t, d) in enumerate(NPL10['tiles']):
-            put(by_id(s, 21 + n * 5), t.format(**fmtv)); put(by_id(s, 22 + n * 5), d)
-        put(by_id(s, 10), 'ЛІСОВОЗ НПЛ-10')
-        path, fx, fy = NPL10['p2_photo']
+        put(by_id(s, 13), D['lead'])
+        put(by_id(s, 14), D['lead2'])
+        put(by_id(s, 16), *D['kpi'])
+        for n, (t, d) in enumerate(D['tiles']):
+            put(by_id(s, 21 + n * 5), t); put(by_id(s, 22 + n * 5), d)
+        put(by_id(s, 10), D['label'])
+        path, fx, fy = D['photo']
         set_image(one(s, 'bg'), self.raster('side_bg', R.side_bg, path, fx, fy, assets=(path,)))
 
         s = t2
         put(by_id(s, 11), '// 02 — ГАБАРИТИ ТА ХАРАКТЕРИСТИКИ')
-        put(by_id(s, 12), 'МІЦНИЙ', 'НА 10 ТОНН.')
+        put(by_id(s, 12), *D['spec_head'])
         put(by_id(s, 13), 'ГАБАРИТНІ РОЗМІРИ, ММ*'); by_id(s, 13).left, by_id(s, 13).top = I(0.45), I(2.6)
-        put(by_id(s, 47), 'ДОВЖИНА 6950 · ШИРИНА 2412 · ВИСОТА 2789')
+        put(by_id(s, 47), D['dims'])
         for sid in range(14, 45): remove(by_id(s, sid))
         dr = by_name(s, 'crane_side_drawing')[0]
         art = lambda path, rot: self.raster('line_art', lambda p, r: R.png(R.line_art(p, r)), path, rot, assets=(path,))
-        side_b, front_b = art(NPL10['side'], -90), art(NPL10['front'], 0)
+        side_b, front_b = art(*D['side']), art(*D['front'])
         side, front = Image.open(io.BytesIO(side_b)), Image.open(io.BytesIO(front_b))
         y0, hh = I(2.85), I(1.95)
         set_image(dr, side_b); dr.name = 'npl_side_drawing'
@@ -250,12 +325,20 @@ class Engine:
         fit(fp, front, (I(5.25), y0, I(2.57), hh))
         labels = [by_id(s, i) for i in (51, 55, 60, 64, 69, 73, 78, 82, 87, 91, 96, 100, 105, 109, 114)]
         units = [by_id(s, i) for i in (53, 57, 62, 66, 71, 75, 80, 84, 89, 93, 98, 102, 107, 111, 116)]
-        for i, (lab, (k, v, u)) in enumerate(zip(labels, NPL10['spec_rows']), 1):
-            put(lab, k.format(**fmtv)); put(one(s, f'fld_spec_{i:02d}'), v.format(**fmtv))
-            if units[i - 1].text_frame.paragraphs[0].runs: put(units[i - 1], u)
-            else: units[i - 1].text_frame.paragraphs[0].text = u
-        put(by_id(s, 118), NPL10['drawing_note'])
-        put(by_id(s, 10), 'ЛІСОВОЗ НПЛ-10')
+        unit_rpr = units[0].text_frame.paragraphs[0].runs[0]._r.get_or_add_rPr()
+        for i, (lab, (k, v, u)) in enumerate(zip(labels, D['spec_rows']), 1):
+            val = one(s, f'fld_spec_{i:02d}')
+            put(lab, k); put(val, v)
+            if self.trl and len(v) > 13:   # long values (frame profile, bolster types) take one line in a wider, smaller field
+                val.left, val.width = val.left - I(1.3), val.width + I(1.3)
+                for r in val.text_frame.paragraphs[0].runs: r.font.size = Pt(10)
+            p0 = units[i - 1].text_frame.paragraphs[0]
+            if p0.runs and p0.runs[0].font.size: put(units[i - 1], u)
+            else:   # the template left some unit fields unstyled: take the first unit's run style
+                p0.text = u
+                if p0.runs: p0.runs[0]._r.replace(p0.runs[0]._r.get_or_add_rPr(), copy.deepcopy(unit_rpr))
+        put(by_id(s, 118), D['note'])
+        put(by_id(s, 10), D['label'])
 
     # ------------------------------------------------------------ configuration page
     def tile_image(self, row, crane_blob):
@@ -263,6 +346,10 @@ class Engine:
         iid = (row.get('item_id') or '').lower(); kind = row.get('kind')
         if kind == 'crane' or (not kind and iid == (self.c.get('id') or '').lower()):
             return 14, Image.open(io.BytesIO(crane_blob)), crane_blob
+        if self.T and kind == 'trailer':
+            data = self.raster('trl_cutout', lambda p: R.png(R.cutout_glow(R.alpha_crop(Image.open(R.asset(p))))),
+                               self.T['cutout'], assets=(self.T['cutout'],))
+            return None, Image.open(io.BytesIO(data)), data
         if iid.startswith('npl') or (kind == 'trailer' and not row.get('photo')):
             data = self.raster('npl_cutout', lambda p: R.png(R.cutout_glow(R.alpha_crop(Image.open(R.asset(p))))),
                                NPL10['cutout'], assets=(NPL10['cutout'],))
@@ -358,8 +445,8 @@ class Engine:
         """'+ ОПЦІЇ ДЛЯ АПГРЕЙДУ' chips: spec.upgrade_chips, else the template's / the НПЛ-10 list."""
         chips = self.spec.get('upgrade_chips')
         titles = ' '.join(r['title'].lower() for r in self.spec['rows'])
-        if chips is None and self.npl:
-            chips = [c for c in NPL_CHIPS if self.opt_no or '{opt}' not in c]
+        if chips is None and (self.npl or self.trl):
+            chips = [c for c in self.tdata()['chips'] if self.opt_no or '{opt}' not in c]
         elif chips is None:
             texts = [''.join(r.text for r in by_id(s, 50 + 2 * k).text_frame.paragraphs[0].runs)[2:] for k in range(8)]
             if not self.opt_no and not any(t.lower() in titles for t in texts): return  # template as approved
@@ -407,7 +494,7 @@ class Engine:
                 set_size(tt, max(800, int(int(r0.get('sz') or 1100) * OPT_TITLE_CHARS / len(a['title']))))
             dd = clone(s, P['desc']); geom(dd, x + 0.14, y + 2.14, cw - 0.28, 0.45); put(dd, a['desc'])
         note = clone(s, P['desc']); geom(note, 0.45, 10.74, 7.37, 0.4)
-        text = self.spec.get('accessories_note') or (NOTE_NPL if self.npl else NOTE_CRANE)
+        text = self.spec.get('accessories_note') or (NOTE_NPL if self.npl else NOTE_TRL if self.trl else NOTE_CRANE)
         if len(accs) > 9:
             text += ' Також на замовлення: ' + ', '.join(a['title'] for a in accs[9:]) + '.'
         put(note, text)
@@ -456,7 +543,7 @@ class Engine:
         put(one(s, 'fld_total'), self.spec['total_text'])
         if len(self.spec['total_text']) > 14: set_size(one(s, 'fld_total'), int(4200 * 14 / len(self.spec['total_text'])))
         # chips under the price box
-        tags = self.spec.get('price_tags') or (['З УРАХУВАННЯМ ПДВ', 'ПАКЕТ ДЛЯ РЕЄСТРАЦІЇ'] if self.npl else None)
+        tags = self.spec.get('price_tags') or (['З УРАХУВАННЯМ ПДВ', 'ПАКЕТ ДЛЯ РЕЄСТРАЦІЇ'] if self.npl or self.trl else None)
         if tags:
             for sid, t in zip((41, 43), tags): put(by_id(s, sid), t.upper())
         put(one(s, 'fld_price_date'), f"ЦІНИ СТАНОМ НА {self.spec.get('price_date') or self.spec['date']}")
@@ -514,14 +601,14 @@ class Engine:
     # ------------------------------------------------------------ cover, end page, chrome
     def cover_page(self):
         s = self.pages['cover']; cs = self.cs; m = self.m()
-        if self.npl:
+        if self.npl or self.trl:
+            D = self.tdata()
             put(by_id(s, 18), 'TIMBER TRAILER SYSTEM')
-            put(by_id(s, 22), self.spec.get('cover_text') or
-                f'Напівпричіп-лісовоз НПЛ-10 власного виробництва з краном-маніпулятором {m}, ротатором і захватом — комплект для навантаження й вивезення деревини.')
-            kpi = NPL10['cover_kpi'] + [('03 / ВИЛІТ', cs['reach_m'], '  м'), ('04 / МОМЕНТ', cs['torque_knm'], '  кНм')]
+            put(by_id(s, 22), self.spec.get('cover_text') or D['cover_text'])
+            kpi = D['cover_kpi'] + [('03 / ВИЛІТ', cs['reach_m'], '  м'), ('04 / МОМЕНТ', cs['torque_knm'], '  кНм')]
             for (kid, vid), (k, v, u) in zip(((25, 26), (29, 30), (33, 34), (37, 38)), kpi):
                 put(by_id(s, kid), k); put(by_id(s, vid), [v, u])
-            self.outline(s, 'НПЛ-10', 7.35)
+            self.outline(s, D['outline'], 7.35)
         else:
             put(by_id(s, 22), self.spec.get('cover_text') or self.crane_cover_text())
             for vid, v in ((26, cs['reach_m']), (30, cs['torque_knm']), (34, cs['lift_4m_kg']), (38, cs['turn_deg'])):
@@ -579,10 +666,10 @@ class Engine:
         S = list(self.prs.slides); n = len(S); sp = self.spec; ct = sp['contacts']
         footer = f"{ct['sites'][0].upper()}  ·  {ct['phones'][0]}" if ct['sites'] and ct['phones'] else None
         tags = {}
-        if self.npl:
+        if self.npl or self.trl:
             tags = {self.pages[k].slide_id: t for k, t in (('manifest', 'КРАН-МАНІПУЛЯТОР'), ('anatomy', 'КОНСТРУКЦІЯ'),
                     ('passport', 'ТЕХНІЧНИЙ ПАСПОРТ КРАНА'), ('config', 'КОНФІГУРАЦІЯ'), ('price', 'ВАРТІСТЬ'),
-                    ('maker', 'ВЛАСНЕ ВИРОБНИЦТВО'))}
+                    ('maker', 'ВЛАСНЕ ВИРОБНИЦТВО' if self.npl else 'ВИРОБНИК'))}
         for i, s in enumerate(S, 1):
             for sh in s.shapes:
                 if sh.name == 'fld_kp_header': put(sh, [None, f"№ {sp['number']}", f"  //  {sp['title']}  //  ", sp['date']])

@@ -8,6 +8,8 @@ import { fillTemplate, isIsoDate, joinUk } from "./format.js";
 
 /** Crane visual profiles the KP generator supports (generator/kpgen/profiles.py). */
 export const SUPPORTED_PROFILES: readonly string[] = ["bmf650", "bmf720", "bmf750"];
+/** BMF trailer profiles of the generator (drawings and photos for the trailer pages). */
+export const SUPPORTED_TRAILER_PROFILES: readonly string[] = ["bmf8t2", "bmf10t2", "bmf14t2", "bmf17t2"];
 
 const ITEM_KINDS = ["crane", "trailer", "component", "service"];
 const ACCESSORY_GROUPS = ["crane", "trailer"];
@@ -449,10 +451,14 @@ export function validateCatalog(c: Catalog): string[] {
     photoOk(it.photo, w);
     if (it.specs !== undefined && !isObj(it.specs)) errors.push(`${w}: specs має бути об’єктом.`);
     if (it.kp_profile !== undefined && it.kp_profile !== null) {
-      if (!SUPPORTED_PROFILES.includes(it.kp_profile)) errors.push(`${w}: генератор не має профілю «${it.kp_profile}».`);
-      if (it.kind !== "crane") errors.push(`${w}: kp_profile задається лише для кранів.`);
-      for (const k of ["reach_m", "torque_knm", "lift_4m_kg", "lift_full_kg", "grapple_m2", "rotator_t", "turn_deg"]) {
-        if (!it.specs || it.specs[k] === undefined || it.specs[k] === "") errors.push(`${w}: для КП бракує характеристики ${k}.`);
+      if (it.kind === "trailer") {
+        if (!SUPPORTED_TRAILER_PROFILES.includes(it.kp_profile)) errors.push(`${w}: генератор не має профілю причепа «${it.kp_profile}».`);
+      } else {
+        if (!SUPPORTED_PROFILES.includes(it.kp_profile)) errors.push(`${w}: генератор не має профілю «${it.kp_profile}».`);
+        if (it.kind !== "crane") errors.push(`${w}: kp_profile задається лише для кранів і причепів BMF.`);
+        for (const k of ["reach_m", "torque_knm", "lift_4m_kg", "lift_full_kg", "grapple_m2", "rotator_t", "turn_deg"]) {
+          if (!it.specs || it.specs[k] === undefined || it.specs[k] === "") errors.push(`${w}: для КП бракує характеристики ${k}.`);
+        }
       }
     }
     for (const t of [it.title, it.short, it.desc_template]) {
