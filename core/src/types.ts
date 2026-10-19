@@ -35,6 +35,7 @@ export interface Item {
   title: string;
   short: string;
   model?: string;                       // short model name for KP titles: "BMF 750", "НПЛ-10"
+  price_eur?: number;                   // list price in EUR from a KP (BMF 905): the PC admin turns it into UAH by its rate
   desc_template?: string;               // row text with {choice_id} placeholders (option short/title)
   includes?: string[];
   specs?: Record<string, string | number>;
@@ -162,6 +163,7 @@ export interface Accessory {
   notes?: string;
   needs_confirmation?: string[];
   source: string;
+  kp_uses?: number;                     // how many of the user's KPs mention it: default order on the options page
 }
 
 export interface Term { id: string; title: string; text: string }

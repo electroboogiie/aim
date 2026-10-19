@@ -27,8 +27,10 @@ test("changing the crane resets crane-bound choices to its standard; incompatibl
   const sel = defaultSelection(kt, c);
   assert.equal(sel.slots.crane, "bmf720");
   assert.equal(sel.choices.grapple, "c24");
-  const to650 = reconcileSelection(c, kt.id, { ...sel, slots: { ...sel.slots, crane: "bmf650", base: "base_outriggers_650" } }, "crane");
-  assert.equal(to650.choices.grapple, "c20");
+  const to750 = reconcileSelection(c, kt.id, { ...sel, slots: { ...sel.slots, crane: "bmf750", base: "base_outriggers_750" } }, "crane");
+  assert.equal(to750.choices.grapple, "c27");
+  const to650 = reconcileSelection(c, kt.id, { ...to750, slots: { ...to750.slots, crane: "bmf650", base: "base_outriggers_650" } }, "crane");
+  assert.equal(to650.choices.grapple, "c24");
   const bad: QuoteInput = { kit_type: kt.id, selection: { ...to650, choices: { ...to650.choices, grapple: "c27" } } };
   assert.match(validateSelection(c, bad).join(" "), /C27 — 0,27 м²» не підходить до BMF 650/);
 });

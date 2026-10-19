@@ -58,10 +58,10 @@
    "family": "bmf_crane",
    "title": "Кран-маніпулятор BMF 650",
    "model": "BMF 650",
-   "short": "у комплекті з ротатором 3 т і захватом 0,2 м²",
+   "short": "у комплекті з ротатором 3 т і захватом 0,24 м²",
    "includes": [
     "ротатор 3 т",
-    "захват 0,2 м²"
+    "захват 0,24 м²"
    ],
    "specs": {
     "reach_m": "6,5",
@@ -110,7 +110,7 @@
    },
    "photo": "bmf/650_a.jpg",
    "kp_profile": "bmf650",
-   "source": "Ціна: drive_kp/КП BMF650 у комплекті (17.03.2026).pptx, рядок «Гідравлічний кран-маніпулятор BMF 650» 637 800 ₴ з ПДВ станом на 17.03.2026 (у ціні ротатор і захват). Характеристики: остання КП з BMF 650 — reference/kp/kp_text.md: CP/READY/КП НПЛ-10+650.pptx (18.05.2026), так само КП 8Т2+650, 10Т2+650, BMF650 25.02.2026; valve_flow_l і legs — bmf.ee (www.bmf.ee/products/cranes/bmf650, перевірено 18.10.2026) і КП BMF650 02.09.2025 («6/8XY (55l)»).",
+   "source": "Ціна: drive_kp/КП BMF650 у комплекті (17.03.2026).pptx, рядок «Гідравлічний кран-маніпулятор BMF 650» 637 800 ₴ з ПДВ станом на 17.03.2026 (у ціні ротатор і захват). Характеристики: остання КП з BMF 650 — reference/kp/kp_text.md: CP/READY/КП НПЛ-10+650.pptx (18.05.2026), так само КП 8Т2+650, 10Т2+650, BMF650 25.02.2026; valve_flow_l і legs — bmf.ee (www.bmf.ee/products/cranes/bmf650, перевірено 18.10.2026) і КП BMF650 02.09.2025 («6/8XY (55l)»). Базовий захват 0,24 м² (C24) — рішення користувача 19.10.2026.",
    "needs_confirmation": [
     "model: КП 2026 р. друкують цифри BMF 650+ (60 кНм, 1120 / 640 кг; bmf.rv.ua: 59 кНм), bmf.ee для BMF 650 — 48 кНм, 840 / 510 кг",
     "specs.legs: A/FD — дані bmf.ee, у КП не вказано",
@@ -294,7 +294,8 @@
     "specs.weight_kg: 1130 (КП, bmf.rv.ua) чи 1160 (bmf.ee)"
    ],
    "photo": "bmf/905_forest_load.jpg",
-   "desc_template": "у комплекті з ротатором 5,5 т і {grapple}"
+   "desc_template": "у комплекті з ротатором 5,5 т і {grapple}",
+   "price_eur": 21500
   },
   {
    "id": "bmf850",
@@ -436,7 +437,7 @@
     "bmf650",
     "bmf720"
    ],
-   "photo": "bmf_trailers/bmf8t2_cutout.png"
+   "photo": "bmf_trailers/bmf8t2_site_item.jpg"
   },
   {
    "id": "bmf10t2",
@@ -488,7 +489,7 @@
     "bmf750",
     "bmf850"
    ],
-   "photo": "bmf_trailers/bmf10t2_cutout.png"
+   "photo": "bmf_trailers/bmf10t2_site_item.jpg"
   },
   {
    "id": "bmf14t2_pro_l",
@@ -542,7 +543,7 @@
     "bmf850",
     "bmf905"
    ],
-   "photo": "bmf_trailers/bmf14t2_cutout.png"
+   "photo": "bmf_trailers/bmf14t2_site_item.jpg"
   },
   {
    "id": "bmf17t2",
@@ -592,7 +593,7 @@
     "bmf850",
     "bmf905"
    ],
-   "photo": "bmf_trailers/bmf17t2_cutout.png"
+   "photo": "bmf_trailers/bmf17t2_site_item.jpg"
   },
   {
    "id": "base_outriggers_650",
@@ -1062,9 +1063,7 @@
         "bmf850",
         "bmf905"
        ],
-       "default_for": [
-        "bmf650"
-       ],
+       "default_for": [],
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,2"
@@ -1083,6 +1082,7 @@
         "bmf905"
        ],
        "default_for": [
+        "bmf650",
         "bmf720",
         "bmf850"
        ],
@@ -1357,9 +1357,7 @@
         "bmf850",
         "bmf905"
        ],
-       "default_for": [
-        "bmf650"
-       ],
+       "default_for": [],
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,2"
@@ -1378,6 +1376,7 @@
         "bmf905"
        ],
        "default_for": [
+        "bmf650",
         "bmf720",
         "bmf850"
        ],
@@ -1731,9 +1730,7 @@
         "bmf850",
         "bmf905"
        ],
-       "default_for": [
-        "bmf650"
-       ],
+       "default_for": [],
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,2"
@@ -1752,6 +1749,7 @@
         "bmf905"
        ],
        "default_for": [
+        "bmf650",
         "bmf720",
         "bmf850"
        ],
@@ -2044,9 +2042,7 @@
         "bmf850",
         "bmf905"
        ],
-       "default_for": [
-        "bmf650"
-       ],
+       "default_for": [],
        "on_request": true,
        "crane_specs": {
         "grapple_m2": "0,2"
@@ -2065,6 +2061,7 @@
         "bmf905"
        ],
        "default_for": [
+        "bmf650",
         "bmf720",
         "bmf850"
        ],
@@ -3073,7 +3070,8 @@
    ],
    "notes": "Гідророзподільник крана на вибір: 5/7 XY, 6/8 XY, 4/8 XYZ, 2/8 XY el. On/Off або HPC. Стандартний клапан комплекту: BMF 650/720 — 6/8 XY 55 л, BMF 750/905 — 4/8 XYZ 80 л (КП користувача). Інший варіант — за запитом. Без сумісних виробів у каталозі: 5/7 XY.",
    "origin": "bmf.rv.ua",
-   "source": "https://bmf.rv.ua/production/regulyuyuchyy-klapan (перевірено 18.10.2026); сумісність і витрати — https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks"
+   "source": "https://bmf.rv.ua/production/regulyuyuchyy-klapan (перевірено 18.10.2026); сумісність і витрати — https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks",
+   "kp_uses": 28
   },
   {
    "id": "rv_grapples",
@@ -3141,7 +3139,8 @@
    ],
    "notes": "Грейфери для колод зі сталі Hardox (SSAB): C15, C20, C24, C27, C37 — від 0,15 до 0,37 м². Штатний грейфер уже входить у ціну крана; інший розмір — за запитом. bmf.rv.ua пише «BMF950(HP)» — у джерелах BMF такої моделі немає, взято як BMF905(HP). Каталог 2025 також містить грейфери для гілок C20B–C37B, C10 (BMF 440) і C50 (BMF 860Z). Без сумісних виробів у каталозі: C37.",
    "origin": "bmf.rv.ua",
-   "source": "https://bmf.rv.ua/production/greyfery (перевірено 18.10.2026) (таблиця сумісності кранів/захватів; розміри і вага — зображення https://bmf.rv.ua/files/styles/medium/public/prodimgs/dyzayn_bez_nazvy.jpg); HD-крани і C37 — каталог BMF 2025 (bmf-clone reference/bmf-ee/catalogue-2025.txt), Grapples"
+   "source": "https://bmf.rv.ua/production/greyfery (перевірено 18.10.2026) (таблиця сумісності кранів/захватів; розміри і вага — зображення https://bmf.rv.ua/files/styles/medium/public/prodimgs/dyzayn_bez_nazvy.jpg); HD-крани і C37 — каталог BMF 2025 (bmf-clone reference/bmf-ee/catalogue-2025.txt), Grapples",
+   "kp_uses": 26
   },
   {
    "id": "rv_rotators",
@@ -3191,55 +3190,16 @@
    "needs_confirmation": [
     "variants: вантажопідйомність і сумісність кожного ротатора з краном"
    ],
-   "source": "https://bmf.rv.ua/production/rotatory (перевірено 18.10.2026); сумісність — https://www.bmf.ee/products/accessories/for-cranes/rotators (усі крани)"
+   "source": "https://bmf.rv.ua/production/rotatory (перевірено 18.10.2026); сумісність — https://www.bmf.ee/products/accessories/for-cranes/rotators (усі крани)",
+   "kp_uses": 26
   },
   {
-   "id": "rv_leg_a",
-   "group": "crane",
-   "title": "Опора крана типу А",
-   "desc": "Гідравлічні А-подібні лапи на передньому щиті — компактно для вузьких просік.",
-   "photo": "",
-   "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/photo.png",
-   "price": {
-    "mode": "on_request"
-   },
-   "compatible": [
-    "bmf650",
-    "bmf720"
-   ],
-   "notes": "Опора крана типу А: гідравлічні А-подібні лапи, кріпляться до переднього щита — компактно для вузьких просік. bmf.rv.ua: «Опора типу А, підходять для всіх кранів»; bmf.ee: тип А — лише BMF 430, 540, 650, 720 (750/850/905 — тільки FD).",
-   "origin": "bmf.rv.ua",
-   "needs_confirmation": [
-    "compatible: bmf.rv.ua «для всіх кранів» проти bmf.ee"
-   ],
-   "source": "https://bmf.rv.ua/production/opory-typ (перевірено 18.10.2026) (фото https://bmf.rv.ua/files/styles/medium/public/prodimgs/photo.png); опис і сумісність — bmf.ee (сторінки кранів і причепів «Trailer-mounted support leg type», опис «A-type support legs»)"
-  },
-  {
-   "id": "rv_leg_fd",
-   "group": "crane",
-   "title": "Опора F/D-типу («метелик»)",
-   "desc": "Відкидні опори FD («метелик»): широка база і стійкість під час навантаження.",
-   "photo": "acc_rv/04_leg_fd.jpg",
-   "price": {
-    "mode": "on_request"
-   },
-   "compatible": [
-    "bmf650",
-    "bmf720",
-    "bmf750",
-    "bmf850",
-    "bmf905"
-   ],
-   "notes": "Гідравлічні відкидні опори FD («метелик»): широка база і максимальна стійкість під час навантаження.",
-   "origin": "bmf.rv.ua",
-   "source": "https://bmf.rv.ua/production/opora-fd-typu-babochka (перевірено 18.10.2026); опис і сумісність — bmf.ee (сторінки кранів і причепів, опис «Flap Down (FD) Legs»)"
-  },
-  {
-   "id": "rv_wheel_drive",
+   "id": "ee_pumps",
    "group": "trailer",
-   "title": "Привід 2WD або 4WD",
-   "desc": "Гідропривід коліс причепа.",
-   "photo": "acc_rv/05_wheel_drive.jpg",
+   "title": "Гідронасоси",
+   "desc": "Насоси 80–130 см³: постійної подачі та LS, поршневі й шестеренні.",
+   "photo": "acc/07_pump.jpg",
+   "photo_url": "https://media.voog.com/0000/0053/0154/photos/MEL_5808-Edit__BMF_accessory_pumps_sunfab90%20ja%20130cc_r_huge.webp",
    "price": {
     "mode": "on_request"
    },
@@ -3249,41 +3209,28 @@
     "bmf14t2_pro_l",
     "bmf17t2"
    ],
-   "compatible_unconfirmed": [
-    "npl10"
-   ],
-   "variants": [
-    {
-     "id": "drive_bb5_2wd",
-     "title": "Black Bruin BB5 (2WD)",
-     "desc": "Гідромотори коліс Black Bruin: клапан, гідромотор, блок керування і дисплей; керування CTR101 (будь-який трактор) або CTR201 (ISOBUS).",
-     "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/waedktv0.jpg",
-     "compatible": [
-      "bmf8t2",
-      "bmf10t2",
-      "bmf14t2_pro_l",
-      "bmf17t2"
-     ]
-    },
-    {
-     "id": "drive_robson_4wd",
-     "title": "Robson (4WD)",
-     "desc": "Роликовий привід Robson: ролики притискаються до коліс; живлення від гідравліки трактора (плаваюче положення) або розподільника крана, витрата 40–80 л/хв.",
-     "photo": "acc_rv/05_wheel_drive.jpg",
-     "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/t0s8a62t.jpg",
-     "compatible": [
-      "bmf8t2",
-      "bmf10t2",
-      "bmf14t2_pro_l"
-     ]
-    }
-   ],
-   "notes": "Гідропривід коліс причепа: Black Bruin BB5 для 2WD, Robson для 4WD.",
+   "notes": "Насоси 80–130 см³: постійної подачі та LS, поршневі й шестеренні (Sunfab; OMFB серій HDT і HDS). На великих причепах насос захищений усередині дишла. У KP_2_v3 «Насос» — опція для апгрейду комплекту крана.",
+   "origin": "bmf.ee",
+   "source": "https://www.bmf.ee/products/accessories/for-trailers/hydraulic-pumps (перевірено 18.10.2026)",
+   "kp_uses": 26
+  },
+  {
+   "id": "rv_poles",
+   "group": "trailer",
+   "title": "Додаткові полюси (стійки)",
+   "desc": "Додаткові полюси (стійки) для коників причепа.",
+   "photo": "acc_rv/07_poles.png",
+   "price": {
+    "mode": "on_request"
+   },
+   "notes": "Додаткові полюси (стійки) для коників причепа.",
    "origin": "bmf.rv.ua",
    "needs_confirmation": [
-    "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
+    "compatible: сумісність на сайтах не вказана",
+    "desc: склад комплекту (пара полюсів чи коник з полюсами)"
    ],
-   "source": "https://bmf.rv.ua/production/2-abo-4-wd (перевірено 18.10.2026); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/black-bruin-drive-system, https://www.bmf.ee/products/accessories/for-trailers/robson-drive-system"
+   "source": "https://bmf.rv.ua/production/dodatkovi-polyusy (перевірено 18.10.2026) (лише фото); bmf.ee радить додатковий коник і комплект полюсів разом із подовжувачем рами (https://www.bmf.ee/products/accessories/for-trailers/frame-extensions)",
+   "kp_uses": 15
   },
   {
    "id": "rv_wheels",
@@ -3356,7 +3303,8 @@
    ],
    "notes": "Колеса для причепів BMF: 11,5/80-15,3 (AW), 400/60-15,5 (SG), 500/50-17 (SG), 520/50-17 (SG), 550/45-22,5 (SG). bmf.ee: диски SG і AP повністю зварні, посилені, із захистом вентиля. Стандартні колеса кожного причепа — specs.wheels_std у bmf_specs.json. Без сумісних виробів у каталозі: 11,5/80-15,3 (AW), 600/40-22,5 (AP).",
    "origin": "bmf.rv.ua",
-   "source": "https://bmf.rv.ua/production/kolesa (перевірено 18.10.2026); розміри для кожного причепа — сторінки причепів bmf.ee «Wheels (*standard)»; додаткові розміри і типи протектора — https://www.bmf.ee/products/accessories/for-trailers/wheels-for-trailers"
+   "source": "https://bmf.rv.ua/production/kolesa (перевірено 18.10.2026); розміри для кожного причепа — сторінки причепів bmf.ee «Wheels (*standard)»; додаткові розміри і типи протектора — https://www.bmf.ee/products/accessories/for-trailers/wheels-for-trailers",
+   "kp_uses": 13
   },
   {
    "id": "rv_brakes",
@@ -3434,7 +3382,8 @@
    ],
    "notes": "Гальма для причепів BMF: гідравлічні циліндричні (зовнішні або внутрішні) 2x / 4x, пневматичні 2x / 4x. bmf.ee: усі гальма відповідають вимогам ЄС; більшість причепів BMF мають типове схвалення ЄС 167/2013. Для НПЛ-10 гальма — характеристика комплекту (вибір), не позиція.",
    "origin": "bmf.rv.ua",
-   "source": "https://bmf.rv.ua/production/galma (перевірено 18.10.2026) (фото https://bmf.rv.ua/files/styles/medium/public/prodimgs/2062-800x531.png); гібридні, стоянкові, накатні і сумісність — https://www.bmf.ee/products/accessories/for-trailers/brakes; коди — каталог BMF 2025 (bmf-clone reference/bmf-ee/catalogue-2025.txt), Trailer accessories / Brakes"
+   "source": "https://bmf.rv.ua/production/galma (перевірено 18.10.2026) (фото https://bmf.rv.ua/files/styles/medium/public/prodimgs/2062-800x531.png); гібридні, стоянкові, накатні і сумісність — https://www.bmf.ee/products/accessories/for-trailers/brakes; коди — каталог BMF 2025 (bmf-clone reference/bmf-ee/catalogue-2025.txt), Trailer accessories / Brakes",
+   "kp_uses": 12
   },
   {
    "id": "rv_lights",
@@ -3459,24 +3408,51 @@
    "needs_confirmation": [
     "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
    ],
-   "source": "https://bmf.rv.ua/production/lihtari (перевірено 18.10.2026) (лише фото); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/lights-for-trailers"
+   "source": "https://bmf.rv.ua/production/lihtari (перевірено 18.10.2026) (лише фото); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/lights-for-trailers",
+   "kp_uses": 11
   },
   {
-   "id": "rv_poles",
-   "group": "trailer",
-   "title": "Додаткові полюси (стійки)",
-   "desc": "Додаткові полюси (стійки) для коників причепа.",
-   "photo": "acc_rv/07_poles.png",
+   "id": "rv_leg_fd",
+   "group": "crane",
+   "title": "Опора F/D-типу («метелик»)",
+   "desc": "Відкидні опори FD («метелик»): широка база і стійкість під час навантаження.",
+   "photo": "acc_rv/04_leg_fd.jpg",
    "price": {
     "mode": "on_request"
    },
-   "notes": "Додаткові полюси (стійки) для коників причепа.",
+   "compatible": [
+    "bmf650",
+    "bmf720",
+    "bmf750",
+    "bmf850",
+    "bmf905"
+   ],
+   "notes": "Гідравлічні відкидні опори FD («метелик»): широка база і максимальна стійкість під час навантаження.",
+   "origin": "bmf.rv.ua",
+   "source": "https://bmf.rv.ua/production/opora-fd-typu-babochka (перевірено 18.10.2026); опис і сумісність — bmf.ee (сторінки кранів і причепів, опис «Flap Down (FD) Legs»)",
+   "kp_uses": 4
+  },
+  {
+   "id": "rv_leg_a",
+   "group": "crane",
+   "title": "Опора крана типу А",
+   "desc": "Гідравлічні А-подібні лапи на передньому щиті — компактно для вузьких просік.",
+   "photo": "",
+   "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/photo.png",
+   "price": {
+    "mode": "on_request"
+   },
+   "compatible": [
+    "bmf650",
+    "bmf720"
+   ],
+   "notes": "Опора крана типу А: гідравлічні А-подібні лапи, кріпляться до переднього щита — компактно для вузьких просік. bmf.rv.ua: «Опора типу А, підходять для всіх кранів»; bmf.ee: тип А — лише BMF 430, 540, 650, 720 (750/850/905 — тільки FD).",
    "origin": "bmf.rv.ua",
    "needs_confirmation": [
-    "compatible: сумісність на сайтах не вказана",
-    "desc: склад комплекту (пара полюсів чи коник з полюсами)"
+    "compatible: bmf.rv.ua «для всіх кранів» проти bmf.ee"
    ],
-   "source": "https://bmf.rv.ua/production/dodatkovi-polyusy (перевірено 18.10.2026) (лише фото); bmf.ee радить додатковий коник і комплект полюсів разом із подовжувачем рами (https://www.bmf.ee/products/accessories/for-trailers/frame-extensions)"
+   "source": "https://bmf.rv.ua/production/opory-typ (перевірено 18.10.2026) (фото https://bmf.rv.ua/files/styles/medium/public/prodimgs/photo.png); опис і сумісність — bmf.ee (сторінки кранів і причепів «Trailer-mounted support leg type», опис «A-type support legs»)",
+   "kp_uses": 2
   },
   {
    "id": "rv_frame_ext",
@@ -3501,47 +3477,8 @@
    "needs_confirmation": [
     "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
    ],
-   "source": "https://bmf.rv.ua/production/podovzhuvach-ramy (перевірено 18.10.2026) (лише фото); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/frame-extensions; довжини — сторінки причепів bmf.ee «Extension»"
-  },
-  {
-   "id": "ee_xcrane",
-   "group": "crane",
-   "title": "Система керування xCrane PLUS",
-   "desc": "Електронне керування краном з джойстиків, сенсорний екран, до 24 гідрофункцій.",
-   "photo": "acc/02_xcrane.png",
-   "photo_url": "https://media.voog.com/0000/0053/0154/photos/xcrane_for%20BMF_set2.png",
-   "price": {
-    "mode": "on_request"
-   },
-   "compatible": [
-    "bmf650",
-    "bmf720",
-    "bmf750",
-    "bmf850",
-    "bmf905"
-   ],
-   "notes": "Електронне керування краном: одночасні рухи з джойстиків, паралельний режим стріли, сенсорний екран 4,3″ (опц. 5″), до 24 гідрофункцій, налаштування швидкості й рамп, лічильник мотогодин. У KP_2_v3 серед опцій для апгрейду — «Системи керування».",
-   "origin": "bmf.ee",
-   "source": "https://www.bmf.ee/products/accessories/for-cranes/crane-control (перевірено 18.10.2026)"
-  },
-  {
-   "id": "ee_damper",
-   "group": "crane",
-   "title": "Гідродемпфер Hultdins KD 1002 PRO",
-   "desc": "Гасить розгойдування і вібрацію крана під час навантаження.",
-   "photo": "acc/03_damper.png",
-   "photo_url": "https://media.voog.com/0000/0053/0154/photos/Hultdins%20crane%20damper.png",
-   "price": {
-    "mode": "on_request"
-   },
-   "compatible": [
-    "bmf750",
-    "bmf850",
-    "bmf905"
-   ],
-   "notes": "Гасить розгойдування і вібрацію крана під час навантаження: точніші рухи і менше зношування вузлів. bmf.ee: сумісний з BMF750, BMF800, BMF850, BMF905, BMF1000; на HD-кранах — стандартне обладнання.",
-   "origin": "bmf.ee",
-   "source": "https://www.bmf.ee/products/accessories/for-cranes/dampers (перевірено 18.10.2026)"
+   "source": "https://bmf.rv.ua/production/podovzhuvach-ramy (перевірено 18.10.2026) (лише фото); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/frame-extensions; довжини — сторінки причепів bmf.ee «Extension»",
+   "kp_uses": 2
   },
   {
    "id": "ee_parker",
@@ -3588,7 +3525,102 @@
    ],
    "notes": "Повністю електричні пропорційні розподільники Parker з кабельним джойстиком або бездротовим пультом. Джойстики: Parker LC5, LC6, бездротовий Autec, xCrane Plus. КП 8Т2+650 (02.04.2026) з «блютус» розподільником друкує «Parker P70; FE; FP; Wireless».",
    "origin": "bmf.ee",
-   "source": "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks (перевірено 18.10.2026)"
+   "source": "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks (перевірено 18.10.2026)",
+   "kp_uses": 1
+  },
+  {
+   "id": "rv_wheel_drive",
+   "group": "trailer",
+   "title": "Привід 2WD або 4WD",
+   "desc": "Гідропривід коліс причепа.",
+   "photo": "acc_rv/05_wheel_drive.jpg",
+   "price": {
+    "mode": "on_request"
+   },
+   "compatible": [
+    "bmf8t2",
+    "bmf10t2",
+    "bmf14t2_pro_l",
+    "bmf17t2"
+   ],
+   "compatible_unconfirmed": [
+    "npl10"
+   ],
+   "variants": [
+    {
+     "id": "drive_bb5_2wd",
+     "title": "Black Bruin BB5 (2WD)",
+     "desc": "Гідромотори коліс Black Bruin: клапан, гідромотор, блок керування і дисплей; керування CTR101 (будь-який трактор) або CTR201 (ISOBUS).",
+     "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/waedktv0.jpg",
+     "compatible": [
+      "bmf8t2",
+      "bmf10t2",
+      "bmf14t2_pro_l",
+      "bmf17t2"
+     ]
+    },
+    {
+     "id": "drive_robson_4wd",
+     "title": "Robson (4WD)",
+     "desc": "Роликовий привід Robson: ролики притискаються до коліс; живлення від гідравліки трактора (плаваюче положення) або розподільника крана, витрата 40–80 л/хв.",
+     "photo": "acc_rv/05_wheel_drive.jpg",
+     "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/t0s8a62t.jpg",
+     "compatible": [
+      "bmf8t2",
+      "bmf10t2",
+      "bmf14t2_pro_l"
+     ]
+    }
+   ],
+   "notes": "Гідропривід коліс причепа: Black Bruin BB5 для 2WD, Robson для 4WD.",
+   "origin": "bmf.rv.ua",
+   "needs_confirmation": [
+    "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
+   ],
+   "source": "https://bmf.rv.ua/production/2-abo-4-wd (перевірено 18.10.2026); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/black-bruin-drive-system, https://www.bmf.ee/products/accessories/for-trailers/robson-drive-system",
+   "kp_uses": 0
+  },
+  {
+   "id": "ee_xcrane",
+   "group": "crane",
+   "title": "Система керування xCrane PLUS",
+   "desc": "Електронне керування краном з джойстиків, сенсорний екран, до 24 гідрофункцій.",
+   "photo": "acc/02_xcrane.png",
+   "photo_url": "https://media.voog.com/0000/0053/0154/photos/xcrane_for%20BMF_set2.png",
+   "price": {
+    "mode": "on_request"
+   },
+   "compatible": [
+    "bmf650",
+    "bmf720",
+    "bmf750",
+    "bmf850",
+    "bmf905"
+   ],
+   "notes": "Електронне керування краном: одночасні рухи з джойстиків, паралельний режим стріли, сенсорний екран 4,3″ (опц. 5″), до 24 гідрофункцій, налаштування швидкості й рамп, лічильник мотогодин. У KP_2_v3 серед опцій для апгрейду — «Системи керування».",
+   "origin": "bmf.ee",
+   "source": "https://www.bmf.ee/products/accessories/for-cranes/crane-control (перевірено 18.10.2026)",
+   "kp_uses": 0
+  },
+  {
+   "id": "ee_damper",
+   "group": "crane",
+   "title": "Гідродемпфер Hultdins KD 1002 PRO",
+   "desc": "Гасить розгойдування і вібрацію крана під час навантаження.",
+   "photo": "acc/03_damper.png",
+   "photo_url": "https://media.voog.com/0000/0053/0154/photos/Hultdins%20crane%20damper.png",
+   "price": {
+    "mode": "on_request"
+   },
+   "compatible": [
+    "bmf750",
+    "bmf850",
+    "bmf905"
+   ],
+   "notes": "Гасить розгойдування і вібрацію крана під час навантаження: точніші рухи і менше зношування вузлів. bmf.ee: сумісний з BMF750, BMF800, BMF850, BMF905, BMF1000; на HD-кранах — стандартне обладнання.",
+   "origin": "bmf.ee",
+   "source": "https://www.bmf.ee/products/accessories/for-cranes/dampers (перевірено 18.10.2026)",
+   "kp_uses": 0
   },
   {
    "id": "ee_valve_dpx",
@@ -3609,7 +3641,8 @@
    ],
    "notes": "Пілотне пропорційне керування, компенсовані золотники, 50–100 л/хв, до 200 бар (HP — 225 бар), код V09/pr.",
    "origin": "bmf.ee",
-   "source": "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks (перевірено 18.10.2026)"
+   "source": "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks (перевірено 18.10.2026)",
+   "kp_uses": 0
   },
   {
    "id": "ee_coupler",
@@ -3630,7 +3663,8 @@
    ],
    "notes": "Ставиться між ротатором і навісним обладнанням для швидкої заміни; комплект з болтами і гідравлічними з’єднаннями. Сумісне з усіма грейферами BMF, крім C15. BMF 430 і 540 у bmf.ee значаться сумісними, але їхній грейфер C15 з coupler не працює.",
    "origin": "bmf.ee",
-   "source": "https://www.bmf.ee/products/accessories/for-grapples/quick-coupler (перевірено 18.10.2026)"
+   "source": "https://www.bmf.ee/products/accessories/for-grapples/quick-coupler (перевірено 18.10.2026)",
+   "kp_uses": 0
   },
   {
    "id": "ee_oil_cooler",
@@ -3656,27 +3690,8 @@
    "needs_confirmation": [
     "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
    ],
-   "source": "https://www.bmf.ee/products/accessories/for-trailers/oil-coolers-and-tanks (перевірено 18.10.2026)"
-  },
-  {
-   "id": "ee_pumps",
-   "group": "trailer",
-   "title": "Гідронасоси",
-   "desc": "Насоси 80–130 см³: постійної подачі та LS, поршневі й шестеренні.",
-   "photo": "acc/07_pump.jpg",
-   "photo_url": "https://media.voog.com/0000/0053/0154/photos/MEL_5808-Edit__BMF_accessory_pumps_sunfab90%20ja%20130cc_r_huge.webp",
-   "price": {
-    "mode": "on_request"
-   },
-   "compatible": [
-    "bmf8t2",
-    "bmf10t2",
-    "bmf14t2_pro_l",
-    "bmf17t2"
-   ],
-   "notes": "Насоси 80–130 см³: постійної подачі та LS, поршневі й шестеренні (Sunfab; OMFB серій HDT і HDS). На великих причепах насос захищений усередині дишла. У KP_2_v3 «Насос» — опція для апгрейду комплекту крана.",
-   "origin": "bmf.ee",
-   "source": "https://www.bmf.ee/products/accessories/for-trailers/hydraulic-pumps (перевірено 18.10.2026)"
+   "source": "https://www.bmf.ee/products/accessories/for-trailers/oil-coolers-and-tanks (перевірено 18.10.2026)",
+   "kp_uses": 0
   },
   {
    "id": "ee_toolbox",
@@ -3702,7 +3717,8 @@
    "needs_confirmation": [
     "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
    ],
-   "source": "https://www.bmf.ee/products/accessories/for-trailers/toolboxes (перевірено 18.10.2026)"
+   "source": "https://www.bmf.ee/products/accessories/for-trailers/toolboxes (перевірено 18.10.2026)",
+   "kp_uses": 0
   },
   {
    "id": "ee_chainsaw",
@@ -3728,7 +3744,8 @@
    "needs_confirmation": [
     "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
    ],
-   "source": "https://www.bmf.ee/products/accessories/for-trailers/chainsaw-holders (перевірено 18.10.2026)"
+   "source": "https://www.bmf.ee/products/accessories/for-trailers/chainsaw-holders (перевірено 18.10.2026)",
+   "kp_uses": 0
   }
  ],
  "bundles": [

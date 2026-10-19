@@ -223,6 +223,16 @@ def generate(body):
     return res
 
 
+def nbu_eur():
+    """Офіційний курс EUR НБУ на сьогодні: {rate, date (ISO)}."""
+    from urllib.request import urlopen
+    url = 'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json'
+    with urlopen(url, timeout=8) as r: rows = json.loads(r.read().decode('utf-8'))
+    if not rows: raise ValueError('порожня відповідь')
+    d, m, y = rows[0]['exchangedate'].split('.')
+    return {'rate': float(rows[0]['rate']), 'date': f'{y}-{m}-{d}', 'source': 'nbu'}
+
+
 class H(BaseHTTPRequestHandler):
     server_version = 'KP-PC/1'
 
@@ -259,6 +269,10 @@ class H(BaseHTTPRequestHandler):
                                            admin=read_json(ADMIN, default_admin()), styles=styles_info(),
                                            defaults=defaults_texts(), history=history()))
             if p == '/api/history': return self.send(200, history())
+            if p == '/api/eur':
+                try: return self.send(200, nbu_eur())
+                except Exception as e:  # noqa: BLE001
+                    return self.send(502, {'error': f'Не вдалося отримати курс НБУ: {e}'})
             if p == '/api/versions': return self.send(200, snapshots())
             if p in ('/api/preview/page', '/api/preview/item'):
                 try: data = preview(p.rsplit('/', 1)[1], q)

@@ -94,12 +94,9 @@ test("business rules: НПЛ-10 kit has 2 positions priced as a bundle, no auton
   assert.equal(c.texts.notes.target_customers, "+ ЛІСОГОСПОДАРСТВА · + ФЕРМЕРИ · + ДЕРЕВООБРОБНИКИ");
 });
 
-test("accessories: bmf.rv.ua first, on request, ids resolve", () => {
-  const origins = c.accessories.map((a) => a.origin);
-  const firstEe = origins.indexOf("bmf.ee");
-  assert.ok(firstEe > 0);
-  assert.ok(origins.slice(0, firstEe).every((o) => o === "bmf.rv.ua"));
-  assert.ok(origins.slice(firstEe).every((o) => o === "bmf.ee"));
+test("accessories: the ones the user's KPs mention most come first, on request", () => {
+  const uses = c.accessories.map((a) => a.kp_uses ?? 0);
+  assert.deepEqual(uses, [...uses].sort((a, b) => b - a));
   for (const a of c.accessories) assert.equal(a.price.mode, "on_request", a.id);
 });
 

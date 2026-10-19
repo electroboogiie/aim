@@ -51,7 +51,7 @@
         </div>
       </div>
       <div class="col side">
-        <div class="card sticky">
+        <div class="card">
           <div class="card-head"><h2><span class="step">3</span>Вартість</h2></div>
           <table class="rows"><thead><tr><th>Позиція</th><th class="num">З адмінки</th><th class="num">Фінальна, ₴</th></tr></thead><tbody id="rows"></tbody></table>
           <div id="kitPriceBox"></div>
@@ -154,6 +154,14 @@
         <div id="a-prices" class="subtab">
           <div class="page-head"><h1>Ціни і націнки</h1></div>
           <p class="hint">Розрахункова ціна = базова × (1 + націнка %), округлення до <span id="roundStep"></span> ₴. Фінальна ціна, якщо вписана, замінює розрахункову. Додана вартість = ціна в КП − базова. Типово базова ціна = ціна з останньої КП, націнка 0 %.</p>
+          <div class="card eur-card">
+            <div class="inline" style="margin:0"><b>Курс € для кранів BMF</b>
+              <input type="number" id="eurRate" step="0.01" min="1" style="width:110px" placeholder="напр. 48,50"> ₴ за €
+              <button id="eurNbu" class="sm">Взяти курс НБУ</button><span id="eurInfo" class="hint" style="margin:0"></span></div>
+            <p class="hint" style="margin:8px 0 0">Ціна крана = ціна в € × коефіцієнт × курс, округлення до <span class="roundStep2"></span> ₴. Порожня ціна в € — кран рахується в гривнях, як в останній КП.
+              Кнопка «Перевести в €» запише ціни кранів у € за поточним курсом, щоб далі вони йшли за курсом.</p>
+            <button id="eurFill" class="sm" style="margin-top:6px">Перевести ціни кранів у €</button>
+          </div>
           <div class="card inline bulk">Націнка для всіх у групі
             <select id="bulkGroup"></select> <input type="number" id="bulkPct" step="0.5" style="width:80px"> %
             <button id="bulkApply">Застосувати</button></div>

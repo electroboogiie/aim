@@ -58,17 +58,23 @@ function confirmBox(text, okText, onOk) {
 
 // ------------------------------------------------------------------ admin -> effective catalog
 function origUah(rule) { return rule && rule.mode === "ref" && typeof rule.uah === "number" ? rule.uah : null; }
-function priceOf(rec, rule) {
-  const base = num(rec?.base) ?? origUah(rule);
-  const mk = num(rec?.markup) ?? 0;
+const eurRate = () => num(admin.eur?.rate);
+/** Admin price of a position: cranes may be priced in EUR (€ × coefficient × rate), others in UAH; markup on top, final wins. */
+function priceOf(rec, rule, it) {
   const step = settings.rounding_uah || 1;
+  const eur = num(rec?.eur) ?? it?.price_eur ?? null;
+  const coef = num(rec?.coef) ?? 1;
+  const rate = eurRate();
+  const fromEur = eur != null && rate ? core.roundTo(eur * coef * rate, step) : null;
+  const base = fromEur ?? num(rec?.base) ?? origUah(rule);
+  const mk = num(rec?.markup) ?? 0;
   const calc = base == null ? null : mk ? core.roundTo(base * (1 + mk / 100), step) : base;
   const fin = num(rec?.final);
-  return { base, mk, calc, price: fin ?? calc, fin };
+  return { base, mk, calc, price: fin ?? calc, fin, eur, coef, fromEur };
 }
-function effRule(rule, rec) {
-  if (!rec) return rule;
-  const p = priceOf(rec, rule);
+function effRule(rule, rec, it) {
+  if (!rec && it?.price_eur == null) return rule;
+  const p = priceOf(rec, rule, it);
   if (p.price == null) return rule;
   return { mode: "ref", uah: p.price, date: core.todayIso(), eur_rate_ref: null, metal_index_ref: null, eur_share: 0, metal_share: 0,
     group: rule?.group || "admin", history: [] };
@@ -94,7 +100,7 @@ function effCatalog() {
     const e = A.items?.edits?.[i.id];
     if (e?.title) i.title = e.title;
     if (e?.desc) { if (i.desc_template) i.desc_template = e.desc; else i.short = e.desc; }
-    i.price = effRule(i.price, P.items?.[i.id]);
+    i.price = effRule(i.price, P.items?.[i.id], i);
     if (F.items?.[i.id]) i.photo = F.items[i.id];
   }
   const has = new Set(c.items.map((i) => i.id));
@@ -330,8 +336,10 @@ function renderTree() {
     const it = core.itemById(cat, cur || s.default || s.candidates[0]);
     const cands = core.slotCandidates(cat, kt.id, s.id, sel);
     const pick = (cands.find((c) => c.allowed && c.id === s.default) || cands.find((c) => c.allowed))?.id;
-    const node = tnode({ photo: it?.photo, title: s.title, sub: cur && it?.unit ? `${S.qty[it.id] ?? it.unit.default} ${it.unit.name}` : "", mark: cur ? "✓ в комплекті" : "+ " + itemPriceText(it), markCls: cur ? "std" : "",
+    const node = tnode({ photo: it?.photo, title: s.title, mark: cur ? "✓ в комплекті" : "+ " + itemPriceText(it), markCls: cur ? "std" : "",
       on: !!cur, dis: !pick && !cur, cls: "tog", onclick: () => setSlot(s.id, cur ? null : pick) });
+    if (it?.unit) node.querySelector(".tt").append(h("label", { class: "tq", onclick: (e) => e.stopPropagation() }, h("input", { type: "number", min: it.unit.min || 1, max: it.unit.max || "", value: S.qty[it.id] ?? it.unit.default,
+      onchange: (e) => { S.qty[it.id] = num(e.target.value); if (!cur) setSlot(s.id, it.id); else { renderConf(); } } }), it.unit.name));
     const subs = restChoices.filter((ch) => ch.slot === s.id);
     extras.push(subs.length && cur ? h("div", { class: "tgrp" }, node, subs.map((ch) => miniChoice(ch, items, setChoice))) : node);
   }
@@ -402,16 +410,18 @@ function renderConf() {
     const it = core.itemById(cat, cur || slot.default || slot.candidates[0]);
     const on = !!cur;
     const cbx = h("input", { type: "checkbox", checked: on, disabled: slot.required, onchange: (e) => setSlot(slot.id, e.target.checked ? (cands.find((c) => c.allowed && c.id === slot.default) || cands.find((c) => c.allowed))?.id : null) });
-    const sel = cands.length > 1 ? h("select", { onchange: (e) => setSlot(slot.id, e.target.value) },
-      cands.map((c) => h("option", { value: c.id, disabled: !c.allowed }, (c.item?.title || c.id) + (c.allowed ? "" : " (несумісний)")))) : null;
+    const ok = cands.filter((c) => c.allowed || c.id === cur);   // incompatible variants (e.g. a base for another crane) are not offered
+    const sel = ok.length > 1 ? h("select", { onchange: (e) => setSlot(slot.id, e.target.value) },
+      ok.map((c) => h("option", { value: c.id }, itemLabel(c.item, ok.map((x) => x.item)) || c.id))) : null;
     if (sel) sel.value = cur || "";
     const unit = it?.unit;
-    const qty = unit && on ? h("label", { class: "inline", style: "margin:0" }, h("input", { type: "number", class: "qty", min: unit.min || 1, max: unit.max || "", value: S.qty[it.id] ?? unit.default,
-      onchange: (e) => { S.qty[it.id] = num(e.target.value); renderQuote(); } }), unit.name) : null;
+    // litres (or other units) are always editable; typing a quantity also adds the position
+    const qty = unit ? h("label", { class: "inline", style: "margin:0", title: "кількість, " + unit.name }, h("input", { type: "number", class: "qty", min: unit.min || 1, max: unit.max || "", step: 1, value: S.qty[it.id] ?? unit.default,
+      onchange: (e) => { S.qty[it.id] = num(e.target.value); if (!on) setSlot(slot.id, it.id); else { renderQuote(); renderTree(); } } }), unit.name) : null;
     box.append(h("div", { class: "slot" + (on ? " on" : "") }, cbx,
       it?.photo ? lbImg(asset(it.photo), null, { alt: it.title }) : h("span"),
       h("div", {}, h("div", { class: "t" }, slot.title, slot.priced ? h("span", { class: "badge gray" }, "ціна окремо") : null), h("small", {}, it ? core.itemDesc(S.kt, it, S.sel) : "")),
-      h("div", { class: "inline", style: "margin:0" }, sel && on ? sel : null, qty)));
+      h("div", { class: "inline", style: "margin:0;flex-wrap:nowrap" }, sel && on ? sel : null, qty)));
   }
   // choices of the kit (захват, розподільник, місце оператора, гальма…)
   const chb = $("#choices"); chb.innerHTML = "";
@@ -449,7 +459,7 @@ function renderAccs() {
       const pin = h("input", { type: "number", placeholder: p ? String(p) : "ціна, ₴", value: on?.price_uah ?? "", onchange: (e) => upd({ price_uah: num(e.target.value) }) });
       box.append(h("div", { class: "acc" + (bad ? " bad" : "") }, h("input", { type: "checkbox", disabled: bad, checked: !!on, onchange: (e) => upd({ on: e.target.checked }) }),
         a.photo ? lbImg(asset(a.photo), null, { alt: a.title }) : h("span"),
-        h("div", {}, h("b", {}, a.title), (a.base_for || []).includes(S.kt.id) ? h("span", { class: "badge" }, "базова") : null, h("small", {}, ka.desc), on && vs ? vs : null,
+        h("div", {}, h("b", {}, a.title), (a.base_for || []).includes(S.kt.id) ? h("span", { class: "badge" }, "базова") : null, a.kp_uses ? h("span", { class: "badge gray", title: "скільки ваших КП згадують цю опцію" }, `у ${a.kp_uses} КП`) : null, h("small", {}, ka.desc), on && vs ? vs : null,
           ka.status === "unconfirmed" ? h("small", {}, "сумісність не підтверджена") : null),
         h("div", { class: "num" }, on ? pin : h("small", {}, p ? uah(p) : "за запитом"))));
     }
@@ -739,6 +749,13 @@ function moveIn(ovObj, ids, id, dir) {
   if (i < 0 || j < 0 || j >= order.length) return;
   [order[i], order[j]] = [order[j], order[i]]; ovObj.order = order;
 }
+/** Item title; items that share a title (a base per crane) get the crane they fit. */
+function itemLabel(it, list) {
+  if (!it) return "";
+  if (list.filter((x) => x?.title === it.title).length < 2) return it.title;
+  const fits = (it.compatible || []).map((id) => core.itemById(cat, id)?.model).filter(Boolean);
+  return fits.length ? `${it.title} · для ${fits.join(", ")}` : `${it.title} · ${it.id}`;
+}
 /** Photo cell: thumbnail (click = view), ✎ uploads a new photo (the old one goes to versions), ↺ opens versions. */
 function photoCell({ key, path, title, set, kind = "tile", rerender }) {
   const nh = (admin.photo_history[key] || []).length;
@@ -773,7 +790,7 @@ function renderKitEditor() {
       h("div", { class: "ord" }, h("button", { title: "вище", onclick: () => { moveIn(K, ids, s.id, -1); saveAdmin(); renderKitEditor(); } }, "▲"), h("button", { title: "нижче", onclick: () => { moveIn(K, ids, s.id, 1); saveAdmin(); renderKitEditor(); } }, "▼")),
       photoCell({ key: "item:" + it?.id, path: it?.photo, title: s.title, set: (p) => { for (const id of s.candidates) if (core.itemById(cat, id)?.title === it.title) admin.photos.items[id] = p; }, rerender: renderKitEditor }),
       h("div", { class: "ed-main" }, h("input", { value: s.title, onchange: (e) => set({ title: e.target.value || s.title }) }),
-        h("div", { class: "chips" }, s.candidates.map((id) => h("span", { class: "chip" + (id === s.default ? " on" : "") }, core.itemById(cat, id)?.title || id))),
+        h("div", { class: "chips" }, s.candidates.map((id) => h("span", { class: "chip" + (id === s.default ? " on" : "") }, itemLabel(core.itemById(cat, id), s.candidates.map((x) => core.itemById(cat, x))) || id))),
         s.priced ? h("small", { class: "hint", style: "margin:0" }, "ціна окремо, додається до ціни комплекту") : null),
       h("div", { class: "ed-side" },
         h("label", { class: "toggle", title: s.required ? "обов’язкова позиція" : "" }, h("input", { type: "checkbox", checked: base, disabled: s.required,
@@ -893,7 +910,8 @@ function renderAccEditor() {
         h("div", { class: "ord" }, h("button", { onclick: () => move(-1) }, "▲"), h("button", { onclick: () => move(1) }, "▼")),
         a.photo ? lbImg(asset(a.photo), [{ src: `/api/preview/item?${qs({ style: admin.style || "dark", path: a.photo, kind: "card" })}`, label: "Як у КП" }, { src: asset(a.photo), label: "Оригінал" }], { class: "thumb", alt: a.title }) : h("div", { class: "thumb none" }, "без фото"),
         h("div", { class: "ed-main" },
-          h("input", { value: a.title, style: "font-weight:600", onchange: (e) => set({ title: e.target.value }, false) }),
+          h("div", { class: "inline", style: "margin:0;flex-wrap:nowrap" }, h("input", { value: a.title, style: "font-weight:600;flex:1", onchange: (e) => set({ title: e.target.value }, false) }),
+            a.kp_uses ? h("span", { class: "badge gray", title: "скільки ваших КП згадують цю опцію" }, `у ${a.kp_uses} КП`) : null),
           h("textarea", { rows: 2, onchange: (e) => set({ desc: e.target.value }, false) }, a.desc),
           a.variants?.length ? h("div", { class: "chips" }, h("span", { class: "hint", style: "margin:0" }, "варіанти:"), a.variants.map((v) => h("span", { class: "chip" }, v.title))) : null,
           h("div", { class: "sm-l" }, "Підходить до"),
@@ -1001,17 +1019,44 @@ function renderPrices() {
     for (const x of g.list) { const r = (admin.prices[g.kind][x.id] ??= {}); r.markup = pct; }
     saveAdmin(); renderPrices(); toast("Націнку застосовано");
   };
+  // EUR rate for cranes
+  $$(".roundStep2").forEach((e) => (e.textContent = settings.rounding_uah || 1));
+  const er = $("#eurRate"); er.value = admin.eur?.rate ?? "";
+  const info = () => { $("#eurInfo").textContent = admin.eur?.rate ? `${admin.eur.source === "nbu" ? "НБУ" : "вручну"}${admin.eur.date ? ", " + core.formatDate(admin.eur.date) : ""}` : "курс не задано"; };
+  info();
+  er.onchange = () => { const v = num(er.value); admin.eur = v ? { rate: v, date: core.todayIso(), source: "manual" } : null; saveAdmin(true, "курс € " + (v ?? "—")).then(renderPrices); };
+  $("#eurNbu").onclick = async () => {
+    try { const r = await api("/api/eur"); admin.eur = { rate: r.rate, date: r.date, source: "nbu" }; await saveAdmin(true, "курс € НБУ " + r.rate); renderPrices(); toast(`Курс НБУ: ${r.rate} ₴ за €`); }
+    catch (e) { toast("Курс НБУ недоступний: " + e.message + ". Впишіть курс вручну."); }
+  };
+  $("#eurFill").onclick = () => {
+    const rate = eurRate(); if (!rate) return toast("Спершу задайте курс €");
+    const cr = cat0.items.filter((i) => i.kind === "crane");
+    let n = 0;
+    for (const it of cr) {
+      const rec = (admin.prices.items[it.id] ??= {});
+      if (num(rec.eur) != null || it.price_eur != null) continue;
+      const uahNow = num(rec.base) ?? origUah(it.price);
+      if (uahNow == null) continue;
+      rec.eur = Math.round(uahNow / rate); rec.coef ??= 1; delete rec.base; n++;
+    }
+    saveAdmin(true, "ціни кранів у €").then(renderPrices); toast(n ? `Переведено в €: ${n}` : "Нічого переводити");
+  };
   const box = $("#priceTables"); box.innerHTML = "";
   for (const g of groups) {
     if (!g.list.length) continue;
-    const tbl = h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Позиція", "Базова, ₴", "Націнка, %", "Розрахункова", "Фінальна, ₴", "У КП", "Додана вартість"].map((t, i) => h("th", { class: i ? "num" : "" }, t)))));
+    const isCrane = g.key === "items:crane";
+    const heads = isCrane ? ["Позиція", "Ціна, €", "Коеф.", "Базова, ₴", "Націнка, %", "Розрахункова", "Фінальна, ₴", "У КП", "Додана вартість"] : ["Позиція", "Базова, ₴", "Націнка, %", "Розрахункова", "Фінальна, ₴", "У КП", "Додана вартість"];
+    const tbl = h("table", { class: "prices" }, h("thead", {}, h("tr", {}, heads.map((t, i) => h("th", { class: i ? "num" : "" }, t)))));
     const tb = h("tbody"); tbl.append(tb);
     for (const x of g.list) {
       const rec = admin.prices[g.kind][x.id] || {};
-      const p = priceOf(rec, x.price);
+      const p = priceOf(rec, x.price, x);
       const calc = h("td", { class: "num" }), fin = h("td", { class: "num" }), add = h("td", { class: "num" });
+      const baseIn = h("input", { type: "number", value: rec.base ?? "", placeholder: p.base ?? "—", onchange: (e) => set("base")(e) });
       const upd = () => {
-        const q = priceOf(admin.prices[g.kind][x.id] || {}, x.price);
+        const q = priceOf(admin.prices[g.kind][x.id] || {}, x.price, x);
+        if (baseIn) { baseIn.placeholder = q.base ?? "—"; baseIn.disabled = q.fromEur != null; baseIn.title = q.fromEur != null ? "рахується з ціни в €" : ""; if (q.fromEur != null) baseIn.value = ""; }
         calc.textContent = uah(q.calc); fin.innerHTML = ""; fin.append(h("b", {}, q.price == null ? "за запитом" : uah(q.price)));
         const d = q.price != null && q.base != null ? q.price - q.base : null;
         add.innerHTML = ""; if (d != null) add.append(h("span", { class: d >= 0 ? "plus" : "minus" }, (d >= 0 ? "+" : "−") + core.formatUah(Math.abs(d)) + (q.base ? ` (${(d / q.base * 100).toFixed(1).replace(".", ",")} %)` : "")));
@@ -1020,12 +1065,14 @@ function renderPrices() {
         if (!Object.keys(r).length) delete admin.prices[g.kind][x.id]; saveAdmin(); upd(); };
       const unit = x.unit ? ` (за ${x.unit.per} ${x.unit.name})` : "";
       tb.append(h("tr", {}, h("td", {}, x.title + unit, x.featured ? h("span", { class: "badge" }, "основний") : null, x.price?.date ? h("small", { style: "display:block;color:#6B727B" }, "з КП " + core.formatDate(x.price.date)) : null),
-        h("td", { class: "num" }, h("input", { type: "number", value: rec.base ?? "", placeholder: p.base ?? "—", onchange: set("base") })),
+        isCrane ? h("td", { class: "num" }, h("input", { type: "number", value: rec.eur ?? "", placeholder: x.price_eur ?? "—", style: "width:96px", onchange: set("eur") })) : null,
+        isCrane ? h("td", { class: "num" }, h("input", { type: "number", step: 0.01, value: rec.coef ?? "", placeholder: "1", style: "width:70px", onchange: set("coef") })) : null,
+        h("td", { class: "num" }, baseIn),
         h("td", { class: "num" }, h("input", { type: "number", step: 0.5, value: rec.markup ?? "", placeholder: "0", style: "width:70px", onchange: set("markup") })),
         calc, h("td", { class: "num" }, h("input", { type: "number", value: rec.final ?? "", placeholder: "—", onchange: set("final") })), fin, add));
       upd();
     }
-    box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, g.title, h("small", {}, `${g.list.length}`))), tbl));
+    box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, g.title, h("small", {}, `${g.list.length}`))), h("div", { class: "tbl-wrap" }, tbl)));
   }
 }
 function bundleTitle(b) {
