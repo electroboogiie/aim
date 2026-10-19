@@ -223,8 +223,8 @@ class Engine:
         s = t1
         put(by_id(s, 11), '// 01 — НАПІВПРИЧІП')
         put(by_id(s, 12), 'ВЕЗЕ ЛІС ТАМ,', 'ДЕ ДОРОГИ', 'ЗАКІНЧУЮТЬСЯ.')
-        put(by_id(s, 13), NPL10['lead'])
-        put(by_id(s, 14), NPL10['lead2'])
+        put(by_id(s, 13), npl['lead'] or NPL10['lead'])
+        put(by_id(s, 14), npl['lead2'] or NPL10['lead2'])
         put(by_id(s, 16), ['10 000', ' кг'], 'вантажопідйомність · об’єм 10 м³')
         for n, (t, d) in enumerate(NPL10['tiles']):
             put(by_id(s, 21 + n * 5), t.format(**fmtv)); put(by_id(s, 22 + n * 5), d)
@@ -363,7 +363,7 @@ class Engine:
             texts = [''.join(r.text for r in by_id(s, 50 + 2 * k).text_frame.paragraphs[0].runs)[2:] for k in range(8)]
             if not self.opt_no and not any(t.lower() in titles for t in texts): return  # template as approved
             if self.opt_no: texts[5] = 'Опції BMF: с. {opt}'   # the template repeats "Ящик для інструмента" here
-            chips = [t for t in texts if t.lower() not in titles]
+            chips = list(dict.fromkeys(t for t in texts if t.lower() not in titles))
         chips = [c.replace('{opt}', f'{self.opt_no:02d}' if self.opt_no else '') for c in chips][:8]
         for k in range(8):
             rect, txt = by_id(s, 49 + 2 * k), by_id(s, 50 + 2 * k)

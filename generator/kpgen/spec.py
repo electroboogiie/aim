@@ -93,7 +93,7 @@ def validate(spec):
         npl = {}
     if npl is not None:
         npl = dict(brakes=_s(npl.get('brakes')) or 'гідравлічна', wheels=_s(npl.get('wheels')) or '500/45-22,5',
-                   stakes=_s(npl.get('stakes')) or '4')
+                   stakes=_s(npl.get('stakes')) or '4', lead=_s(npl.get('lead')), lead2=_s(npl.get('lead2')))
 
     client = spec['client'] if isinstance(spec['client'], dict) else {'name': _s(spec['client'])}
     contacts = spec['contacts']
