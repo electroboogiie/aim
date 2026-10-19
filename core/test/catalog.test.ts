@@ -76,7 +76,7 @@ test("business rules: cranes come with rotator and grapple, KP profiles only for
   for (const it of c.items) if (it.kind !== "crane") assert.equal(it.kp_profile ?? null, null, it.id);
   assert.deepEqual([...SUPPORTED_PROFILES], ["bmf650", "bmf720", "bmf750"]);
   // the approved KP_2_v3 values for the BMF 720 and the latest user KP values for 650 / 750
-  assert.equal(itemById(c, "bmf720")!.specs!.weight_kg, "675");
+  assert.equal(itemById(c, "bmf720")!.specs!.weight_kg, "710");
   assert.equal(itemById(c, "bmf750")!.specs!.weight_kg, "1090");
   assert.equal(itemById(c, "bmf650")!.specs!.torque_knm, "60");
 });

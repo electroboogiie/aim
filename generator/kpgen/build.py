@@ -21,9 +21,10 @@ CM = 1 / 2.54
 GROUPS = {'crane': 'ДЛЯ КРАНА', 'trailer': 'ДЛЯ ПРИЧЕПА'}
 NPL_CHIPS = ['Гальма на вибір', 'Колеса 400/60-15.5', 'Колеса 500/50-17', 'Колеса 550/45-22.5',
              'Кількість коників', 'Колір на замовлення', 'Опції для крана: с. {opt}', 'Опції для причепа: с. {opt}']
-NOTE_CRANE = ('Аксесуари з каталогу BMF (bmf.rv.ua), сумісні з краном комплекту. Ціни — за запитом: '
+OPT_TITLE_CHARS = 22
+NOTE_CRANE = ('Аксесуари з каталогів BMF (bmf.rv.ua, bmf.ee), сумісні з краном комплекту. Ціни — за запитом: '
               'обрані опції додаємо в КП окремими рядками.')
-NOTE_NPL = ('Аксесуари з каталогу BMF (bmf.rv.ua) для кранів і причепів, сумісні з краном комплекту. Ціни — за запитом: '
+NOTE_NPL = ('Аксесуари з каталогів BMF (bmf.rv.ua, bmf.ee) для кранів і причепів, сумісні з краном комплекту. Ціни — за запитом: '
             'обрані опції додаємо в КП окремими рядками. Сумісність опцій для причепа з НПЛ-10 підтверджуємо під замовлення.')
 
 
@@ -401,6 +402,9 @@ class Engine:
                 remove(ph)
             ln = clone(s, P['line']); geom(ln, x + 0.14, y + 1.82, cw - 0.28, 0)
             tt = clone(s, P['title']); geom(tt, x + 0.14, y + 1.88, cw - 0.28, 0.25); put(tt, a['title']); tt.name = f'fld_opt_title_{n + 1}'
+            if len(a['title']) > OPT_TITLE_CHARS:  # one line: shrink instead of running into the description
+                r0 = tt.text_frame.paragraphs[0].runs[0]._r.get_or_add_rPr()
+                set_size(tt, max(800, int(int(r0.get('sz') or 1100) * OPT_TITLE_CHARS / len(a['title']))))
             dd = clone(s, P['desc']); geom(dd, x + 0.14, y + 2.14, cw - 0.28, 0.45); put(dd, a['desc'])
         note = clone(s, P['desc']); geom(note, 0.45, 10.74, 7.37, 0.4)
         text = self.spec.get('accessories_note') or (NOTE_NPL if self.npl else NOTE_CRANE)

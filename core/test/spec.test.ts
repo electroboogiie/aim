@@ -59,7 +59,7 @@ test("itemized crane kit: priced rows, KP_2_v3 total, dates dd.mm.yyyy", () => {
   assert.equal(spec.valid_until, "31.08.2025");
   assert.equal(spec.price_date, "24.08.2025");
   assert.equal(spec.maker.line, "Виробник: ТОВ «ГІДМАН»");
-  assert.equal(spec.crane?.specs.weight_kg, "675");
+  assert.equal(spec.crane?.specs.weight_kg, "710");
   assert.equal(spec.crane?.specs.telescope, "так");
   assert.ok(!/\s{2}/.test(spec.total_text));
   assert.equal(buildKpSpec(c, { ...s, validity_days: 0 }, q, meta).valid_until, "");
@@ -115,4 +115,20 @@ test("blockers: cranes without KP pages, kits without a crane, more than 8 rows"
   const spec = buildKpSpec(c, s, fine, meta);
   assert.equal(spec.rows.length, fine.rows.length);
   assert.deepEqual(spec.accessories.map((a) => a.price_text), accs.map(() => "ціна за запитом"));
+});
+
+test("offer_accessories: chosen options first, then compatible ones on request, crane before trailer, at most 9", () => {
+  const input: QuoteInput = { kit_type: "npl_crane", date: "2026-10-18",
+    selection: { slots: { trailer: "npl10", crane: "bmf750" }, choices: {}, accessories: [{ id: "rv_poles", price_uah: 12000 }] } };
+  const spec = buildKpSpec(c, s, quote(c, s, noRate, input), { ...meta, offer_accessories: true });
+  assert.ok(spec.accessories.length > 1 && spec.accessories.length <= 9);
+  const groups = spec.accessories.map((a) => a.group);
+  assert.deepEqual(groups, [...groups].sort((a, b) => (a === "crane" ? 0 : 1) - (b === "crane" ? 0 : 1)));
+  const poles = spec.accessories.find((a) => a.title === c.accessories.find((x) => x.id === "rv_poles")!.title)!;
+  assert.match(poles.price_text, /12\s000/);
+  assert.equal(spec.accessories.filter((a) => a.title === poles.title).length, 1);
+  for (const a of spec.accessories) if (a !== poles) assert.equal(a.price_text, "ціна за запитом");
+  const leg = c.accessories.find((x) => x.id === "rv_leg_a")!;
+  assert.ok(!spec.accessories.some((a) => a.title === leg.title), "A-type leg does not fit BMF 750");
+  assert.equal(buildKpSpec(c, s, quote(c, s, noRate, npl750), meta).accessories.length, 0);
 });

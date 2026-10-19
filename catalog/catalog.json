@@ -68,7 +68,7 @@
     "torque_knm": "60",
     "lift_4m_kg": "1120",
     "lift_full_kg": "640",
-    "grapple_m2": "0,2",
+    "grapple_m2": "0,24",
     "rotator_t": "3",
     "valve": "6/8 XY",
     "valve_flow_l": "55",
@@ -113,8 +113,6 @@
    "source": "Ціна: drive_kp/КП BMF650 у комплекті (17.03.2026).pptx, рядок «Гідравлічний кран-маніпулятор BMF 650» 637 800 ₴ з ПДВ станом на 17.03.2026 (у ціні ротатор і захват). Характеристики: остання КП з BMF 650 — reference/kp/kp_text.md: CP/READY/КП НПЛ-10+650.pptx (18.05.2026), так само КП 8Т2+650, 10Т2+650, BMF650 25.02.2026; valve_flow_l і legs — bmf.ee (www.bmf.ee/products/cranes/bmf650, перевірено 18.10.2026) і КП BMF650 02.09.2025 («6/8XY (55l)»).",
    "needs_confirmation": [
     "model: КП 2026 р. друкують цифри BMF 650+ (60 кНм, 1120 / 640 кг; bmf.rv.ua: 59 кНм), bmf.ee для BMF 650 — 48 кНм, 840 / 510 кг",
-    "specs.weight_kg: 686 (КП 2026, bmf.rv.ua) чи 640 (bmf.ee)",
-    "specs.grapple_m2: 0,2 (bmf.ee, більшість КП) чи 0,24 (КП 02.09.2025 і 17.03.2026)",
     "specs.legs: A/FD — дані bmf.ee, у КП не вказано",
     "price: 637 800 (17.03.2026), 607 700 (25.02.2026), 626 400 (02.09.2025)",
     "price.eur_rate_ref: курс EUR на дату ціни"
@@ -146,7 +144,7 @@
     "pressure_bar": "200",
     "pump_lpm": "30–60",
     "legs": "A/FD",
-    "weight_kg": "675",
+    "weight_kg": "710",
     "telescope": "так",
     "wide_angle": "так"
    },
@@ -180,7 +178,6 @@
    "kp_profile": "bmf720",
    "source": "Ціна: drive_kp/КП_BMF720_у_комплекті___лапи_ (1).pdf, станом на 17.07.2026: 841 000 ₴ = кран 686 000 + основа 155 000 (та сама ціна, що в затвердженому KP_2_v3.pptx, ціни станом на 24.08.2025). Характеристики: KP_2_v3.pptx (S-01…S-15).",
    "needs_confirmation": [
-    "specs.weight_kg: 675 (KP_2_v3, bmf.ee) чи 710 (інші КП, bmf.rv.ua)",
     "price: 686 000 (24.08.2025, 17.07.2026) чи 657 920 (04.03.2026)",
     "price.eur_rate_ref: курс EUR на дату ціни"
    ]
@@ -238,7 +235,6 @@
    "kp_profile": "bmf750",
    "source": "Ціна і характеристики: reference/kp/kp_text.md: CP/Комерційні пропозиції/КП BMF750 у комплекті 02102026 радіатор.pptx, рядок «Гідравлічний кран-маніпулятор BMF 750» 856 800 ₴ з ПДВ станом на 02.10.2026 (клапан «4/8 XYZ (80l)», вага 1090 кг); legs — bmf.ee (www.bmf.ee/products/cranes/bmf750, перевірено 18.10.2026).",
    "needs_confirmation": [
-    "specs.weight_kg: 1090 (усі КП користувача) чи 996 (bmf.ee, каталог BMF 2025)",
     "specs.rotator_t: 4 т (КП, bmf.ee) чи 5 т (каталог BMF 2025)",
     "specs.legs: FD — дані bmf.ee, у КП не вказано",
     "price.eur_rate_ref: курс EUR на дату ціни"
@@ -822,7 +818,8 @@
    "source": "reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx: «Теплообмінник (радіатор)» 27 000 ₴ з ПДВ, станом на 02.10.2026.",
    "needs_confirmation": [
     "price.eur_share, price.metal_share (зараз 0: ціна не рухається з курсом)"
-   ]
+   ],
+   "photo": "acc/06_oilcooler.jpg"
   },
   {
    "id": "pump",
@@ -839,7 +836,8 @@
     "price",
     "short",
     "продуктивність насоса"
-   ]
+   ],
+   "photo": "acc/07_pump.jpg"
   },
   {
    "id": "truck_pyramid_outriggers",
@@ -1063,7 +1061,7 @@
        "value": "pneumatic",
        "title": "пневматична",
        "short": "пневматичні гальма",
-       "on_request": true
+       "price_uah": 87600
       },
       {
        "value": "none",
@@ -2504,7 +2502,7 @@
    "group": "crane",
    "title": "Система керування xCrane PLUS",
    "desc": "Електронне керування краном з джойстиків, сенсорний екран, до 24 гідрофункцій.",
-   "photo": "",
+   "photo": "acc/02_xcrane.png",
    "photo_url": "https://media.voog.com/0000/0053/0154/photos/xcrane_for%20BMF_set2.png",
    "price": {
     "mode": "on_request"
@@ -2525,7 +2523,7 @@
    "group": "crane",
    "title": "Гідродемпфер Hultdins KD 1002 PRO",
    "desc": "Гасить розгойдування і вібрацію крана під час навантаження.",
-   "photo": "",
+   "photo": "acc/03_damper.png",
    "photo_url": "https://media.voog.com/0000/0053/0154/photos/Hultdins%20crane%20damper.png",
    "price": {
     "mode": "on_request"
@@ -2610,9 +2608,9 @@
   {
    "id": "ee_coupler",
    "group": "crane",
-   "title": "Швидкозмінне з’єднання (Quick Coupler)",
-   "desc": "Швидка заміна навісного обладнання між ротатором і захватом (крім C15).",
-   "photo": "",
+   "title": "Швидкозмінне з’єднання",
+   "desc": "Quick Coupler: швидка заміна навісного обладнання між ротатором і захватом (крім C15).",
+   "photo": "acc/05_coupler.jpg",
    "photo_url": "https://media.voog.com/0000/0053/0154/photos/BMF%20quick%20coupler%20for%20log%20crane%20%288%29_huge.webp",
    "price": {
     "mode": "on_request"
@@ -2633,7 +2631,7 @@
    "group": "trailer",
    "title": "Масляний радіатор (теплообмінник)",
    "desc": "Радіатор «олива — повітря» для стабільної роботи крана в спеку.",
-   "photo": "",
+   "photo": "acc/06_oilcooler.jpg",
    "photo_url": "https://media.voog.com/0000/0053/0154/photos/BMF%20Oil%20Cooler%20for%20forest%20log%20crane%281%29.jpg",
    "price": {
     "mode": "on_request"
@@ -2659,7 +2657,7 @@
    "group": "trailer",
    "title": "Гідронасоси",
    "desc": "Насоси 80–130 см³: постійної подачі та LS, поршневі й шестеренні.",
-   "photo": "",
+   "photo": "acc/07_pump.jpg",
    "photo_url": "https://media.voog.com/0000/0053/0154/photos/MEL_5808-Edit__BMF_accessory_pumps_sunfab90%20ja%20130cc_r_huge.webp",
    "price": {
     "mode": "on_request"
@@ -2679,7 +2677,7 @@
    "group": "trailer",
    "title": "Ящик для інструментів",
    "desc": "Металевий ящик двох розмірів, закривається навісним замком.",
-   "photo": "",
+   "photo": "acc/08_toolbox.jpg",
    "photo_url": "https://media.voog.com/0000/0053/0154/photos/Toolbox%20TBX01_24_for%20BMF%20forestry%20trailer.jpg",
    "price": {
     "mode": "on_request"
@@ -2705,7 +2703,7 @@
    "group": "trailer",
    "title": "Тримач бензопили",
    "desc": "Тримач бензопили для шин будь-якої довжини: метал із пластиковою вставкою.",
-   "photo": "",
+   "photo": "acc/09_chainsaw.jpg",
    "photo_url": "https://media.voog.com/0000/0053/0154/photos/BMF14T2Pro_BMF750HP-5_chainsaw%20holder_3.jpg",
    "price": {
     "mode": "on_request"
@@ -2770,8 +2768,8 @@
    },
    "price": {
     "mode": "ref",
-    "uah": 1886600,
-    "date": "2026-09-29",
+    "uah": 1799000,
+    "date": "2026-06-09",
     "eur_rate_ref": null,
     "metal_index_ref": null,
     "eur_share": 0.55,
@@ -2808,11 +2806,12 @@
      }
     ]
    },
-   "source": "reference/kp CP/READY/КП НПЛ-10+720 2909.pptx: 1 886 600 ₴ з ПДВ, станом на 29.09.2026 (пневматичні гальма). Раніше: 1 799 000 ₴ (09.06.2026), 1 709 100 ₴ (18.05.2026, 14.01.2026), 1 411 000 ₴ (20.08.2024). Частки — оцінка (кран 686 000).",
+   "source": "drive_kp/КП НПЛ-10+720 (09.06.2026).pptx: 1 799 000 ₴ з ПДВ, гідравлічні гальма (остання КП з гідравлічними гальмами). КП 29.09.2026 з пневматичними гальмами: 1 886 600 ₴ — різниця 87 600 ₴ взята як доплата за пневматичні гальма.",
    "needs_confirmation": [
     "price: 1 886 600 ₴ — КП з пневматичними гальмами; з гідравлічними остання ціна 1 799 000 ₴ (09.06.2026), доплата за пневматичні гальма невідома",
     "price.eur_share, price.metal_share: оцінка",
-    "price.eur_rate_ref, price.metal_index_ref"
+    "price.eur_rate_ref, price.metal_index_ref",
+    "доплата за пневматичні гальма 87 600 ₴ виведена з різниці КП 09.06.2026 і 29.09.2026"
    ]
   },
   {

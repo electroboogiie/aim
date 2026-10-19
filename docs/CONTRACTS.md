@@ -311,7 +311,8 @@ How the generator (`generator/kpgen`, KP_2_v3 template) uses the fields:
 interface KpMeta { number: string; client: { name: string; contact?: string };
   maker?: string;                  // Company id, default settings.company_maker (the legal entity is selectable)
   terms?: (string | { title: string; text: string })[];   // Term ids or literal terms, default KitType.terms
-  photos?: KpSpec["photos"]; accessories_note?: string; cover_text?: string; file?: string }
+  photos?: KpSpec["photos"]; accessories_note?: string; cover_text?: string; file?: string;
+  offer_accessories?: boolean }   // true: options page also lists the kit's other compatible accessories, «ціна за запитом»
 ```
 - Blockers: no crane in the kit, a crane whose `kp_profile` is not supported or that lacks a required spec,
   0 or more than 8 price rows, unknown company or term, more than 7 terms, empty number.

@@ -274,6 +274,7 @@ export interface KpMeta {
   terms?: (string | { title: string; text: string })[];   // Term ids or literal terms; default KitType.terms
   photos?: KpSpec["photos"];
   accessories_note?: string;
+  offer_accessories?: boolean;          // options page also lists compatible accessories not chosen ("ціна за запитом")
   cover_text?: string;
   file?: string;
 }
