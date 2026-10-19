@@ -9,12 +9,35 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.normpath(os.path.join(HERE, '..', 'assets'))
 W, H = 8.27, 11.69          # A4 portrait, inches
 DPI = 200
-FONT_B = os.environ.get('KPGEN_FONT_BOLD', '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf')
+def _font_bold():
+    for f in (os.environ.get('KPGEN_FONT_BOLD'), '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+              os.path.join(ASSETS, 'fonts', 'LiberationSans-Bold.ttf'), r'C:\Windows\Fonts\arialbd.ttf'):
+        if f and os.path.isfile(f): return f
+    return 'arialbd.ttf'
+
+
+FONT_B = _font_bold()
 
 INK = '0B0D10'
 WHITE = 'F4F4F2'
 OR = 'F2530A'
 CARD = (23, 27, 33)         # #171B21, the template's tile fill
+
+# Colour treatment of the generated rasters per KP style: 'dark' (KP_2_v3) or the light designs.
+THEMES = {
+    'dark': dict(name='dark', ink=INK, bg_top=None, grid=(255, 255, 255), grid_a=(9, 40), scan=True,
+                 hero=dict(sat=0.7, bright=0.85, warm=0.05), side=dict(sat=0.75, bright=0.9), glow=1.0,
+                 steel='light', line=(196, 202, 210), outline=WHITE, card=CARD, cut_glow=1.0, tone=0.15),
+    'light': dict(name='light', ink='E6E9EC', bg_top=(245, 246, 248), grid=(30, 35, 40), grid_a=(8, 38), scan=False,
+                  hero=dict(sat=0.95, bright=1.0, warm=0.0, contrast=1.05), side=dict(sat=0.95, bright=1.0, warm=0.0, contrast=1.05),
+                  glow=0.0, steel='dark', line=(70, 76, 84), outline='1E2228', card=(255, 255, 255), cut_glow=0.0, tone=0.03),
+}
+THEME = THEMES['dark']
+
+
+def set_theme(name):
+    global THEME
+    THEME = THEMES[name]
 
 
 def asset(path):
@@ -57,7 +80,7 @@ def grade(im, sat=0.55, bright=0.78, contrast=1.18, warm=0.10):
     im = ImageEnhance.Brightness(im).enhance(bright)
     g = ImageOps.grayscale(im)   # split-tone: shadows toward ink-blue, highlights toward orange
     tone = ImageOps.colorize(g, black=(8, 12, 18), white=(255, 196, 150), mid=(120, 100, 90))
-    return Image.blend(im, tone, warm + 0.15)
+    return Image.blend(im, tone, warm + THEME['tone'])
 
 
 def scan(im, step=4, a=18):
@@ -90,15 +113,20 @@ def glow(w, h, cx, cy, r, color=OR, a=150):
 
 def bg_page(layers=(), grid=True, gy0=0.0):
     """Full-page background: ink, HUD grid from gy0 down, then the layers. Returns JPEG bytes."""
-    im = Image.new('RGBA', (px(W), px(H)), hexrgb(INK) + (255,))
+    T = THEME
+    im = Image.new('RGBA', (px(W), px(H)), hexrgb(T['ink']) + (255,))
+    if T['bg_top']:   # light designs: soft vertical gradient instead of the flat ink
+        d = ImageDraw.Draw(im); top, bot = T['bg_top'], hexrgb(T['ink'])
+        for y in range(im.height):
+            t = y / im.height; d.line([(0, y), (im.width, y)], fill=tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3)) + (255,))
     if grid:
         g = Image.new('RGBA', im.size, (0, 0, 0, 0)); d = ImageDraw.Draw(g)
-        s = px(0.25)
-        for x in range(0, im.width, s): d.line([(x, px(gy0)), (x, im.height)], fill=(255, 255, 255, 9))
-        for y in range(px(gy0), im.height, s): d.line([(0, y), (im.width, y)], fill=(255, 255, 255, 9))
+        s = px(0.25); gc = T['grid']; a1, a2 = T['grid_a']
+        for x in range(0, im.width, s): d.line([(x, px(gy0)), (x, im.height)], fill=gc + (a1,))
+        for y in range(px(gy0), im.height, s): d.line([(0, y), (im.width, y)], fill=gc + (a1,))
         for x in range(0, im.width, s * 4):
             for y in range(px(gy0), im.height, s * 4):
-                d.line([(x - 6, y), (x + 6, y)], fill=(255, 255, 255, 40)); d.line([(x, y - 6), (x, y + 6)], fill=(255, 255, 255, 40))
+                d.line([(x - 6, y), (x + 6, y)], fill=gc + (a2,)); d.line([(x, y - 6), (x, y + 6)], fill=gc + (a2,))
         im = Image.alpha_composite(im, g)
     for lay, (x, y) in layers:
         lay = lay.convert('RGBA')
@@ -106,7 +134,8 @@ def bg_page(layers=(), grid=True, gy0=0.0):
     return jpg(im)
 
 
-def outline_text(text, cap_in, stroke=3, color=WHITE, alpha=255):
+def outline_text(text, cap_in, stroke=3, color=None, alpha=255):
+    color = color or THEME['outline']
     f = ImageFont.truetype(FONT_B, int(px(cap_in) / 0.72))
     l, t, r, b = f.getbbox(text, stroke_width=stroke)
     im = Image.new('RGBA', (r - l + 4, b - t + 4), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
@@ -115,23 +144,37 @@ def outline_text(text, cap_in, stroke=3, color=WHITE, alpha=255):
 
 
 # ---------------------------------------------------------------- page backgrounds (kp_v3_set.py)
+def _scan(im): return scan(im) if THEME['scan'] else im.convert('RGBA')
+
+
+def _glow(*a, a_=120):
+    return glow(*a, a=int(a_ * THEME['glow']))
+
+
 def cover_bg(path, fx, fy):
-    hero = grade(cover(path, W, 7.9, fx=fx, fy=fy), sat=0.7, bright=0.85, warm=0.05)
-    hero = fade(scan(hero), {'b': 0.42, 't': 0.12})
-    return bg_page([(hero, (0, 0)), (glow(W, H, 6.6, 7.4, 2.6, a=120), (0, 0))], gy0=7.2)
+    hero = grade(cover(path, W, 7.9, fx=fx, fy=fy), **THEME['hero'])
+    hero = fade(_scan(hero), {'b': 0.42, 't': 0.12 if THEME['name'] == 'dark' else 0.0})
+    return bg_page([(hero, (0, 0)), (_glow(W, H, 6.6, 7.4, 2.6, a_=120), (0, 0))], gy0=7.2)
 
 
 def side_bg(path, fx, fy=0.5):
     pw, ph_, py = 4.25, 5.6, 0.8
-    ph = grade(cover(path, pw, ph_, fx=fx, fy=fy), sat=0.75, bright=0.9)
-    ph = fade(scan(ph), {'l': 0.62}); ph = fade(ph, {'b': 0.10})
-    return bg_page([(ph, (W - pw, py)), (glow(W, H, 7.5, 6.2, 1.8, a=80), (0, 0))])
+    ph = grade(cover(path, pw, ph_, fx=fx, fy=fy), **THEME['side'])
+    ph = fade(_scan(ph), {'l': 0.62}); ph = fade(ph, {'b': 0.10})
+    return bg_page([(ph, (W - pw, py)), (_glow(W, H, 7.5, 6.2, 1.8, a_=80), (0, 0))])
 
 
 def end_bg(path, fx, fy):
-    hero = grade(cover(path, W, 6.4, fx=fx, fy=fy), sat=0.75, bright=0.9)
-    hero = fade(scan(hero), {'b': 0.42, 't': 0.12})
-    return bg_page([(hero, (0, 0.6)), (glow(W, H, 4.1, 5.6, 2.8, a=90), (0, 0))], gy0=6.5)
+    hero = grade(cover(path, W, 6.4, fx=fx, fy=fy), **THEME['side'])
+    hero = fade(_scan(hero), {'b': 0.42, 't': 0.12})
+    return bg_page([(hero, (0, 0.6)), (_glow(W, H, 4.1, 5.6, 2.8, a_=90), (0, 0))], gy0=6.5)
+
+
+def underlay(path, opacity=0.18, fx=0.5, fy=0.5):
+    """Admin underlay photo for any page: the style's page background with the photo blended in at opacity."""
+    ph = cover(path, W, H, fx=fx, fy=fy).convert('RGBA')
+    ph.putalpha(int(255 * max(0.0, min(1.0, opacity))))
+    return bg_page([(ph, (0, 0))])
 
 
 def graded_photo(path, w, h, fx=0.5, fy=0.5):
@@ -154,7 +197,10 @@ def steel(im, keep):
     vis = A != 0
     mx = np.maximum(np.maximum(R, G), B); mn = np.minimum(np.minimum(R, G), B)
     tone = vis & k & (mx - mn < 18) & (mx < 120)
-    v = (40 + (R + G + B).astype(np.float64) / 3 * 1.55).astype(np.int32)
+    if THEME['steel'] == 'dark':   # light pages: the drawn body stays a dark graphite
+        v = (34 + (R + G + B).astype(np.float64) / 3 * 0.6).astype(np.int32)
+    else:
+        v = (40 + (R + G + B).astype(np.float64) / 3 * 1.55).astype(np.int32)
     out = a.copy()
     out[tone, 0] = v[tone]; out[tone, 1] = v[tone] + 3; out[tone, 2] = v[tone] + 7
     out[vis & ~k] = 0
@@ -190,7 +236,7 @@ def drawing(im, labels, n=5, k=None):
 def side_glow(clean, padg=60):
     gl = Image.new('RGBA', (clean.width + 2 * padg, clean.height + 2 * padg), (242, 83, 10, 0))
     mm = Image.new('L', gl.size, 0); mm.paste(clean.getchannel('A'), (padg, padg))
-    mm = mm.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(22)).point(lambda v: int(v * 0.45))
+    mm = mm.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(22)).point(lambda v: int(v * 0.45 * THEME['glow']))
     gl.putalpha(mm); gl.alpha_composite(clean, (padg, padg))
     return gl
 
@@ -204,7 +250,7 @@ def line_art(path, rotate=0):
     vis = A != 0
     col = (np.maximum(np.maximum(R, G), B) - np.minimum(np.minimum(R, G), B)) > 60
     a[vis & col, :3] = (255, 138, 61)
-    a[vis & ~col, :3] = (196, 202, 210)
+    a[vis & ~col, :3] = THEME['line']
     im = Image.fromarray(a, 'RGBA')
     big = im.resize((im.width * 2, im.height * 2), Image.LANCZOS)
     big.putalpha(big.getchannel('A').filter(ImageFilter.MaxFilter(3)))
@@ -213,6 +259,7 @@ def line_art(path, rotate=0):
 
 # ---------------------------------------------------------------- cut-outs and cards
 def cutout_glow(im, a=70, pad=0.08):
+    a = int(a * THEME['cut_glow'])
     p = int(max(im.size) * pad); big = Image.new('RGBA', (im.width + 2 * p, im.height + 2 * p), (0, 0, 0, 0))
     sh = Image.new('RGBA', big.size, (242, 83, 10, 0))
     m = Image.new('L', big.size, 0); m.paste(im.getchannel('A'), (p, p))
@@ -228,7 +275,7 @@ def on_card(im, w, h, k=0.92):
     """Product cut-out (alpha) centred on the tile colour."""
     im = alpha_crop(im); tw, th = px(w), px(h)
     r = min(tw * k / im.width, th * k / im.height); im = im.resize((int(im.width * r), int(im.height * r)), Image.LANCZOS)
-    out = Image.new('RGBA', (tw, th), CARD + (255,)); out.alpha_composite(im, ((tw - im.width) // 2, (th - im.height) // 2))
+    out = Image.new('RGBA', (tw, th), THEME['card'] + (255,)); out.alpha_composite(im, ((tw - im.width) // 2, (th - im.height) // 2))
     return out.convert('RGB')
 
 

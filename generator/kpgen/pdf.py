@@ -1,6 +1,9 @@
 # PDF export through LibreOffice. Each run gets its own LibreOffice profile so parallel runs do not
 # block each other on the shared user profile.
-import os, shutil, signal, subprocess, tempfile
+import os, pathlib, shutil, signal, subprocess, tempfile
+
+WIN_PATHS = [os.path.join(os.environ.get(v, ''), 'LibreOffice', 'program', 'soffice.exe')
+             for v in ('ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432') if os.environ.get(v)]
 
 
 class PdfError(Exception):
@@ -10,6 +13,8 @@ class PdfError(Exception):
 def soffice_bin():
     for name in (os.environ.get('KPGEN_SOFFICE'), 'soffice', 'libreoffice'):
         if name and shutil.which(name): return shutil.which(name)
+    for path in WIN_PATHS:
+        if os.path.isfile(path): return path
     raise PdfError('Не знайдено LibreOffice (soffice) для створення PDF.')
 
 
@@ -19,14 +24,17 @@ def to_pdf(pptx, out_dir, timeout=None):
     try:
         pdf = os.path.join(out_dir, os.path.splitext(os.path.basename(pptx))[0] + '.pdf')
         if os.path.exists(pdf): os.remove(pdf)   # soffice may exit 0 without writing: never report a stale file
-        cmd = [soffice_bin(), f'-env:UserInstallation=file://{profile}', '--headless', '--norestore',
+        cmd = [soffice_bin(), '-env:UserInstallation=' + pathlib.Path(profile).as_uri(), '--headless', '--norestore',
                '--convert-to', 'pdf', '--outdir', out_dir, pptx]
         # own session: on timeout the whole LibreOffice tree (wrapper + soffice.bin) is killed
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                             encoding='utf-8', errors='replace', start_new_session=True)
         try:
             out, err = p.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
-            try: os.killpg(p.pid, signal.SIGKILL)
+            try:
+                if hasattr(os, 'killpg'): os.killpg(p.pid, signal.SIGKILL)
+                else: p.kill()
             except ProcessLookupError: pass
             p.communicate()
             raise PdfError(f'LibreOffice не встиг створити PDF за {timeout} с.')

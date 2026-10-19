@@ -15,6 +15,7 @@ from .profiles import (PROFILES, TEMPLATE_720, PHOTO_FOCUS, CARD_TWEAKS, TEMPLAT
                        DECAL_ANATOMY, DECAL_CONFIG, chart_for)
 from .pptx_util import (EMU, I, by_id, by_name, one, remove, put, set_lines, set_image, fit, geom, clone, dup_slide,
                         dim_box, set_size, prune_images)
+from .styles import STYLES, HERO_PAGES, template_path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.normpath(os.path.join(HERE, '..', 'templates', 'KP_2_v3.pptx'))
@@ -54,6 +55,10 @@ class Engine:
         self.kit = 'npl_crane' if self.npl else 'crane_kit'
         self.truck = spec['kit_type'] == 'truck_crane'   # truck converted to a timber carrier, crane on a pyramid
         self.cache = Cache(build_dir)
+        self.style = spec.get('style') or 'dark'
+        self.S = STYLES[self.style]
+        R.set_theme(self.S['theme'])
+        self.panel = self.S.get('cover') == 'panel'   # light design whose cover is an orange panel with a crane cut-out
 
     # ------------------------------------------------------------ helpers
     def sp(self, k, default='—'):
@@ -65,7 +70,13 @@ class Engine:
         return f"у комплекті з ротатором {self.cs['rotator_t']} т і захватом {self.cs['grapple_m2']} м²"
 
     def raster(self, kind, fn, *args, assets=()):
-        return self.cache.get(kind, fn, args, assets)
+        return self.cache.get(f"{self.S['theme']}-{kind}", fn, args, assets)
+
+    def photo_override(self, key):
+        o = ((self.spec.get('overrides') or {}).get('bg') or {}).get(key) or {}
+        p = o.get('path')
+        if p and R.asset_ok(p): return p, float(o.get('fx', 0.5)), float(o.get('fy', 0.45))
+        return None
 
     def hero(self, which, maker):
         """Photo for the cover / end page: spec.photos, else the profile default; None keeps the template's."""
@@ -80,7 +91,7 @@ class Engine:
 
     # ------------------------------------------------------------ build
     def build(self):
-        prs = Presentation(TEMPLATE)
+        prs = Presentation(template_path(self.style))
         self.prs = prs
         cover, manifest, anatomy, passport, config, price, maker, end = list(prs.slides)
         self.pages = dict(cover=cover, manifest=manifest, anatomy=anatomy, passport=passport, config=config,
@@ -97,11 +108,34 @@ class Engine:
         self.config_page(crane_blob)
         self.price_page()
         if self.npl: self.own_production(seat_blob)
+        self.crane_blob = crane_blob
         self.cover_page()
         self.end_page()
         self.chrome()
+        if self.options: self.pages['options'] = self.options
+        self.overrides()
         prune_images(prs)
         return prs
+
+    # ------------------------------------------------------------ admin overrides: page underlays and page texts
+    def overrides(self):
+        if self.npl: self.pages['own_production'] = self.pages.pop('maker')
+        ov = self.spec.get('overrides') or {}
+        for key, o in (ov.get('bg') or {}).items():
+            s = self.pages.get(key); path = (o or {}).get('path')
+            if s is None or not path or not R.asset_ok(path): continue
+            if key in HERO_PAGES and not (key == 'cover' and self.panel): continue   # handled as spec.photos by the page
+            bgs = by_name(s, 'bg')
+            if not bgs: continue
+            op = float(o.get('opacity', 0.18))
+            set_image(bgs[0], self.raster('underlay', R.underlay, path, op, assets=(path,)))
+        for key, texts in (ov.get('texts') or {}).items():
+            s = self.pages.get(key)
+            if s is None: continue
+            for sid, text in (texts or {}).items():
+                try: sh = by_id(s, int(sid))
+                except (KeyError, ValueError): continue
+                if sh.has_text_frame and text is not None: set_lines(sh, str(text).split('\n'))
 
     # ------------------------------------------------------------ crane pages (template slides 1-5)
     def crane_pages(self):
@@ -109,9 +143,12 @@ class Engine:
         native = P.get('native')
         # 01 cover tag
         tag = self.tdata()['cover_tag'] if self.npl or self.trl else f"{m} · {cs['reach_m']} M · {cs['torque_knm']} KNM"
-        put(by_id(pg['cover'], 16), None, tag)
+        if by_name(pg['cover'], 'TextBox 15'): put(by_id(pg['cover'], 16), None, tag)
         # 02 crane manifest
         s = pg['manifest']
+        if self.photo_override('manifest'):
+            path, fx, fy = self.photo_override('manifest')
+            set_image(one(s, 'bg'), self.raster('side_bg', R.side_bg, path, fx, fy, assets=(path,)))
         put(by_id(s, 13), c.get('lead') or P['lead'])
         put(by_id(s, 14), c.get('lead2') or P['lead2'])
         put(by_id(s, 16), [cs['lift_4m_kg'], None], None)
@@ -321,7 +358,7 @@ class Engine:
         for n, (t, d) in enumerate(D['tiles']):
             put(by_id(s, 21 + n * 5), t); put(by_id(s, 22 + n * 5), d)
         put(by_id(s, 10), D['label'])
-        path, fx, fy = D['photo']
+        path, fx, fy = self.photo_override('trailer') or D['photo']
         set_image(one(s, 'bg'), self.raster('side_bg', R.side_bg, path, fx, fy, assets=(path,)))
 
         s = t2
@@ -360,6 +397,11 @@ class Engine:
     def tile_image(self, row, crane_blob):
         """(template shape id or None, PIL image or None, encoded bytes or None) for the row's tile."""
         iid = (row.get('item_id') or '').lower(); kind = row.get('kind')
+        if row.get('photo_force') and row.get('photo') and R.asset_ok(row['photo']):   # photo set in the admin
+            im = Image.open(R.asset(row['photo']))
+            if im.mode in ('RGBA', 'LA', 'P') and im.convert('RGBA').getchannel('A').getextrema()[0] < 250:
+                return None, R.cutout_glow(R.alpha_crop(im)), None
+            return None, im.convert('RGB'), None
         if kind == 'crane' or (not kind and iid == (self.c.get('id') or '').lower()):
             return 14, Image.open(io.BytesIO(crane_blob)), crane_blob
         if self.T and kind == 'trailer':
@@ -634,14 +676,16 @@ class Engine:
             kpi = D['cover_kpi'] + [('03 / ВИЛІТ', cs['reach_m'], '  м'), ('04 / МОМЕНТ', cs['torque_knm'], '  кНм')]
             for (kid, vid), (k, v, u) in zip(((25, 26), (29, 30), (33, 34), (37, 38)), kpi):
                 put(by_id(s, kid), k); put(by_id(s, vid), [v, u])
-            self.outline(s, D['outline'], 7.35)
+            self.outline(s, D['outline'], 4.1 if self.panel else 7.35)
         else:
             put(by_id(s, 22), self.spec.get('cover_text') or self.crane_cover_text())
             for vid, v in ((26, cs['reach_m']), (30, cs['torque_knm']), (34, cs['lift_4m_kg']), (38, cs['turn_deg'])):
                 put(by_id(s, vid), [v, None])
-            if not self.P.get('native'): self.outline(s, self.P['model_no'], 7.35)
-        bg = self.hero('cover', R.cover_bg)
-        if bg: set_image(one(s, 'bg'), bg)
+            if not self.P.get('native'): self.outline(s, self.P['model_no'], 4.1 if self.panel else 7.35)
+        if self.panel: self.panel_cover(s)
+        else:
+            bg = self.hero('cover', R.cover_bg)
+            if bg: set_image(one(s, 'bg'), bg)
         cl = one(s, 'fld_client'); name = self.spec['client']['name'] or 'Назва замовника'
         lines = ['ПІДГОТОВЛЕНО ДЛЯ', name] + ([self.spec['client']['contact']] if self.spec['client']['contact'] else [])
         set_lines(cl, lines)
@@ -649,6 +693,26 @@ class Engine:
         if len(lines) > 2:
             r = cl.text_frame.paragraphs[2].runs[0]._r.get_or_add_rPr(); r.set('sz', '900'); r.set('b', '0')
             cl.height = I(0.62)
+
+    def panel_cover(self, s):
+        """Light design with the orange panel: crane (or trailer) cut-out over the panel, short spec list on the right."""
+        cs = self.cs
+        for i, v in enumerate((self.sp('pressure_bar'), self.sp('pump_lpm'), self.sp('slew_knm'), self.sp('weight_kg')), 1):
+            f = by_name(s, f'fld_cover_spec_{i}')
+            if f: put(f[0], v)
+        chip = [sh for sh in s.shapes if sh.has_text_frame and sh.text_frame.text.startswith('ВИРОБНИЦТВО')]
+        if chip and self.npl: put(chip[0], 'УКРАЇНА · ЕСТОНІЯ')
+        hero = by_name(s, 'hero_crane')
+        if not hero: return
+        hero = hero[0]
+        if self.npl or self.trl:
+            path = self.T['cutout'] if self.trl else NPL10['cutout']
+            data = self.raster('cutout', lambda p: R.png(R.alpha_crop(Image.open(R.asset(p)))), path, assets=(path,))
+        elif not self.P.get('native'):
+            data = R.png(R.alpha_crop(Image.open(io.BytesIO(self.crane_blob))))
+        else:
+            return
+        set_image(hero, data); fit(hero, Image.open(io.BytesIO(data)))
 
     def crane_cover_text(self):
         parts = []

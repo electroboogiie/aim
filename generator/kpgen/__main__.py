@@ -35,7 +35,11 @@ def main(argv=None):
     if not build_dir:
         tmp = build_dir = tempfile.mkdtemp(prefix='kpgen_build_')
     try:
-        from .build import Engine
+        from .styles import STYLES
+        if STYLES[spec.get('style') or 'dark']['engine'] == 'd6':
+            from .d6 import D6 as Engine
+        else:
+            from .build import Engine
         prs = Engine(spec, build_dir).build()
         name = file_name(spec)
         pptx = os.path.join(out, name + '.pptx')

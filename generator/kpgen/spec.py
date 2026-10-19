@@ -58,6 +58,9 @@ def load(path):
 
 def validate(spec):
     if not isinstance(spec, dict): raise SpecError('Специфікація КП має бути JSON-об’єктом.')
+    from .styles import STYLES
+    if (spec.get('style') or 'dark') not in STYLES:
+        raise SpecError(f"Невідомий стиль КП: {spec.get('style')!r}. Є: {', '.join(STYLES)}.")
     if spec.get('template', 'kp_v3') != 'kp_v3':
         raise SpecError(f"Невідомий шаблон КП: {spec.get('template')!r} (підтримується лише kp_v3).")
     missing = [k for k in ('number', 'date', 'client', 'kit_type', 'title', 'rows', 'total_text', 'maker', 'contacts')
@@ -80,7 +83,7 @@ def validate(spec):
     if len(rows) > MAX_ROWS: raise SpecError(f'Забагато позицій для сторінки «Вартість»: {len(rows)} (максимум {MAX_ROWS}).')
     rows = [dict(no=r.get('no', i), title=_s(r.get('title')), desc=_s(r.get('desc')), qty=r.get('qty', 1),
                  price_text=_s(r.get('price_text')), item_id=r.get('item_id'), kind=r.get('kind'),
-                 photo=_photo(r.get('photo'), f'позиції {i}'))
+                 photo=_photo(r.get('photo'), f'позиції {i}'), photo_force=bool(r.get('photo_force')))
             for i, r in enumerate(rows, 1)]
     terms = [dict(title=_s(t.get('title')), text=_s(t.get('text'))) for t in (spec.get('terms') or [])]
     if len(terms) > MAX_TERMS: raise SpecError(f'Забагато умов співпраці: {len(terms)} (максимум {MAX_TERMS}).')

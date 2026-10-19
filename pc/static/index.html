@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Конфігуратор КП</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">BMF</span> Конфігуратор КП <small>тестова модель для ПК</small></div>
+  <nav>
+    <button data-tab="conf" class="on">Конфігуратор</button>
+    <button data-tab="admin">Адмінка</button>
+    <button data-tab="hist">Історія</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ======================= CONFIGURATOR ======================= -->
+  <section id="tab-conf" class="tab on">
+    <div class="cols">
+      <div class="col">
+        <div class="card">
+          <h2>1. Комплект</h2>
+          <label>Тип комплекту <select id="kitType"></select></label>
+          <label>Готова комплектація з ваших КП <select id="preset"><option value="">— обрати —</option></select></label>
+          <div id="slots"></div>
+          <div id="choices"></div>
+        </div>
+        <div class="card">
+          <h2>2. Додаткові опції</h2>
+          <p class="hint">Позначені опції з ціною додаються рядком у вартість. Без ціни — лише картка «ціна за запитом».</p>
+          <label class="chk"><input type="checkbox" id="offerAcc" checked> Показати в КП сторінку «Додаткові опції» з сумісними аксесуарами</label>
+          <div id="accs" class="accs"></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h2>3. Ціни в цій КП</h2>
+          <p class="hint">Ціна з адмінки підставляється сама. Впишіть фінальну ціну, якщо треба інша саме в цій КП.</p>
+          <table class="rows"><thead><tr><th>Позиція</th><th>Ціна з адмінки</th><th>Фінальна ціна, ₴</th></tr></thead><tbody id="rows"></tbody></table>
+          <div id="kitPriceBox"></div>
+          <label class="inline">Знижка, % <input type="number" id="discount" min="0" step="0.5" value="0"></label>
+          <div class="total">Разом: <b id="total">—</b></div>
+          <ul id="warnings" class="warn"></ul>
+        </div>
+        <div class="card">
+          <h2>4. КП</h2>
+          <div class="grid2">
+            <label>Номер КП <input id="kpNumber"></label>
+            <label>Дата <input type="date" id="kpDate"></label>
+            <label>Замовник <input id="client" placeholder="Назва замовника"></label>
+            <label>Контакт замовника <input id="clientContact" placeholder="необов’язково"></label>
+          </div>
+          <label>Стиль КП <select id="style"></select></label>
+          <button id="gen" class="primary">Створити КП (PPTX + PDF)</button>
+          <div id="genResult"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= ADMIN ======================= -->
+  <section id="tab-admin" class="tab">
+    <nav class="sub">
+      <button data-sub="a-style" class="on">Стиль</button>
+      <button data-sub="a-bg">Підкладки сторінок</button>
+      <button data-sub="a-texts">Тексти сторінок</button>
+      <button data-sub="a-photos">Фото позицій</button>
+      <button data-sub="a-prices">Ціни</button>
+      <span class="saved" id="savedMark"></span>
+    </nav>
+
+    <div id="a-style" class="subtab on card">
+      <h2>Стиль КП за замовчуванням</h2>
+      <p class="hint">Цей стиль обирається в конфігураторі автоматично; менеджер може змінити його для окремої КП.</p>
+      <div id="styleCards" class="stylecards"></div>
+    </div>
+
+    <div id="a-bg" class="subtab card">
+      <h2>Підкладки сторінок</h2>
+      <label class="inline">Стиль <select class="admStyle"></select></label>
+      <p class="hint">Обкладинка, сторінка крана, причепа та контакти: фото обробляється під стиль (кадрування за точкою фокусу).
+        Інші сторінки: фото накладається на фон стилю з вибраною прозорістю. «Скинути» повертає фон шаблону.</p>
+      <div id="bgList" class="bglist"></div>
+    </div>
+
+    <div id="a-texts" class="subtab card">
+      <h2>Тексти сторінок</h2>
+      <label class="inline">Стиль <select class="admStyle"></select></label>
+      <p class="hint">Постійні тексти шаблону. Новий рядок = новий абзац. Порожнє поле — текст шаблону.</p>
+      <div id="textsBox"></div>
+      <h3>Умови співпраці і примітка до ціни (усі стилі)</h3>
+      <div id="termsBox"></div>
+      <h3>Описи кранів і НПЛ-10 (усі стилі)</h3>
+      <div id="leadsBox"></div>
+    </div>
+
+    <div id="a-photos" class="subtab card">
+      <h2>Фото позицій і опцій</h2>
+      <p class="hint">Фото плитки позиції на сторінці «Конфігурація» та картки опції. PNG з прозорим фоном виглядає найкраще.</p>
+      <div id="photoList" class="photolist"></div>
+    </div>
+
+    <div id="a-prices" class="subtab card">
+      <h2>Ціни</h2>
+      <p class="hint">Розрахункова ціна = базова ціна × (1 + націнка %), округлення до <span id="roundStep"></span> ₴.
+        Фінальна ціна, якщо вписана, замінює розрахункову. Додана вартість = ціна в КП − базова ціна.
+        Типово базова ціна = ціна з останньої КП, націнка 0 %.</p>
+      <div class="inline">Націнка для всіх у групі:
+        <select id="bulkGroup"></select> <input type="number" id="bulkPct" step="0.5" style="width:80px"> %
+        <button id="bulkApply">Застосувати</button></div>
+      <div id="priceTables"></div>
+    </div>
+  </section>
+
+  <!-- ======================= HISTORY ======================= -->
+  <section id="tab-hist" class="tab card">
+    <h2>Створені КП</h2>
+    <table class="hist"><thead><tr><th>Коли</th><th>№</th><th>Комплект</th><th>Замовник</th><th>Стиль</th><th>Разом</th><th>Файли</th></tr></thead>
+      <tbody id="histRows"></tbody></table>
+  </section>
+</main>
+<div id="toast"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
