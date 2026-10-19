@@ -100,7 +100,7 @@ class EngineTest(unittest.TestCase):
         code, _, err = run(spec); self.assertEqual(code, 1); self.assertIn('cover_focus', err)
 
     def test_errors(self):
-        spec = self.sample('bmf720_komplekt'); spec['crane']['profile'] = 'bmf905'
+        spec = self.sample('bmf720_komplekt'); spec['crane']['profile'] = 'bmf850'
         code, _, err = run(spec); self.assertEqual(code, 2); self.assertIn('профілю', err)
         spec = self.sample('bmf720_komplekt'); spec['crane'] = None
         code, _, err = run(spec); self.assertEqual(code, 2)

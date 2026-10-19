@@ -62,21 +62,21 @@ test("every photo path exists in generator/assets", () => {
   for (const p of paths) assert.ok(existsSync(new URL(p, assets)), p);
 });
 
-test("business rules: cranes come with rotator and grapple, KP profiles for 650/720/750 and BMF trailers", () => {
+test("business rules: cranes come with rotator and grapple, KP profiles for 650/720/750/905 and BMF trailers", () => {
   const cranes = c.items.filter((x) => x.kind === "crane");
   assert.ok(cranes.length >= 5);
   for (const cr of cranes) {
     assert.ok(cr.includes?.some((x) => x.startsWith("ротатор")), cr.id);
     assert.ok(cr.includes?.some((x) => x.startsWith("захват")), cr.id);
     assert.match(cr.short, /ротатором.*захватом/, cr.id);
-    const want = ["bmf650", "bmf720", "bmf750"].includes(cr.id) ? cr.id : null;
+    const want = ["bmf650", "bmf720", "bmf750", "bmf905"].includes(cr.id) ? cr.id : null;
     assert.equal(cr.kp_profile ?? null, want, cr.id);
   }
   for (const it of c.items) {
     if (it.kind === "trailer" && it.family === "bmf_trailer") assert.ok(SUPPORTED_TRAILER_PROFILES.includes(it.kp_profile ?? ""), it.id);
     else if (it.kind !== "crane") assert.equal(it.kp_profile ?? null, null, it.id);
   }
-  assert.deepEqual([...SUPPORTED_PROFILES], ["bmf650", "bmf720", "bmf750"]);
+  assert.deepEqual([...SUPPORTED_PROFILES], ["bmf650", "bmf720", "bmf750", "bmf905"]);
   // the approved KP_2_v3 values for the BMF 720 and the latest user KP values for 650 / 750
   assert.equal(itemById(c, "bmf720")!.specs!.weight_kg, "710");
   assert.equal(itemById(c, "bmf750")!.specs!.weight_kg, "1090");

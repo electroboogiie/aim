@@ -7,7 +7,7 @@ import type {
 import { fillTemplate, isIsoDate, joinUk } from "./format.js";
 
 /** Crane visual profiles the KP generator supports (generator/kpgen/profiles.py). */
-export const SUPPORTED_PROFILES: readonly string[] = ["bmf650", "bmf720", "bmf750"];
+export const SUPPORTED_PROFILES: readonly string[] = ["bmf650", "bmf720", "bmf750", "bmf905"];
 /** BMF trailer profiles of the generator (drawings and photos for the trailer pages). */
 export const SUPPORTED_TRAILER_PROFILES: readonly string[] = ["bmf8t2", "bmf10t2", "bmf14t2", "bmf17t2"];
 

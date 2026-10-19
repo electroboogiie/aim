@@ -118,10 +118,10 @@ test("POST /api/kp validation: client, selection, blocked kits, company, terms, 
   assert.equal(badSel.status, 400);
   assert.match(badSel.json.errors.join(" "), /обов’язкову позицію/);
 
-  const blocked = await call(t, "POST", "/api/kp", { quote_input: { kit_type: "crane_kit", selection: { slots: { crane: "bmf905" }, choices: {}, accessories: [] } },
+  const blocked = await call(t, "POST", "/api/kp", { quote_input: { kit_type: "npl_crane", selection: { slots: { trailer: "npl10", crane: "bmf850" }, choices: {}, accessories: [] } },
     client: { name: "A" } });
   assert.equal(blocked.status, 422);
-  assert.match(blocked.json.errors.join(" "), /BMF 905/);
+  assert.match(blocked.json.errors.join(" "), /BMF 850/);
   const part = await call(t, "POST", "/api/kp", { quote_input: { kit_type: "part", selection: { slots: { item: "valf_s58" }, choices: {}, accessories: [] } },
     client: { name: "A" } });
   assert.equal(part.status, 422);

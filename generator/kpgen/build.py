@@ -11,7 +11,7 @@ from pptx.util import Pt
 
 from . import raster as R
 from .cache import Cache
-from .profiles import (PROFILES, TEMPLATE_720, PHOTO_FOCUS, CARD_TWEAKS, TEMPLATE_TILES, NPL10, OWN_PRODUCTION, TRAILERS,
+from .profiles import (PROFILES, TEMPLATE_720, PHOTO_FOCUS, CARD_TWEAKS, TEMPLATE_TILES, NPL10, OWN_PRODUCTION, TRAILERS, TRUCK,
                        DECAL_ANATOMY, DECAL_CONFIG, chart_for)
 from .pptx_util import (EMU, I, by_id, by_name, one, remove, put, set_lines, set_image, fit, geom, clone, dup_slide,
                         dim_box, set_size, prune_images)
@@ -52,6 +52,7 @@ class Engine:
         self.trl = spec.get('trailer') if not self.npl else None
         self.T = TRAILERS[self.trl['profile']] if self.trl else None
         self.kit = 'npl_crane' if self.npl else 'crane_kit'
+        self.truck = spec['kit_type'] == 'truck_crane'   # truck converted to a timber carrier, crane on a pyramid
         self.cache = Cache(build_dir)
 
     # ------------------------------------------------------------ helpers
@@ -72,7 +73,7 @@ class Engine:
         if path:
             fx, fy = self.spec['photos'].get(which + '_focus') or PHOTO_FOCUS.get(path) or ((0.5, 0.42) if which == 'cover' else (0.5, 0.5))
         else:
-            d = self.T[which] if self.T else self.P[which][self.kit]
+            d = self.T[which] if self.T else TRUCK[which] if self.truck and TRUCK.get(which) else self.P[which][self.kit]
             if d is None: return None
             path, fx, fy = d
         return self.raster(which + '_bg', maker, path, fx, fy, assets=(path,))
@@ -139,8 +140,8 @@ class Engine:
         put(by_id(s, 46), [None, None, f" {cs['rotator_t']} т", None, None, f" {cs['grapple_m2']} м² ", None, None])
         if not native:
             pic = by_id(s, 14)
-            set_image(pic, self.raster('decal', lambda b: R.png(R.redecal(Image.open(io.BytesIO(b)), DECAL_CONFIG, P['model_no'])),
-                                       pic.image.blob))
+            set_image(pic, self.raster('decal', lambda b, box, no: R.png(R.redecal(Image.open(io.BytesIO(b)), box, no)),
+                                       pic.image.blob, DECAL_CONFIG, P['model_no']))
 
     def flow(self):
         f = self.sp('valve_flow_l')
@@ -153,7 +154,7 @@ class Engine:
         dims = by_name(s, 'dim_7205')[0]; proto = copy.deepcopy(dims._element)
         for sh in [sh for sh in s.shapes if sh.name.startswith('dim_')]: remove(sh)
         s.shapes._spTree.append(proto); proto_sh = list(s.shapes)[-1]
-        for sid, box, labels, erase in ((85, D['side'], fill(D['side_labels']), ()), (88, D['fold'], fill(D['fold_labels']), D.get('fold_erase', ()))):
+        for sid, box, labels, erase in ((85, D['side'], fill(D['side_labels']), D.get('side_erase', ())), (88, D['fold'], fill(D['fold_labels']), D.get('fold_erase', ()))):
             pic = by_id(s, sid)
             im = R.chart_crop(chart, box, erase)
             data = self.raster('drawing', lambda ch, b, e, l, n_: R.png(R.drawing(R.chart_crop(ch, b, e), l, n_)),
@@ -171,14 +172,31 @@ class Engine:
             data = self.raster('drawing', lambda ch, b, n_: R.png(R.drawing(R.chart_crop(ch, b), [], n_)), chart, D['plate'], n, assets=(chart,))
             set_image(pic, data); fit(pic, Image.open(io.BytesIO(data)), (I(0.5), I(9.05), I(2.75), I(1.35)))
         crane = by_id(s, 14)
-        set_image(crane, self.raster('decal', lambda b: R.png(R.redecal(Image.open(io.BytesIO(b)), DECAL_ANATOMY, P['model_no'])),
-                                     crane.image.blob))
+        set_image(crane, self.raster('decal', lambda b, box, no: R.png(R.redecal(Image.open(io.BytesIO(b)), box, no)),
+                                     crane.image.blob, DECAL_ANATOMY, P['model_no']))
+
+    def reach_axis(self, s, gx, gw, span):
+        """Cranes reaching past 7,5 m: the template's 0–7 m grid (tick, grid line, label per metre) re-spaced to span."""
+        groups = [[by_id(s, i), by_id(s, i + 1), by_id(s, i + 2)] for i in range(15, 39, 3)]
+        while len(groups) <= int(span):
+            groups.append([clone(s, sh) for sh in groups[-1]])
+        for m, (tick, line, lab) in enumerate(groups):
+            x = I(gx + gw * m / span)
+            for sh in (tick, line): sh.left = x
+            lab.left = x - lab.width // 2
+            put(lab, f'{m} м')
+        for sh in (by_id(s, 14), by_id(s, 39), by_id(s, 40), by_id(s, 41), by_id(s, 42), by_id(s, 43), by_id(s, 44)):
+            s.shapes._spTree.remove(sh._element); s.shapes._spTree.append(sh._element)   # bars stay above the new grid lines
 
     def passport(self, s):
         P, cs = self.P, self.cs; native = P.get('native')
         b4, c4, l4 = by_id(s, 39), by_id(s, 40), by_id(s, 41)
         bf, cf, lf = by_id(s, 42), by_id(s, 43), by_id(s, 44)
         same = all(cs[k] == TEMPLATE_720[k] for k in TEMPLATE_720)
+        gx, gw = 0.75, 6.9
+        reach = float(cs['reach_m'].replace(',', '.'))
+        span = self.span = 7.5 if reach <= 7.5 else reach + 0.45   # metres across the chart grid
+        if span != 7.5: self.reach_axis(s, gx, gw, span)
         if not same:
             # load-by-reach bars: 4 m and full reach, heights proportional to the user's 1100 kg bar
             k = b4.height / 1100
@@ -187,10 +205,9 @@ class Engine:
                 dy = bottom - int(k * kg) - bar.top
                 bar.top += dy; bar.height = int(k * kg); cap.top += dy; lab.top += dy
                 put(lab, [str(kg), None, None])
-            gx, gw = 0.75, 6.9
-            xr = I(gx + gw * float(cs['reach_m'].replace(',', '.')) / 7.5)
-            dx = xr - (bf.left + bf.width // 2)
-            for sh in (bf, cf, lf): sh.left += dx
+            for (bar, cap, lab), m in (((b4, c4, l4), 4), ((bf, cf, lf), reach)):
+                dx = I(gx + gw * m / span) - (bar.left + bar.width // 2)
+                for sh in (bar, cap, lab): sh.left += dx
         put(by_id(s, 47), f"ЗОНА РОБОТИ 0 — {cs['reach_m']} М")
         if not native:
             D = P['draw']; chart = chart_for(self.c['profile'], self.c); n = D['open']
@@ -206,9 +223,8 @@ class Engine:
             padg = 60
             data, (bb, gsize) = self.raster('passport', side_view, chart, D['side'], tuple(D.get('pass_erase', ())), n, padg, assets=(chart,))
             PIV, TIP, BASE_Y = D['piv'], D['tip'], D['base_y']
-            gx, gw = 0.75, 6.9
             axis_y = 2.95 + 1.5
-            in_per_px = (gw * D['tip_m'] / 7.5) / (TIP - PIV)
+            in_per_px = (gw * D['tip_m'] / span) / (TIP - PIV)
             set_image(dr, data)
             dr.width = I(gsize[0] * in_per_px); dr.height = I(gsize[1] * in_per_px)
             dr.left = I(gx - (PIV - bb[0] + padg) * in_per_px)
@@ -431,7 +447,8 @@ class Engine:
             geom(label, x + 0.16, y + 0.14, 1.6, 0.2); put(label, f'МОДУЛЬ {i + 1:02d}')
             ph = th - 1.35
             geom(line, x + 0.16, y + th - 0.88, tw - 0.32, 0)
-            geom(title, x + 0.16, y + th - 0.81, tw - 0.32, 0.22); put(title, row['title']); set_size(title, 950)
+            geom(title, x + 0.16, y + th - 0.81, tw - 0.32, 0.22); put(title, row['title'])
+            set_size(title, 950 if len(row['title']) <= 30 else int(950 * 30 / len(row['title'])))   # one line in a third-width tile
             geom(desc, x + 0.16, y + th - 0.57, tw - 0.32, 0.3); put(desc, row['desc']); set_size(desc, 700)
             geom(price, x + 0.16, y + th - 0.30, tw - 0.32, 0.24); put(price, row['price_text']); set_size(price, 1100)
             if im is None: remove(pic)
@@ -543,7 +560,8 @@ class Engine:
         put(one(s, 'fld_total'), self.spec['total_text'])
         if len(self.spec['total_text']) > 14: set_size(one(s, 'fld_total'), int(4200 * 14 / len(self.spec['total_text'])))
         # chips under the price box
-        tags = self.spec.get('price_tags') or (['З УРАХУВАННЯМ ПДВ', 'ПАКЕТ ДЛЯ РЕЄСТРАЦІЇ'] if self.npl or self.trl else None)
+        tags = self.spec.get('price_tags') or (['З УРАХУВАННЯМ ПДВ', 'ПАКЕТ ДЛЯ РЕЄСТРАЦІЇ'] if self.npl or self.trl
+                                               else ['З УРАХУВАННЯМ ПДВ', 'МОНТАЖ ВХОДИТЬ'] if self.truck else None)
         if tags:
             for sid, t in zip((41, 43), tags): put(by_id(s, sid), t.upper())
         put(one(s, 'fld_price_date'), f"ЦІНИ СТАНОМ НА {self.spec.get('price_date') or self.spec['date']}")
@@ -571,7 +589,15 @@ class Engine:
                 conns.append(clone(s, by_id(s, 66)).shape_id)
         head = by_id(s, 50).top
         pitch = min(0.52, (I(11.15) - head) / EMU / max(t, 5))
-        if t > 5 or pitch < 0.52:
+        lines = [max(2, -(-len(term['text']) // 85)) for term in terms]   # ~85 characters per line of the term text
+        if t <= 5 and max(lines) > 2:   # long terms (the truck KP's payment stages): rows as tall as their text
+            y = head / EMU
+            for k, n in enumerate(lines):
+                for sid, off in zip(ids[k], (0.10, 0.10, 0.09)): by_id(s, sid).top = I(y + off)
+                if k: by_id(s, conns[k - 1]).top = I(y)
+                by_id(s, ids[k][2]).height = I(n * 0.155 + 0.05)
+                y += max(0.52, n * 0.155 + 0.22)
+        elif t > 5 or pitch < 0.52:
             for k in range(t):
                 y = head / EMU + k * pitch
                 for sid, off in zip(ids[k], (0.10, 0.10, 0.09)): by_id(s, sid).top = I(y + off)
@@ -631,8 +657,13 @@ class Engine:
             if iid.startswith('base_outriggers'): parts.append('платформою, аутригерами')
             elif iid.startswith('tank'): parts.append('баком')
             elif iid.startswith('seat'): parts.append('місцем оператора')
+            elif iid.startswith('truck_pyramid'): parts.append('пірамідою з аутригерами')
+            elif iid == 'pump': parts.append('насосом')
         parts = list(dict.fromkeys(parts))
         text = f'Гідравлічний кран-маніпулятор {self.m()} з ротатором і захватом'
+        if self.truck:
+            text = f"{self.spec['rows'][0]['title']} з краном-маніпулятором {self.m()}, ротатором і захватом"
+            return text + (', ' + ', '.join(parts[:-1]) + ' і ' + parts[-1] if len(parts) > 1 else f', {parts[0]}' if parts else '') + '.'
         if parts:
             text += ' — повний комплект з ' + (', '.join(parts[:-1]) + ' і ' + parts[-1] if len(parts) > 1 else parts[0])
         return text + '.'

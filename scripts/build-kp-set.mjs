@@ -1,5 +1,5 @@
 // Builds one KP per distinct preset of catalog/catalog.json through core + generator.
-// Usage: node scripts/build-kp-set.mjs OUT_DIR [--dry] [--only id,id] [--date YYYY-MM-DD]
+// Usage: node scripts/build-kp-set.mjs OUT_DIR [--dry: specs only] [--only id,id] [--date YYYY-MM-DD]
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, resolve, dirname } from "node:path";
@@ -37,9 +37,9 @@ for (const p of catalog.presets) {
   try {
     spec = core.buildKpSpec(catalog, settings, q, { number: String(++n).padStart(4, "0"), client: { name: "Назва замовника" }, offer_accessories: true });
   } catch (e) { row.errors = e.errors ?? [String(e)]; continue; }
-  if (dry) continue;
   const dir = join(out, p.id); mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "spec.json"), JSON.stringify(spec, null, 1));
+  if (dry) continue;
   const r = spawnSync(process.env.KP_PYTHON ?? "python3", ["-m", "kpgen", "--spec", join(dir, "spec.json"), "--out", dir],
     { cwd: join(root, "generator"), encoding: "utf8", env: { ...process.env, KPGEN_BUILD: process.env.KPGEN_BUILD ?? join(out, ".build") } });
   const last = r.stdout.trim().split("\n").pop();

@@ -94,10 +94,10 @@ test("terms: ids or literal terms, unknown id and more than 7 are errors", () =>
 });
 
 test("blockers: cranes without KP pages, kits without a crane, more than 8 rows", () => {
-  const q905 = quote(c, s, noRate, { kit_type: "crane_kit", date: "2026-10-18",
-    selection: { slots: { crane: "bmf905" }, choices: {}, accessories: [] } });
-  assert.deepEqual(kpBlockers(c, q905), ["Для BMF 905 ще немає сторінок КП (є для BMF 650, BMF 720 і BMF 750)."]);
-  assert.throws(() => buildKpSpec(c, s, q905, meta), KpSpecError);
+  const q850 = quote(c, s, noRate, { kit_type: "npl_crane", date: "2026-10-18",
+    selection: { slots: { trailer: "npl10", crane: "bmf850" }, choices: {}, accessories: [] } });
+  assert.deepEqual(kpBlockers(c, q850), ["Для BMF 850 ще немає сторінок КП (є для BMF 650, BMF 720, BMF 750 і BMF 905)."]);
+  assert.throws(() => buildKpSpec(c, s, q850, meta), KpSpecError);
 
   const part = quote(c, s, noRate, { kit_type: "part", date: "2026-10-18", selection: { slots: { item: "valf_s58" }, choices: {}, accessories: [] } });
   assert.deepEqual(kpBlockers(c, part), ["Шаблон KP_2_v3 будує КП лише для комплектів з краном-маніпулятором BMF."]);

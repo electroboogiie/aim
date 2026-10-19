@@ -273,13 +273,12 @@
    "price": {
     "mode": "on_request"
    },
-   "kp_profile": null,
+   "kp_profile": "bmf905",
    "source": "drive_kp/КП BMF905  (16.03.2026).pptx: «Гідравлічний кран-маніпулятор BMF 905» € 21 500, «Ціна вказана із урахуванням ПДВ», станом на 16.03.2026; характеристики з тієї ж КП. valve_flow_l і legs — bmf.ee (www.bmf.ee/products/cranes/bmf905, перевірено 18.10.2026). Ціна в EUR з ПДВ — це продажна ціна, а не чиста закупівельна, тому не режим «eur».",
    "needs_confirmation": [
     "price: € 21 500 з ПДВ (16.03.2026) — потрібна ціна в гривнях або курс НБУ на 16.03.2026",
     "specs.rotator_t: 5,5 т (КП) / 4 т (bmf.ee) / 5 т (каталог BMF 2025)",
-    "specs.weight_kg: 1130 (КП, bmf.rv.ua) чи 1160 (bmf.ee)",
-    "kp_profile: для BMF 905 у генераторі ще немає візуального профілю"
+    "specs.weight_kg: 1130 (КП, bmf.rv.ua) чи 1160 (bmf.ee)"
    ]
   },
   {
@@ -852,6 +851,7 @@
    "price": {
     "mode": "on_request"
    },
+   "photo": "prod/truck_pyramid.png",
    "kp_profile": null,
    "source": "drive_kp/КП КАМАЗ + 750 (26.02.2026).pptx, слайд 3 «Піраміда з аутригерами +». Окремої ціни немає.",
    "needs_confirmation": [
@@ -863,7 +863,7 @@
    "id": "kamaz_platform",
    "kind": "service",
    "family": "truck_conversion",
-   "title": "Дообладнання автомобіля КАМАЗ у лісовоз",
+   "title": "Дообладнання автомобіля КРАЗ у лісовоз",
    "short": "бортова платформа з 4 стійками, рама 6 мм / 5 м, щит, монтаж",
    "includes": [
     "бортова платформа із стійками (4 шт)",
@@ -896,7 +896,7 @@
     "price.eur_share, price.metal_share: оцінка (0,3 / 0,5)",
     "price.eur_rate_ref, price.metal_index_ref"
    ],
-   "model": "КАМАЗ"
+   "model": "КРАЗ"
   },
   {
    "id": "valf_s58",
@@ -1210,7 +1210,7 @@
   },
   {
    "id": "truck_crane",
-   "title": "Дообладнання вантажівки КАМАЗ під лісовоз",
+   "title": "Дообладнання вантажівки КРАЗ під лісовоз",
    "price_display": "bundle",
    "slots": [
     {
@@ -1936,7 +1936,7 @@
   },
   {
    "id": "kamaz_platform_2026-04-02",
-   "title": "Дообладнання КАМАЗ у лісовоз (КП 23.10.2025, ціна 02.04.2026)",
+   "title": "Дообладнання КРАЗ у лісовоз (КП 23.10.2025, ціна 02.04.2026)",
    "kit_type": "truck_crane",
    "selection": {
     "slots": {
@@ -1958,7 +1958,7 @@
   },
   {
    "id": "kamaz_bmf750_2026-02-26",
-   "title": "КАМАЗ + BMF 750 з пірамідою, баком і насосом (КП 26.02.2026, ціна без ПДВ)",
+   "title": "КРАЗ + BMF 750 з пірамідою, баком і насосом (КП 26.02.2026, ціна без ПДВ)",
    "kit_type": "truck_crane",
    "selection": {
     "slots": {

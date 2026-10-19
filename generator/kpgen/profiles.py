@@ -27,6 +27,14 @@ DRAW750 = dict(
                  (1581, 641, '{lift_4m_kg} кг'), (1575, 749, '4 м'), (2666, 641, '{lift_full_kg} кг'), (2664, 749, '7,5 м')],
     fold_labels=[(478, 1147, '2520'), (242, 1499, '1000')], piv=294, tip=2642, base_y=872, tip_m=7.5)
 
+# BMF 905: bmf.ee chart BMF905_crane_chart.jpg (1600 px) upscaled 2.0675x with Lanczos to 3308 px (assets/bmf/905_chart_up.jpg).
+# side_erase / pass_erase: the top of the folded view inside the side-view crop.
+DRAW905 = dict(
+    open=9, side=(20, 40, 3308, 940), side_erase=[(510, 700, 810, 900)], pass_erase=[(510, 700, 810, 900), (0, 0, 3288, 130), (0, 130, 190, 900)],
+    fold=(380, 740, 880, 2290), plate=(950, 1590, 2110, 2135),
+    side_labels=[(1643, 42, '9050'), (155, 105, '160'), (772, 103, '3200'), (62, 529, '2240'), (152, 624, '1640'), (1555, 620, '{lift_4m_kg} кг'), (1549, 755, '4 м'), (3202, 626, '{lift_full_kg} кг'), (3194, 755, '9,05 м')],
+    fold_labels=[(467, 1140, '2520'), (249, 1496, '1000')], piv=269, tip=3176, base_y=875, tip_m=9.05)
+
 # Crane cut-outs on the anatomy (slide 3) and configuration (slide 5) pages show "720" on the boom;
 # other models get the number repainted at these boxes (px of the template images).
 DECAL_ANATOMY = (870, 850, 978, 928)
@@ -58,6 +66,16 @@ PROFILES = {
         # crane_kit photos: no BMF 750 kit KP was built on KP_2_v3 yet; bmf.ee photos of the 750
         cover={'crane_kit': ('bmf/750_forest_load.jpg', 0.45, 0.5), 'npl_crane': ('npl/npl10_bmf750_studio.jpg', 0.5, 0.42)},
         end={'crane_kit': ('bmf/750_forest.webp', 0.5, 0.35), 'npl_crane': ('bmf/750_forest_load.jpg', 0.45, 0.5)},
+    ),
+    'bmf905': dict(
+        model_no='905', native=False, draw=DRAW905,
+        charts={'default': 'bmf/905_chart_up.jpg'},
+        # wording from the user's КП BMF905 (16.03.2026)
+        lead='Лісовий кран із максимальним радіусом дії 9,05 м, ширококутним шарніром і подвійним телескопом.',
+        lead2='Один із найбільш далекобійних кранів у лінійці BMF. Сумісний з причепами BMF 11T1, 12T2, 13T1, 14T2, 16T1 і 17T2.',
+        # bmf.ee gallery photos of the BMF 905 HP on a BMF 14T2 Pro (no BMF 905 photos in the user's KPs)
+        cover={'crane_kit': ('bmf/905_forest_load.jpg', 0.5, 0.5), 'npl_crane': ('bmf/905_forest_load.jpg', 0.5, 0.5)},
+        end={'crane_kit': ('bmf/905_field.jpg', 0.5, 0.45), 'npl_crane': ('bmf/905_field.jpg', 0.5, 0.45)},
     ),
 }
 
@@ -144,3 +162,7 @@ TRAILERS = {
                     cutout='bmf_trailers/bmf17t2_cutout.png', work=('bmf_trailers/bmf17t2_work.jpg', 0.5, 0.5),
                     cover=('bmf_trailers/bmf17t2_work.jpg', 0.5, 0.45), end=('bmf_trailers/bmf17t2_end.jpg', 0.5, 0.5)),
 }
+
+# Truck converted to a timber carrier (kit truck_crane): end-page photo from the user's КП КАМАЗ + 750 (26.02.2026);
+# the cover keeps the crane's photo (the truck photo there is a small cut-out).
+TRUCK = dict(cover=None, end=('prod/truck_conversion.png', 0.5, 0.55))
