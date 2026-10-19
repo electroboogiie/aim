@@ -8,120 +8,164 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand"><span class="logo">BMF</span> Конфігуратор КП <small>тестова модель для ПК</small></div>
-  <nav>
+  <div class="brand"><span class="logo">BMF</span><div><b>Конфігуратор КП</b><small>тестова модель для ПК</small></div></div>
+  <nav class="main-nav">
     <button data-tab="conf" class="on">Конфігуратор</button>
+    <button data-tab="hist">Історія КП</button>
     <button data-tab="admin">Адмінка</button>
-    <button data-tab="hist">Історія</button>
   </nav>
+  <span class="saved" id="savedMark"></span>
 </header>
 
 <main>
   <!-- ======================= CONFIGURATOR ======================= -->
   <section id="tab-conf" class="tab on">
-    <div class="cols">
+    <div id="editBanner" class="banner" hidden></div>
+    <div class="kit-tabs" id="kitTabs"></div>
+
+    <div class="card featured-card">
+      <div class="card-head"><h2>Основні КП</h2><span class="hint">готові комплекти з ваших КП з кранами BMF 650, 720 і 750</span></div>
+      <div id="featured" class="featured"></div>
+      <label class="inline other-presets">Інші КП з архіву <select id="preset"><option value="">— обрати —</option></select></label>
+    </div>
+
+    <div class="conf-grid">
       <div class="col">
         <div class="card">
-          <h2>1. Комплект</h2>
-          <label>Тип комплекту <select id="kitType"></select></label>
-          <label>Готова комплектація з ваших КП <select id="preset"><option value="">— обрати —</option></select></label>
-          <div id="slots"></div>
-          <div id="choices"></div>
+          <div class="card-head"><h2><span class="step">1</span>Комплект</h2></div>
+          <div id="craneBox"></div>
+          <div id="slots" class="slots"></div>
+          <div id="choices" class="choices"></div>
         </div>
         <div class="card">
-          <h2>2. Додаткові опції</h2>
-          <p class="hint">Позначені опції з ціною додаються рядком у вартість. Без ціни — лише картка «ціна за запитом».</p>
-          <label class="chk"><input type="checkbox" id="offerAcc" checked> Показати в КП сторінку «Додаткові опції» з сумісними аксесуарами</label>
+          <div class="card-head"><h2><span class="step">2</span>Додаткові опції</h2>
+            <label class="chk"><input type="checkbox" id="offerAcc" checked> показати в КП сторінку опцій</label></div>
+          <p class="hint">Позначені опції з ціною додаються рядком у вартість. Без ціни — картка «ціна за запитом».</p>
           <div id="accs" class="accs"></div>
         </div>
       </div>
-      <div class="col">
-        <div class="card">
-          <h2>3. Ціни в цій КП</h2>
-          <p class="hint">Ціна з адмінки підставляється сама. Впишіть фінальну ціну, якщо треба інша саме в цій КП.</p>
-          <table class="rows"><thead><tr><th>Позиція</th><th>Ціна з адмінки</th><th>Фінальна ціна, ₴</th></tr></thead><tbody id="rows"></tbody></table>
+      <div class="col side">
+        <div class="card sticky">
+          <div class="card-head"><h2><span class="step">3</span>Вартість</h2></div>
+          <table class="rows"><thead><tr><th>Позиція</th><th class="num">З адмінки</th><th class="num">Фінальна, ₴</th></tr></thead><tbody id="rows"></tbody></table>
           <div id="kitPriceBox"></div>
-          <label class="inline">Знижка, % <input type="number" id="discount" min="0" step="0.5" value="0"></label>
-          <div class="total">Разом: <b id="total">—</b></div>
+          <label class="inline">Знижка, % <input type="number" id="discount" min="0" step="0.5" value="0" style="width:90px"></label>
+          <div class="total">Разом <b id="total">—</b></div>
           <ul id="warnings" class="warn"></ul>
         </div>
         <div class="card">
-          <h2>4. КП</h2>
+          <div class="card-head"><h2><span class="step">4</span>КП</h2></div>
           <div class="grid2">
             <label>Номер КП <input id="kpNumber"></label>
             <label>Дата <input type="date" id="kpDate"></label>
             <label>Замовник <input id="client" placeholder="Назва замовника"></label>
             <label>Контакт замовника <input id="clientContact" placeholder="необов’язково"></label>
           </div>
-          <label>Стиль КП <select id="style"></select></label>
-          <button id="gen" class="primary">Створити КП (PPTX + PDF)</button>
+          <div class="label">Стиль КП</div>
+          <div id="styleChips" class="style-chips"></div>
+          <div class="gen-row">
+            <button id="gen" class="primary">Створити КП (PPTX + PDF)</button>
+            <button id="genNew" class="ghost" hidden>Зберегти як нову КП</button>
+          </div>
           <div id="genResult"></div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- ======================= HISTORY ======================= -->
+  <section id="tab-hist" class="tab">
+    <div class="page-head"><h1>Історія КП</h1>
+      <input id="histSearch" type="search" placeholder="Пошук: замовник, номер, кран…"></div>
+    <div id="histList" class="hist-grid"></div>
+  </section>
+
   <!-- ======================= ADMIN ======================= -->
   <section id="tab-admin" class="tab">
-    <nav class="sub">
-      <button data-sub="a-style" class="on">Стиль</button>
-      <button data-sub="a-bg">Підкладки сторінок</button>
-      <button data-sub="a-texts">Тексти сторінок</button>
-      <button data-sub="a-photos">Фото позицій</button>
-      <button data-sub="a-prices">Ціни</button>
-      <span class="saved" id="savedMark"></span>
-    </nav>
+    <div class="admin">
+      <aside class="side-nav" id="adminNav">
+        <div class="grp">Вигляд КП</div>
+        <button data-sub="a-style" class="on"><i>◐</i>Стиль за замовчуванням</button>
+        <button data-sub="a-bg"><i>▦</i>Підкладки сторінок</button>
+        <button data-sub="a-texts"><i>¶</i>Тексти сторінок</button>
+        <div class="grp">Каталог</div>
+        <button data-sub="a-kits"><i>☰</i>Позиції комплектів</button>
+        <button data-sub="a-choices"><i>⇄</i>Варіанти вибору</button>
+        <button data-sub="a-accs"><i>＋</i>Додаткові опції</button>
+        <button data-sub="a-items"><i>▣</i>Вироби і фото</button>
+        <div class="grp">Ціни</div>
+        <button data-sub="a-prices"><i>₴</i>Ціни і націнки</button>
+        <div class="grp">Сервіс</div>
+        <button data-sub="a-versions"><i>↺</i>Версії і відкат</button>
+      </aside>
+      <div class="admin-body">
+        <div id="a-style" class="subtab on">
+          <div class="page-head"><h1>Стиль КП за замовчуванням</h1></div>
+          <p class="hint">Цей стиль обирається в конфігураторі автоматично; менеджер може змінити його для окремої КП. Клік по картинці — перегляд.</p>
+          <div id="styleCards" class="stylecards"></div>
+        </div>
 
-    <div id="a-style" class="subtab on card">
-      <h2>Стиль КП за замовчуванням</h2>
-      <p class="hint">Цей стиль обирається в конфігураторі автоматично; менеджер може змінити його для окремої КП.</p>
-      <div id="styleCards" class="stylecards"></div>
+        <div id="a-bg" class="subtab">
+          <div class="page-head"><h1>Підкладки сторінок</h1><div class="seg admStyle"></div></div>
+          <p class="hint">Фото обробляється під стиль так само, як у КП: кольорова обробка, сітка і лінії, плавні краї. Обкладинка, сторінки крана і причепа та контакти — фото на всю сторінку (точка фокусу); інші сторінки — фото вплітається у фон сторінки з обраною видимістю. Попередні фото зберігаються у «Версіях».</p>
+          <div id="bgList" class="bglist"></div>
+        </div>
+
+        <div id="a-texts" class="subtab">
+          <div class="page-head"><h1>Тексти сторінок</h1><div class="seg admStyle"></div></div>
+          <p class="hint">Постійні тексти шаблону. Новий рядок = новий абзац. Порожнє поле — текст шаблону.</p>
+          <div id="textsBox"></div>
+          <h2 class="sec">Умови співпраці (усі стилі)</h2>
+          <div id="termsBox" class="card"></div>
+          <h2 class="sec">Описи кранів і НПЛ-10 (усі стилі)</h2>
+          <div id="leadsBox" class="leads"></div>
+        </div>
+
+        <div id="a-kits" class="subtab">
+          <div class="page-head"><h1>Позиції комплектів</h1><div class="seg" id="kitSeg"></div></div>
+          <p class="hint">Порядок позицій = порядок рядків у КП. «Базова» — позиція одразу є в комплекті; без позначки менеджер додає її сам. Фото й опис виробу змінюються у «Вироби і фото».</p>
+          <div id="kitEditor"></div>
+        </div>
+
+        <div id="a-choices" class="subtab">
+          <div class="page-head"><h1>Варіанти вибору</h1></div>
+          <p class="hint">Захват, розподільник, місце оператора, гальма тощо. «Базовий» — варіант, що стоїть у комплекті без доплати (для кожного крана свій). Доплата порожня — «за запитом». Зміни діють в усіх комплектах, де є цей вибір.</p>
+          <div id="choiceEditor"></div>
+        </div>
+
+        <div id="a-accs" class="subtab">
+          <div class="page-head"><h1>Додаткові опції</h1><button class="primary sm" id="addAcc">＋ Додати опцію</button></div>
+          <p class="hint">Порядок = порядок карток на сторінці «Додаткові опції». «Базова для» — опцію одразу позначено в конфігураторі для цього комплекту. Ціни — у «Ціни і націнки».</p>
+          <div id="accEditor"></div>
+        </div>
+
+        <div id="a-items" class="subtab">
+          <div class="page-head"><h1>Вироби і фото</h1><div class="seg" id="itemStyleSeg"></div></div>
+          <p class="hint">Велике фото — як виріб виглядатиме на плитці сторінки «Конфігурація» в обраному стилі; мале — оригінал. PNG з прозорим фоном виглядає найкраще. У описі слова в фігурних дужках підставляються з вибору: {grapple} — захват, {seat_pos} — місце оператора, {brakes} — гальма, {stakes} — коники.</p>
+          <div id="itemEditor"></div>
+        </div>
+
+        <div id="a-prices" class="subtab">
+          <div class="page-head"><h1>Ціни і націнки</h1></div>
+          <p class="hint">Розрахункова ціна = базова × (1 + націнка %), округлення до <span id="roundStep"></span> ₴. Фінальна ціна, якщо вписана, замінює розрахункову. Додана вартість = ціна в КП − базова. Типово базова ціна = ціна з останньої КП, націнка 0 %.</p>
+          <div class="card inline bulk">Націнка для всіх у групі
+            <select id="bulkGroup"></select> <input type="number" id="bulkPct" step="0.5" style="width:80px"> %
+            <button id="bulkApply">Застосувати</button></div>
+          <div id="priceTables"></div>
+        </div>
+
+        <div id="a-versions" class="subtab">
+          <div class="page-head"><h1>Версії і відкат</h1>
+            <div class="inline"><input id="verNote" placeholder="Назва версії, напр. «перед зміною цін»" style="width:280px"><button id="verSave" class="primary sm">Зберегти версію</button></div></div>
+          <p class="hint">Кожна зміна в адмінці зберігається автоматично; часті зміни об’єднуються в одну версію (до 3 хв). «Відновити» повертає всі налаштування адмінки на той момент, а поточні зберігаються окремою версією, тож відкат теж можна скасувати.</p>
+          <div id="verList" class="card"></div>
+        </div>
+      </div>
     </div>
-
-    <div id="a-bg" class="subtab card">
-      <h2>Підкладки сторінок</h2>
-      <label class="inline">Стиль <select class="admStyle"></select></label>
-      <p class="hint">Обкладинка, сторінка крана, причепа та контакти: фото обробляється під стиль (кадрування за точкою фокусу).
-        Інші сторінки: фото накладається на фон стилю з вибраною прозорістю. «Скинути» повертає фон шаблону.</p>
-      <div id="bgList" class="bglist"></div>
-    </div>
-
-    <div id="a-texts" class="subtab card">
-      <h2>Тексти сторінок</h2>
-      <label class="inline">Стиль <select class="admStyle"></select></label>
-      <p class="hint">Постійні тексти шаблону. Новий рядок = новий абзац. Порожнє поле — текст шаблону.</p>
-      <div id="textsBox"></div>
-      <h3>Умови співпраці і примітка до ціни (усі стилі)</h3>
-      <div id="termsBox"></div>
-      <h3>Описи кранів і НПЛ-10 (усі стилі)</h3>
-      <div id="leadsBox"></div>
-    </div>
-
-    <div id="a-photos" class="subtab card">
-      <h2>Фото позицій і опцій</h2>
-      <p class="hint">Фото плитки позиції на сторінці «Конфігурація» та картки опції. PNG з прозорим фоном виглядає найкраще.</p>
-      <div id="photoList" class="photolist"></div>
-    </div>
-
-    <div id="a-prices" class="subtab card">
-      <h2>Ціни</h2>
-      <p class="hint">Розрахункова ціна = базова ціна × (1 + націнка %), округлення до <span id="roundStep"></span> ₴.
-        Фінальна ціна, якщо вписана, замінює розрахункову. Додана вартість = ціна в КП − базова ціна.
-        Типово базова ціна = ціна з останньої КП, націнка 0 %.</p>
-      <div class="inline">Націнка для всіх у групі:
-        <select id="bulkGroup"></select> <input type="number" id="bulkPct" step="0.5" style="width:80px"> %
-        <button id="bulkApply">Застосувати</button></div>
-      <div id="priceTables"></div>
-    </div>
-  </section>
-
-  <!-- ======================= HISTORY ======================= -->
-  <section id="tab-hist" class="tab card">
-    <h2>Створені КП</h2>
-    <table class="hist"><thead><tr><th>Коли</th><th>№</th><th>Комплект</th><th>Замовник</th><th>Стиль</th><th>Разом</th><th>Файли</th></tr></thead>
-      <tbody id="histRows"></tbody></table>
   </section>
 </main>
+
+<div id="modal" class="modal" hidden><div class="modal-box"><button class="x" id="modalX" title="Закрити">×</button><div id="modalBody"></div></div></div>
 <div id="toast"></div>
 <script type="module" src="app.js"></script>
 </body>

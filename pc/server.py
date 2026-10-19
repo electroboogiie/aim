@@ -2,7 +2,7 @@
 #   python pc/server.py [--port 8765] [--no-browser]
 # Інтерфейс: http://127.0.0.1:8765  (конфігуратор і адмінка). Дані адмінки: pc/data/admin.json,
 # згенеровані КП: pc/data/out/, завантажені фото: generator/assets/custom/.
-import argparse, hashlib, json, mimetypes, os, re, subprocess, sys, threading, time, webbrowser
+import argparse, glob, hashlib, json, mimetypes, os, re, shutil, subprocess, sys, threading, time, webbrowser
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
@@ -16,7 +16,10 @@ DATA = os.environ.get('KP_PC_DATA') or os.path.join(HERE, 'data')
 OUT = os.path.join(DATA, 'out')
 CACHE = os.path.join(DATA, 'cache')
 ADMIN = os.path.join(DATA, 'admin.json')
-for d in (DATA, OUT, CACHE, os.path.join(ASSETS, 'custom')): os.makedirs(d, exist_ok=True)
+HIST = os.path.join(DATA, 'history.json')
+VERSIONS = os.path.join(DATA, 'versions')
+PREVIEW = os.path.join(CACHE, 'preview')
+for d in (DATA, OUT, CACHE, VERSIONS, PREVIEW, os.path.join(ASSETS, 'custom')): os.makedirs(d, exist_ok=True)
 
 sys.path.insert(0, GEN)
 from kpgen.styles import STYLES, DEFAULT, HERO_PAGES, pages   # noqa: E402
@@ -40,7 +43,59 @@ def write_json(path, data):
 
 def default_admin():
     return {'style': DEFAULT, 'kp_counter': 1, 'styles': {}, 'photos': {'items': {}, 'accessories': {}},
-            'prices': {'items': {}, 'bundles': {}, 'accessories': {}}, 'texts': {'terms': {}, 'cranes': {}, 'npl': {}}}
+            'prices': {'items': {}, 'bundles': {}, 'accessories': {}, 'choices': {}},
+            'texts': {'terms': {}, 'cranes': {}, 'npl': {}}, 'catalog': {}, 'photo_history': {}}
+
+
+# ---------------------------------------------------------------- admin versions (rollback)
+SNAP_EVERY = 180      # s: saves closer together than this update the latest snapshot instead of adding one
+SNAP_KEEP = 120
+
+
+def snapshots():
+    out = []
+    for f in sorted(glob.glob(os.path.join(VERSIONS, '*.json')), reverse=True):
+        d = read_json(f, None)
+        if d is None: continue
+        out.append(dict(id=os.path.basename(f)[:-5], time=d.get('time'), note=d.get('note') or '', size=os.path.getsize(f)))
+    return out
+
+
+def snapshot(data, note='', force=False):
+    """Keep a copy of admin.json; frequent autosaves fold into the newest copy."""
+    now = time.time()
+    files = sorted(glob.glob(os.path.join(VERSIONS, '*.json')))
+    last = files[-1] if files else None
+    if last and not force and not note and now - os.path.getmtime(last) < SNAP_EVERY and not read_json(last, {}).get('note'):
+        path = last
+    else:
+        path = os.path.join(VERSIONS, time.strftime('%Y%m%d-%H%M%S') + f'-{int(now * 1000) % 1000:03d}.json')
+    write_json(path, {'time': time.strftime('%d.%m.%Y %H:%M:%S'), 'note': note, 'admin': data})
+    for f in sorted(glob.glob(os.path.join(VERSIONS, '*.json')))[:-SNAP_KEEP]: os.remove(f)
+
+
+# ---------------------------------------------------------------- previews of photos as the KP will show them
+def preview(kind, q):
+    style = q.get('style', [DEFAULT])[0]
+    if style not in STYLES: raise ValueError('Невідомий стиль')
+    path = q.get('path', [''])[0]
+    from kpgen import raster as R
+    if not R.asset_ok(path): raise ValueError('Фото не знайдено')
+    f = lambda k, d: float(q.get(k, [d])[0])
+    if kind == 'page':
+        key = q.get('page', ['cover'])[0]
+        args = (style, key, path, f('fx', 0.5), f('fy', 0.45), f('opacity', 0.18))
+    else:
+        args = (style, path, q.get('kind', ['tile'])[0])
+    st = os.stat(R.asset(path))
+    h = hashlib.sha1(repr((kind, args, st.st_size, st.st_mtime_ns, 'p2')).encode()).hexdigest()
+    cached = os.path.join(PREVIEW, h + '.jpg')
+    if os.path.exists(cached):
+        with open(cached, 'rb') as fh: return fh.read()
+    from kpgen import preview as P
+    with LOCK: data = P.page(*args) if kind == 'page' else P.item(*args)
+    with open(cached, 'wb') as fh: fh.write(data)
+    return data
 
 
 def styles_info():
@@ -93,7 +148,45 @@ def apply_admin(spec, admin):
     return spec
 
 
-def generate(spec):
+def history():
+    h = read_json(HIST, [])
+    for e in h:   # entries from the first test version had no id: the output folder is one
+        if not e.get('id'):
+            m = re.match(r'^/out/([^/]+)/', e.get('pptx') or e.get('pdf') or '')
+            e['id'] = m.group(1) if m else hashlib.sha1(json.dumps(e, sort_keys=True).encode()).hexdigest()[:12]
+    return h
+
+
+def save_history(h):
+    with LOCK: write_json(HIST, h[:300])
+
+
+def out_dir_of(entry):
+    p = entry.get('pptx') or entry.get('pdf') or ''
+    m = re.match(r'^/out/([^/]+)/', p)
+    return safe_join(OUT, m.group(1)) if m else None
+
+
+def cover_png(entry_id, pptx):
+    """Background: PNG of the KP cover for the history (needs LibreOffice)."""
+    try:
+        from kpgen.pdf import to_png
+        png = to_png(pptx, os.path.dirname(pptx), timeout=120)
+        cover = os.path.join(os.path.dirname(png), 'cover.png')
+        from PIL import Image
+        im = Image.open(png); im.thumbnail((360, 520)); im.save(cover); os.remove(png)
+        h = history()
+        for e in h:
+            if e.get('id') == entry_id: e['cover'] = '/out/' + os.path.relpath(cover, OUT).replace(os.sep, '/')
+        save_history(h)
+    except Exception as e:  # noqa: BLE001 - a missing preview is not an error for the user
+        sys.stderr.write(f'cover preview: {e}\n')
+
+
+def generate(body):
+    spec = body.get('spec') if 'spec' in body else body
+    state = body.get('state') if 'spec' in body else None
+    replace_id = body.get('history_id')
     admin = read_json(ADMIN, default_admin())
     spec = apply_admin(spec, admin)
     stamp = time.strftime('%Y%m%d-%H%M%S')
@@ -110,12 +203,23 @@ def generate(spec):
     rel = lambda p: '/out/' + os.path.relpath(p, OUT).replace(os.sep, '/') if p else None
     res.update(pptx=rel(last.get('pptx')), pdf=rel(last.get('pdf')), pages=last.get('pages'))
     if r.returncode not in (0, 3) and not lines: res['messages'] = r.stderr.splitlines()[-6:]
-    # one history line per KP
-    hist = read_json(os.path.join(DATA, 'history.json'), [])
-    hist.insert(0, dict(time=time.strftime('%d.%m.%Y %H:%M'), number=spec.get('number'), title=spec.get('title'),
-                        client=(spec.get('client') or {}).get('name'), style=spec['style'], total=spec.get('total_text'),
-                        pptx=res['pptx'], pdf=res['pdf']))
-    write_json(os.path.join(DATA, 'history.json'), hist[:200])
+    if not res['pptx']: return res
+    entry = dict(id=os.path.basename(out), time=time.strftime('%d.%m.%Y %H:%M'), date=spec.get('date'), number=spec.get('number'),
+                 title=spec.get('title'), kit=[r_.get('title') for r_ in spec.get('rows') or []],
+                 options=[a.get('title') for a in spec.get('accessories') or []],
+                 client=(spec.get('client') or {}).get('name'), contact=(spec.get('client') or {}).get('contact'),
+                 style=spec['style'], total=spec.get('total_text'), pptx=res['pptx'], pdf=res['pdf'], state=state)
+    h = history()
+    if replace_id:
+        old = next((e for e in h if e.get('id') == replace_id), None)
+        if old:
+            d = out_dir_of(old)
+            if d and os.path.isdir(d) and d != out: shutil.rmtree(d, ignore_errors=True)
+            h = [e for e in h if e.get('id') != replace_id]
+            entry['edited_from'] = old.get('time')
+    h.insert(0, entry); save_history(h)
+    res['history_id'] = entry['id']
+    threading.Thread(target=cover_png, args=(entry['id'], last['pptx']), daemon=True).start()
     return res
 
 
@@ -153,7 +257,13 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, dict(catalog=read_json(os.path.join(ROOT, 'catalog', 'catalog.json'), {}),
                                            settings=read_json(os.path.join(ROOT, 'catalog', 'settings.default.json'), {}),
                                            admin=read_json(ADMIN, default_admin()), styles=styles_info(),
-                                           defaults=defaults_texts(), history=read_json(os.path.join(DATA, 'history.json'), [])[:30]))
+                                           defaults=defaults_texts(), history=history()))
+            if p == '/api/history': return self.send(200, history())
+            if p == '/api/versions': return self.send(200, snapshots())
+            if p in ('/api/preview/page', '/api/preview/item'):
+                try: data = preview(p.rsplit('/', 1)[1], q)
+                except ValueError as e: return self.send(400, {'error': str(e)})
+                return self.send(200, data, 'image/jpeg', cache=True)
             if p == '/api/texts':
                 style = q.get('style', [DEFAULT])[0]
                 if style not in STYLES: return self.send(400, {'error': 'Невідомий стиль'})
@@ -171,10 +281,35 @@ class H(BaseHTTPRequestHandler):
             return self.send(500, {'error': str(e)})
 
     def do_PUT(self):
-        if urlparse(self.path).path != '/api/admin': return self.send(404, {'error': 'немає'})
+        p = urlparse(self.path).path
         try: data = json.loads(self.body())
         except ValueError: return self.send(400, {'error': 'Неправильний JSON'})
-        with LOCK: write_json(ADMIN, data)
+        if p == '/api/admin':
+            note = unquote(self.headers.get('X-Snapshot-Note') or '')
+            with LOCK:
+                write_json(ADMIN, data)
+                snapshot(data, note=note, force=bool(note))
+            return self.send(200, {'ok': True})
+        m = re.match(r'^/api/history/([\w.-]+)$', p)
+        if m:
+            h = history()
+            e = next((x for x in h if x.get('id') == m.group(1)), None)
+            if not e: return self.send(404, {'error': 'КП не знайдено'})
+            for k in ('client', 'contact', 'note', 'number', 'date'):
+                if k in data: e[k] = data[k]
+            save_history(h)
+            return self.send(200, e)
+        return self.send(404, {'error': 'немає'})
+
+    def do_DELETE(self):
+        m = re.match(r'^/api/history/([\w.-]+)$', urlparse(self.path).path)
+        if not m: return self.send(404, {'error': 'немає'})
+        h = history()
+        e = next((x for x in h if x.get('id') == m.group(1)), None)
+        if not e: return self.send(404, {'error': 'КП не знайдено'})
+        d = out_dir_of(e)
+        if d and os.path.isdir(d): shutil.rmtree(d, ignore_errors=True)
+        save_history([x for x in h if x is not e])
         return self.send(200, {'ok': True})
 
     def do_POST(self):
@@ -192,10 +327,20 @@ class H(BaseHTTPRequestHandler):
             with open(os.path.join(ASSETS, rel), 'wb') as f: f.write(data)
             return self.send(200, {'path': rel})
         if p == '/api/generate':
-            try: spec = json.loads(self.body())
+            try: body = json.loads(self.body())
             except ValueError: return self.send(400, {'error': 'Неправильний JSON'})
-            try: return self.send(200, generate(spec))
+            try: return self.send(200, generate(body))
             except ValueError as e: return self.send(400, {'error': str(e)})
+        if p == '/api/versions/restore':
+            try: vid = json.loads(self.body()).get('id', '')
+            except ValueError: return self.send(400, {'error': 'Неправильний JSON'})
+            path = safe_join(VERSIONS, vid + '.json')
+            snap = read_json(path, None) if path else None
+            if not snap: return self.send(404, {'error': 'Версію не знайдено'})
+            with LOCK:
+                snapshot(read_json(ADMIN, default_admin()), note='до відновлення ' + (snap.get('time') or ''), force=True)
+                write_json(ADMIN, snap['admin'])
+            return self.send(200, {'ok': True, 'admin': snap['admin']})
         return self.send(404, {'error': 'немає'})
 
 

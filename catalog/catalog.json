@@ -116,7 +116,9 @@
     "specs.legs: A/FD — дані bmf.ee, у КП не вказано",
     "price: 637 800 (17.03.2026), 607 700 (25.02.2026), 626 400 (02.09.2025)",
     "price.eur_rate_ref: курс EUR на дату ціни"
-   ]
+   ],
+   "featured": true,
+   "desc_template": "у комплекті з ротатором 3 т і {grapple}"
   },
   {
    "id": "bmf720",
@@ -180,7 +182,9 @@
    "needs_confirmation": [
     "price: 686 000 (24.08.2025, 17.07.2026) чи 657 920 (04.03.2026)",
     "price.eur_rate_ref: курс EUR на дату ціни"
-   ]
+   ],
+   "featured": true,
+   "desc_template": "у комплекті з ротатором 4 т і {grapple}"
   },
   {
    "id": "bmf750",
@@ -238,7 +242,9 @@
     "specs.rotator_t: 4 т (КП, bmf.ee) чи 5 т (каталог BMF 2025)",
     "specs.legs: FD — дані bmf.ee, у КП не вказано",
     "price.eur_rate_ref: курс EUR на дату ціни"
-   ]
+   ],
+   "featured": true,
+   "desc_template": "у комплекті з ротатором 4 т і {grapple}"
   },
   {
    "id": "bmf905",
@@ -279,7 +285,9 @@
     "price: € 21 500 з ПДВ (16.03.2026) — потрібна ціна в гривнях або курс НБУ на 16.03.2026",
     "specs.rotator_t: 5,5 т (КП) / 4 т (bmf.ee) / 5 т (каталог BMF 2025)",
     "specs.weight_kg: 1130 (КП, bmf.rv.ua) чи 1160 (bmf.ee)"
-   ]
+   ],
+   "photo": "bmf/905_forest_load.jpg",
+   "desc_template": "у комплекті з ротатором 5,5 т і {grapple}"
   },
   {
    "id": "bmf850",
@@ -321,7 +329,8 @@
     "specs.rotator_t: 4 т (bmf.ee) чи 5 т (каталог BMF 2025)",
     "specs.weight_kg: 1060 (bmf.ee) чи 1095 (bmf.rv.ua)",
     "kp_profile: для BMF 850 у генераторі ще немає візуального профілю"
-   ]
+   ],
+   "desc_template": "у комплекті з ротатором 4 т і {grapple}"
   },
   {
    "id": "npl10",
@@ -368,7 +377,7 @@
     "specs.stakes: 4 (КП) / 4–5 (bmf.rv.ua)"
    ],
    "model": "НПЛ-10",
-   "desc_template": "10 т · {stakes} · {brakes} · місце оператора",
+   "desc_template": "10 т · {stakes} · {brakes} · {seat_pos}",
    "compatible": [
     "bmf650",
     "bmf720",
@@ -603,7 +612,7 @@
     "metal_share": 0.5,
     "group": "own_production"
    },
-   "photo": "prod/base_outriggers.jpg",
+   "photo": "prod/tile_base.png",
    "kp_profile": null,
    "source": "reference/kp/kp_text.md CP/READY/КП BMF650.pptx: «Основа із аутригерами» 160 000 ₴ з ПДВ, станом на 02.09.2025.",
    "needs_confirmation": [
@@ -649,7 +658,7 @@
      }
     ]
    },
-   "photo": "prod/base_outriggers.jpg",
+   "photo": "prod/tile_base.png",
    "kp_profile": null,
    "source": "drive_kp/КП_BMF720_у_комплекті___лапи_ (1).pdf (17.07.2026): 841 000 = 686 000 + 155 000; KP_2_v3.pptx, рядок 02 «Платформа з аутригерами» 155 000 ₴, ціни станом на 24.08.2025 (так само CP/READY/КП BMF720 887.pptx).",
    "needs_confirmation": [
@@ -686,7 +695,7 @@
     "metal_share": 0.5,
     "group": "own_production"
    },
-   "photo": "prod/base_outriggers.jpg",
+   "photo": "prod/tile_base.png",
    "kp_profile": null,
    "source": "reference/kp/kp_text.md CP/Комерційні пропозиції/КП BMF750 у комплекті 02102026 радіатор.pptx: «Основа із аутригерами» 180 000 ₴ з ПДВ, станом на 02.10.2026.",
    "needs_confirmation": [
@@ -730,7 +739,7 @@
      }
     ]
    },
-   "photo": "prod/tank.jpg",
+   "photo": "prod/tile_tank.png",
    "kp_profile": null,
    "source": "«Бак» 18 500 ₴ з ПДВ: reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx (02.10.2026), CP/READY/КП BMF650.pptx (02.09.2025), KP_2_v3.pptx (24.08.2025). Без оливи (КП BMF650 02.09.2025: «Гідробак в зборі (без оливи)»).",
    "needs_confirmation": [
@@ -771,22 +780,23 @@
     ]
    },
    "kp_profile": null,
-   "source": "«Місце оператора» 27 750 ₴ з ПДВ: reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx (02.10.2026, «заднє, по центру»), CP/READY/КП BMF650.pptx (02.09.2025), KP_2_v3.pptx (24.08.2025).",
+   "source": "«Місце оператора» 27 750 ₴ з ПДВ: reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx (02.10.2026, «заднє, по центру»), CP/READY/КП BMF650.pptx (02.09.2025), KP_2_v3.pptx (24.08.2025). Розташування (2026-10-19, власник): бокове або пряме (заднє).",
    "needs_confirmation": [
-    "варіанти розташування (у КП 02.10.2026 — «заднє, по центру»)",
     "price.eur_share, price.metal_share: оцінка (0,3 / 0,5)",
     "price.eur_rate_ref, price.metal_index_ref"
-   ]
+   ],
+   "photo": "prod/tile_seat.png",
+   "desc_template": "{seat_pos} · ергономічне робоче місце з органами керування"
   },
   {
    "id": "oil_90l",
    "kind": "component",
    "family": "component",
-   "title": "Олива гідравлічна 90 л",
+   "title": "Олива гідравлічна",
    "short": "заправка гідробака",
    "price": {
     "mode": "ref",
-    "uah": 16200,
+    "uah": 180,
     "date": "2026-10-02",
     "eur_rate_ref": null,
     "metal_index_ref": null,
@@ -795,11 +805,19 @@
     "group": "accessories"
    },
    "kp_profile": null,
-   "source": "reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx: «Олива 90л.» 16 200 ₴ з ПДВ, станом на 02.10.2026.",
+   "source": "reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx: «Олива 90л.» 16 200 ₴ з ПДВ, станом на 02.10.2026. Ціна за 1 л: 16 200 / 90 = 180 ₴; об’єм задає менеджер (2026-10-19, власник: «літри оливи мали б змінюватись»).",
    "needs_confirmation": [
     "price.eur_share, price.metal_share (зараз 0: ціна не рухається з курсом)",
     "об’єм оливи для BMF 650/720 (у КП 2024: 80 л)"
-   ]
+   ],
+   "unit": {
+    "name": "л",
+    "per": 1,
+    "default": 90,
+    "title": "Олива гідравлічна {qty} л",
+    "min": 1,
+    "max": 400
+   }
   },
   {
    "id": "heat_exchanger",
@@ -1006,7 +1024,244 @@
      "default": null
     }
    ],
-   "choices": [],
+   "choices": [
+    {
+     "id": "grapple",
+     "title": "Захват (грейфер)",
+     "default": "c24",
+     "slot": "crane",
+     "options": [
+      {
+       "value": "c15",
+       "title": "C15 — 0,15 м²",
+       "short": "захватом C15 (0,15 м²)",
+       "compatible": [
+        "bmf650"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,15"
+       }
+      },
+      {
+       "value": "c20",
+       "title": "C20 — 0,2 м²",
+       "short": "захватом C20 (0,2 м²)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf650"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,2"
+       }
+      },
+      {
+       "value": "c24",
+       "title": "C24 — 0,24 м²",
+       "short": "захватом C24 (0,24 м²)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf720",
+        "bmf850"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,24"
+       }
+      },
+      {
+       "value": "c27",
+       "title": "C27 — 0,27 м²",
+       "short": "захватом C27 (0,27 м²)",
+       "compatible": [
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf750",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,27"
+       }
+      }
+     ]
+    },
+    {
+     "id": "valve",
+     "title": "Розподільник крана",
+     "default": "v48xyz",
+     "slot": "crane",
+     "options": [
+      {
+       "value": "v68xy",
+       "title": "6/8 XY механічний, 55 л",
+       "compatible": [
+        "bmf650",
+        "bmf720"
+       ],
+       "default_for": [
+        "bmf650",
+        "bmf720"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "6/8 XY",
+        "valve_flow_l": "55"
+       },
+       "crane_note": "розподільник 6/8 XY"
+      },
+      {
+       "value": "v48xyz",
+       "title": "4/8 XYZ механічний",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "4/8 XYZ"
+       },
+       "crane_note": "розподільник 4/8 XYZ"
+      },
+      {
+       "value": "v28xy_onoff",
+       "title": "2/8 XY, телескоп і грейфер — електричні On/Off",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "2/8 XY el. On/Off"
+       },
+       "crane_note": "розподільник 2/8 XY el. On/Off"
+      },
+      {
+       "value": "hpc",
+       "title": "55 л з пілотними джойстиками HPC",
+       "compatible": [
+        "bmf650",
+        "bmf720"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "HPC, пілотні джойстики"
+       },
+       "crane_note": "розподільник з пілотними джойстиками HPC"
+      },
+      {
+       "value": "dpx",
+       "title": "Walvoil DPX 100/8 з джойстиками HPC",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Walvoil DPX 100/8"
+       },
+       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC"
+      },
+      {
+       "value": "parker_p70",
+       "title": "електричний Parker P70",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Parker P70"
+       },
+       "crane_note": "електричний розподільник Parker P70"
+      },
+      {
+       "value": "parker_p70_wireless",
+       "title": "електричний Parker P70; FE; FP; Wireless (Bluetooth)",
+       "price_uah": 259900,
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "crane_specs": {
+        "valve": "Parker P70 Wireless"
+       },
+       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)"
+      },
+      {
+       "value": "parker_l90",
+       "title": "електричний Parker L90 (з Autec — бездротовий)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Parker L90"
+       },
+       "crane_note": "електричний розподільник Parker L90"
+      }
+     ]
+    },
+    {
+     "id": "seat_pos",
+     "title": "Місце оператора",
+     "default": "rear",
+     "slot": "seat",
+     "options": [
+      {
+       "value": "rear",
+       "title": "пряме (заднє)",
+       "short": "Пряме (заднє) розташування"
+      },
+      {
+       "value": "side",
+       "title": "бокове",
+       "short": "Бокове розташування"
+      }
+     ]
+    }
+   ],
    "accessory_groups": [
     "crane"
    ],
@@ -1051,6 +1306,224 @@
     }
    ],
    "choices": [
+    {
+     "id": "grapple",
+     "title": "Захват (грейфер)",
+     "default": "c24",
+     "slot": "crane",
+     "options": [
+      {
+       "value": "c15",
+       "title": "C15 — 0,15 м²",
+       "short": "захватом C15 (0,15 м²)",
+       "compatible": [
+        "bmf650"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,15"
+       }
+      },
+      {
+       "value": "c20",
+       "title": "C20 — 0,2 м²",
+       "short": "захватом C20 (0,2 м²)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf650"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,2"
+       }
+      },
+      {
+       "value": "c24",
+       "title": "C24 — 0,24 м²",
+       "short": "захватом C24 (0,24 м²)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf720",
+        "bmf850"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,24"
+       }
+      },
+      {
+       "value": "c27",
+       "title": "C27 — 0,27 м²",
+       "short": "захватом C27 (0,27 м²)",
+       "compatible": [
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf750",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,27"
+       }
+      }
+     ]
+    },
+    {
+     "id": "valve",
+     "title": "Розподільник крана",
+     "default": "v48xyz",
+     "slot": "crane",
+     "options": [
+      {
+       "value": "v68xy",
+       "title": "6/8 XY механічний, 55 л",
+       "compatible": [
+        "bmf650",
+        "bmf720"
+       ],
+       "default_for": [
+        "bmf650",
+        "bmf720"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "6/8 XY",
+        "valve_flow_l": "55"
+       },
+       "crane_note": "розподільник 6/8 XY"
+      },
+      {
+       "value": "v48xyz",
+       "title": "4/8 XYZ механічний",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "4/8 XYZ"
+       },
+       "crane_note": "розподільник 4/8 XYZ"
+      },
+      {
+       "value": "v28xy_onoff",
+       "title": "2/8 XY, телескоп і грейфер — електричні On/Off",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "2/8 XY el. On/Off"
+       },
+       "crane_note": "розподільник 2/8 XY el. On/Off"
+      },
+      {
+       "value": "hpc",
+       "title": "55 л з пілотними джойстиками HPC",
+       "compatible": [
+        "bmf650",
+        "bmf720"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "HPC, пілотні джойстики"
+       },
+       "crane_note": "розподільник з пілотними джойстиками HPC"
+      },
+      {
+       "value": "dpx",
+       "title": "Walvoil DPX 100/8 з джойстиками HPC",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Walvoil DPX 100/8"
+       },
+       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC"
+      },
+      {
+       "value": "parker_p70",
+       "title": "електричний Parker P70",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Parker P70"
+       },
+       "crane_note": "електричний розподільник Parker P70"
+      },
+      {
+       "value": "parker_p70_wireless",
+       "title": "електричний Parker P70; FE; FP; Wireless (Bluetooth)",
+       "price_uah": 259900,
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "crane_specs": {
+        "valve": "Parker P70 Wireless"
+       },
+       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)"
+      },
+      {
+       "value": "parker_l90",
+       "title": "електричний Parker L90 (з Autec — бездротовий)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Parker L90"
+       },
+       "crane_note": "електричний розподільник Parker L90"
+      }
+     ]
+    },
     {
      "id": "brakes",
      "title": "Гальмівна система",
@@ -1118,6 +1591,23 @@
        "on_request": true
       }
      ]
+    },
+    {
+     "id": "seat_pos",
+     "title": "Місце оператора",
+     "default": "rear",
+     "options": [
+      {
+       "value": "rear",
+       "title": "пряме (заднє)",
+       "short": "пряме (заднє) місце оператора"
+      },
+      {
+       "value": "side",
+       "title": "бокове",
+       "short": "бокове місце оператора"
+      }
+     ]
     }
    ],
    "accessory_groups": [
@@ -1171,22 +1661,220 @@
    ],
    "choices": [
     {
-     "id": "valve",
-     "title": "Розподільник крана",
-     "default": "mech",
+     "id": "grapple",
+     "title": "Захват (грейфер)",
+     "default": "c24",
+     "slot": "crane",
      "options": [
       {
-       "value": "mech",
-       "title": "механічний, стандарт крана"
+       "value": "c15",
+       "title": "C15 — 0,15 м²",
+       "short": "захватом C15 (0,15 м²)",
+       "compatible": [
+        "bmf650"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,15"
+       }
+      },
+      {
+       "value": "c20",
+       "title": "C20 — 0,2 м²",
+       "short": "захватом C20 (0,2 м²)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf650"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,2"
+       }
+      },
+      {
+       "value": "c24",
+       "title": "C24 — 0,24 м²",
+       "short": "захватом C24 (0,24 м²)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf720",
+        "bmf850"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,24"
+       }
+      },
+      {
+       "value": "c27",
+       "title": "C27 — 0,27 м²",
+       "short": "захватом C27 (0,27 м²)",
+       "compatible": [
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf750",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,27"
+       }
+      }
+     ]
+    },
+    {
+     "id": "valve",
+     "title": "Розподільник крана",
+     "default": "v48xyz",
+     "slot": "crane",
+     "options": [
+      {
+       "value": "v68xy",
+       "title": "6/8 XY механічний, 55 л",
+       "compatible": [
+        "bmf650",
+        "bmf720"
+       ],
+       "default_for": [
+        "bmf650",
+        "bmf720"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "6/8 XY",
+        "valve_flow_l": "55"
+       },
+       "crane_note": "розподільник 6/8 XY"
+      },
+      {
+       "value": "v48xyz",
+       "title": "4/8 XYZ механічний",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "4/8 XYZ"
+       },
+       "crane_note": "розподільник 4/8 XYZ"
+      },
+      {
+       "value": "v28xy_onoff",
+       "title": "2/8 XY, телескоп і грейфер — електричні On/Off",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "2/8 XY el. On/Off"
+       },
+       "crane_note": "розподільник 2/8 XY el. On/Off"
+      },
+      {
+       "value": "hpc",
+       "title": "55 л з пілотними джойстиками HPC",
+       "compatible": [
+        "bmf650",
+        "bmf720"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "HPC, пілотні джойстики"
+       },
+       "crane_note": "розподільник з пілотними джойстиками HPC"
+      },
+      {
+       "value": "dpx",
+       "title": "Walvoil DPX 100/8 з джойстиками HPC",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Walvoil DPX 100/8"
+       },
+       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC"
+      },
+      {
+       "value": "parker_p70",
+       "title": "електричний Parker P70",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Parker P70"
+       },
+       "crane_note": "електричний розподільник Parker P70"
       },
       {
        "value": "parker_p70_wireless",
        "title": "електричний Parker P70; FE; FP; Wireless (Bluetooth)",
        "price_uah": 259900,
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
        "crane_specs": {
         "valve": "Parker P70 Wireless"
        },
        "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)"
+      },
+      {
+       "value": "parker_l90",
+       "title": "електричний Parker L90 (з Autec — бездротовий)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Parker L90"
+       },
+       "crane_note": "електричний розподільник Parker L90"
       }
      ]
     }
@@ -1272,7 +1960,226 @@
      "default": "pump"
     }
    ],
-   "choices": [],
+   "choices": [
+    {
+     "id": "grapple",
+     "title": "Захват (грейфер)",
+     "default": "c24",
+     "slot": "crane",
+     "options": [
+      {
+       "value": "c15",
+       "title": "C15 — 0,15 м²",
+       "short": "захватом C15 (0,15 м²)",
+       "compatible": [
+        "bmf650"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,15"
+       }
+      },
+      {
+       "value": "c20",
+       "title": "C20 — 0,2 м²",
+       "short": "захватом C20 (0,2 м²)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf650"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,2"
+       }
+      },
+      {
+       "value": "c24",
+       "title": "C24 — 0,24 м²",
+       "short": "захватом C24 (0,24 м²)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf720",
+        "bmf850"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,24"
+       }
+      },
+      {
+       "value": "c27",
+       "title": "C27 — 0,27 м²",
+       "short": "захватом C27 (0,27 м²)",
+       "compatible": [
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf750",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "grapple_m2": "0,27"
+       }
+      }
+     ]
+    },
+    {
+     "id": "valve",
+     "title": "Розподільник крана",
+     "default": "v48xyz",
+     "slot": "crane",
+     "options": [
+      {
+       "value": "v68xy",
+       "title": "6/8 XY механічний, 55 л",
+       "compatible": [
+        "bmf650",
+        "bmf720"
+       ],
+       "default_for": [
+        "bmf650",
+        "bmf720"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "6/8 XY",
+        "valve_flow_l": "55"
+       },
+       "crane_note": "розподільник 6/8 XY"
+      },
+      {
+       "value": "v48xyz",
+       "title": "4/8 XYZ механічний",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "default_for": [
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "4/8 XYZ"
+       },
+       "crane_note": "розподільник 4/8 XYZ"
+      },
+      {
+       "value": "v28xy_onoff",
+       "title": "2/8 XY, телескоп і грейфер — електричні On/Off",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "2/8 XY el. On/Off"
+       },
+       "crane_note": "розподільник 2/8 XY el. On/Off"
+      },
+      {
+       "value": "hpc",
+       "title": "55 л з пілотними джойстиками HPC",
+       "compatible": [
+        "bmf650",
+        "bmf720"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "HPC, пілотні джойстики"
+       },
+       "crane_note": "розподільник з пілотними джойстиками HPC"
+      },
+      {
+       "value": "dpx",
+       "title": "Walvoil DPX 100/8 з джойстиками HPC",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Walvoil DPX 100/8"
+       },
+       "crane_note": "розподільник Walvoil DPX 100/8 з джойстиками HPC"
+      },
+      {
+       "value": "parker_p70",
+       "title": "електричний Parker P70",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Parker P70"
+       },
+       "crane_note": "електричний розподільник Parker P70"
+      },
+      {
+       "value": "parker_p70_wireless",
+       "title": "електричний Parker P70; FE; FP; Wireless (Bluetooth)",
+       "price_uah": 259900,
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "crane_specs": {
+        "valve": "Parker P70 Wireless"
+       },
+       "crane_note": "електричний розподільник Parker P70 (FE, FP, Wireless)"
+      },
+      {
+       "value": "parker_l90",
+       "title": "електричний Parker L90 (з Autec — бездротовий)",
+       "compatible": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+       ],
+       "on_request": true,
+       "crane_specs": {
+        "valve": "Parker L90"
+       },
+       "crane_note": "електричний розподільник Parker L90"
+      }
+     ]
+    }
+   ],
    "accessory_groups": [
     "crane"
    ],
@@ -1842,9 +2749,7 @@
      "trailer": "bmf8t2",
      "crane": "bmf650"
     },
-    "choices": {
-     "valve": "mech"
-    },
+    "choices": {},
     "accessories": []
    },
    "source": {
@@ -1882,9 +2787,7 @@
      "trailer": "bmf10t2",
      "crane": "bmf650"
     },
-    "choices": {
-     "valve": "mech"
-    },
+    "choices": {},
     "accessories": []
    },
    "source": {
@@ -1902,9 +2805,7 @@
      "trailer": "bmf14t2_pro_l",
      "crane": "bmf720"
     },
-    "choices": {
-     "valve": "mech"
-    },
+    "choices": {},
     "accessories": []
    },
    "source": {
@@ -1922,9 +2823,7 @@
      "trailer": "bmf17t2",
      "crane": "bmf750"
     },
-    "choices": {
-     "valve": "mech"
-    },
+    "choices": {},
     "accessories": []
    },
    "source": {

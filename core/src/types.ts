@@ -42,9 +42,14 @@ export interface Item {
   photo?: string;
   kp_profile?: string | null;
   compatible?: string[];                // item ids this item fits (e.g. a base or trailer -> crane ids)
+  featured?: boolean;                   // main product (BMF 650 / 720 / 750): offered first in pickers
+  unit?: ItemUnit;                      // priced per unit with a quantity the manager sets (oil per litre)
   source: string;
   needs_confirmation?: string[];
 }
+
+/** Item sold by quantity: price rule is per `per` units; row title from `title` with {qty}. */
+export interface ItemUnit { name: string; per: number; default: number; title: string; min?: number; max?: number }
 
 export interface PriceEur { mode: "eur"; eur: number; group: string }
 export interface PriceCost {
@@ -86,7 +91,14 @@ export interface KitType {
   maker_line?: string;                  // "Виробник: {maker}"
 }
 
-export interface Slot { id: string; title: string; candidates: string[]; required: boolean; default: string | null }
+export interface Slot {
+  id: string;
+  title: string;
+  candidates: string[];
+  required: boolean;
+  default: string | null;
+  priced?: boolean;                     // bundle kits: priced on its own on top of the kit price, not part of the bundle
+}
 
 export interface ChoiceOption {
   value: string;
@@ -96,8 +108,16 @@ export interface ChoiceOption {
   on_request?: boolean;                 // surcharge not known yet: selecting it adds a warning
   crane_specs?: Record<string, string>; // KP: crane characteristics this option replaces (e.g. valve)
   crane_note?: string;                  // KP: appended to the crane row description
+  compatible?: string[];                // item ids this option fits (like AccessoryVariant.compatible)
+  default_for?: string[];               // the option is the standard one (no surcharge, no note) with these items
 }
-export interface Choice { id: string; title: string; default: string; options: ChoiceOption[] }
+export interface Choice {
+  id: string;
+  title: string;
+  default: string;
+  options: ChoiceOption[];
+  slot?: string;                        // the choice applies only while this slot has an item (UI hides it otherwise)
+}
 
 export interface PresetSourceRow { title: string; price_uah: number }
 export interface Preset {
@@ -180,6 +200,7 @@ export interface QuoteInput {
   discount_pct?: number;
   manual_prices?: Record<string, number>;
   kit_price_uah?: number | null;        // bundle kits: manual kit price, overrides bundle / sum
+  quantities?: Record<string, number>;  // item id -> quantity for items with a unit (default ItemUnit.default)
   date?: string;
 }
 

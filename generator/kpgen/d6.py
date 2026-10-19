@@ -144,7 +144,8 @@ class D6:
             if not bgs: continue
             dark = sum(Image.open(io.BytesIO(bgs[0].image.blob)).convert('L').resize((8, 8)).getdata()) / 64 < 128
             R.set_theme('dark' if dark else 'light')
-            data = self.cache.get(f"d6-underlay-{'dark' if dark else 'light'}", R.underlay, (path, float(o.get('opacity', 0.18))), (path,))
+            data = self.cache.get(f"d6-underlay-{'dark' if dark else 'light'}", R.underlay_on,
+                                  (bgs[0].image.blob, path, float(o.get('opacity', 0.18)), float(o.get('fx', 0.5)), float(o.get('fy', 0.5))), (path,))
             set_image(bgs[0], data)
         R.set_theme('dark')
         for key, texts in (ov.get('texts') or {}).items():

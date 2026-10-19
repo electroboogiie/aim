@@ -3,7 +3,7 @@
 import hashlib, json, os, struct
 from . import raster as R
 
-VERSION = 'kpgen-2'
+VERSION = 'kpgen-3'
 
 
 class Cache:

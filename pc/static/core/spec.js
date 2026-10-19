@@ -1,4 +1,4 @@
-import { SUPPORTED_PROFILES, SUPPORTED_TRAILER_PROFILES, accessoryDesc, accessoryStatus, companyById, itemById, kitTitle, kitTypeById, modelName, termById } from "./catalog.js";
+import { SUPPORTED_PROFILES, SUPPORTED_TRAILER_PROFILES, accessoryDesc, choiceIsStandard, accessoryStatus, companyById, itemById, kitTitle, kitTypeById, modelName, termById } from "./catalog.js";
 import { fillTemplate, formatDate, formatPct, formatRate, formatUah, joinUk } from "./format.js";
 import { TEXT_ON_REQUEST } from "./pricing.js";
 /** Crane spec keys the generator prints (§2.1 plus telescope). */
@@ -178,9 +178,12 @@ export function buildKpSpec(c, settings, q, meta) {
     }
     const rows = kpRows(q);
     for (const ch of q.choices) {
-        const opt = kt.choices.find((x) => x.id === ch.id)?.options.find((o) => o.value === ch.value);
-        if (!opt)
+        const def = kt.choices.find((x) => x.id === ch.id);
+        const opt = def?.options.find((o) => o.value === ch.value);
+        if (!opt || choiceIsStandard(opt, [crane]))
             continue;
+        if (def?.slot && !q.rows.some((r) => r.slot === def.slot))
+            continue; // its position is not in the kit
         Object.assign(specs, opt.crane_specs ?? {});
         const row = opt.crane_note ? rows.find((r) => r.item_id === crane.id) : undefined;
         if (row)

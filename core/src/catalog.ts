@@ -29,12 +29,34 @@ export function choiceOption(choice: Choice, value: string | undefined): ChoiceO
   return choice.options.find((o) => o.value === value);
 }
 
-export function defaultSelection(kitType: KitType): Selection {
+export function defaultSelection(kitType: KitType, catalog?: Catalog): Selection {
   const slots: Record<string, string | null> = {};
   for (const s of kitType.slots) slots[s.id] = s.default;
   const choices: Record<string, string> = {};
-  for (const ch of kitType.choices) choices[ch.id] = ch.default;
+  const items = catalog ? selectedItems(catalog, kitType, { slots, choices: {}, accessories: [] }).map((x) => x.item) : [];
+  for (const ch of kitType.choices) choices[ch.id] = catalog ? choiceDefault(catalog, ch, items) : ch.default;
   return { slots, choices, accessories: [] };
+}
+
+/** True when a choice option fits the selected items (an option without a list fits everything). */
+export function choiceOptionFits(c: Catalog, o: ChoiceOption, items: Item[]): boolean {
+  if (!o.compatible) return true;
+  const rel = relevant(c, o.compatible, items);
+  return rel.length === 0 || rel.every((x) => o.compatible!.includes(x.id));
+}
+
+/** The option that is standard with the selected items (ChoiceOption.default_for), else Choice.default. */
+export function choiceDefault(c: Catalog, ch: Choice, items: Item[]): string {
+  const std = ch.options.find((o) => o.default_for && items.some((i) => o.default_for!.includes(i.id)));
+  if (std) return std.value;
+  const d = choiceOption(ch, ch.default);
+  if (d && choiceOptionFits(c, d, items)) return ch.default;
+  return (ch.options.find((o) => choiceOptionFits(c, o, items)) ?? d ?? ch.options[0]!).value;
+}
+
+/** The option is the standard one for the selected items (no surcharge, nothing printed). */
+export function choiceIsStandard(o: ChoiceOption, items: Item[]): boolean {
+  return !!o.default_for && items.some((i) => o.default_for!.includes(i.id));
 }
 
 function cloneSelection(s: Selection): Selection {
@@ -45,13 +67,14 @@ function cloneSelection(s: Selection): Selection {
   };
 }
 
-/** Every slot present (missing ones are empty), missing choices get their default. */
-export function normalizeSelection(kitType: KitType, selection: Selection): Selection {
+/** Every slot present (missing ones are empty), missing choices get their default (with the catalog: for the items). */
+export function normalizeSelection(kitType: KitType, selection: Selection, catalog?: Catalog): Selection {
   const s = cloneSelection(selection);
   const slots: Record<string, string | null> = {};
   for (const slot of kitType.slots) slots[slot.id] = s.slots[slot.id] ?? null;
+  const items = catalog ? selectedItems(catalog, kitType, { slots, choices: {}, accessories: [] }).map((x) => x.item) : [];
   const choices: Record<string, string> = {};
-  for (const ch of kitType.choices) choices[ch.id] = s.choices[ch.id] ?? ch.default;
+  for (const ch of kitType.choices) choices[ch.id] = s.choices[ch.id] ?? (catalog ? choiceDefault(catalog, ch, items) : ch.default);
   return { slots, choices, accessories: s.accessories };
 }
 
@@ -59,7 +82,7 @@ export function normalizeSelection(kitType: KitType, selection: Selection): Sele
 export function presetSelection(preset: Preset, catalog?: Catalog): Selection {
   const s = cloneSelection(preset.selection);
   const kt = catalog ? kitTypeById(catalog, preset.kit_type) : undefined;
-  return kt ? normalizeSelection(kt, s) : s;
+  return kt ? normalizeSelection(kt, s, catalog) : s;
 }
 
 export interface SelectedItem { slot: Slot; item: Item }
@@ -220,7 +243,7 @@ export function itemDesc(kitType: KitType, item: Item, selection: Selection): st
 export function reconcileSelection(c: Catalog, kitTypeId: string, selection: Selection, changedSlot?: string): Selection {
   const kt = kitTypeById(c, kitTypeId);
   if (!kt) return cloneSelection(selection);
-  const s = normalizeSelection(kt, selection);
+  const s = normalizeSelection(kt, selection, c);
   const order = kt.slots.filter((x) => x.id !== changedSlot);
   for (const slot of order) {
     const id = s.slots[slot.id];
@@ -235,6 +258,11 @@ export function reconcileSelection(c: Catalog, kitTypeId: string, selection: Sel
     else if (!slot.required) s.slots[slot.id] = null;
   }
   const items = selectedItems(c, kt, s).map((x) => x.item);
+  for (const ch of kt.choices) {
+    const o = choiceOption(ch, s.choices[ch.id]);
+    const slotChanged = !!changedSlot && ch.slot === changedSlot && ch.options.some((x) => x.default_for);
+    if (!o || !choiceOptionFits(c, o, items) || slotChanged) s.choices[ch.id] = choiceDefault(c, ch, items);
+  }
   s.accessories = s.accessories
     .filter((a) => {
       const acc = accessoryById(c, a.id);
@@ -297,7 +325,11 @@ export function validateSelection(c: Catalog, input: QuoteInput): string[] {
     const ch = kt.choices.find((x) => x.id === key);
     if (!ch) { errors.push(`Невідомий параметр «${key}» для комплекту «${kt.title}».`); continue; }
     const v = chs[key];
-    if (typeof v !== "string" || !choiceOption(ch, v)) errors.push(`Невідоме значення «${String(v)}» для параметра «${ch.title}».`);
+    const o = typeof v === "string" ? choiceOption(ch, v) : undefined;
+    if (!o) errors.push(`Невідоме значення «${String(v)}» для параметра «${ch.title}».`);
+    else if (!choiceOptionFits(c, o, picked.map((x) => x.item))) {
+      errors.push(`${ch.title}: «${o.title}» не підходить до ${joinUk(picked.map((x) => modelName(x.item)), "і")}.`);
+    }
   }
 
   const items = picked.map((x) => x.item);
@@ -344,6 +376,17 @@ export function validateSelection(c: Catalog, input: QuoteInput): string[] {
   if (input.kit_price_uah !== undefined && input.kit_price_uah !== null) {
     if (kt.price_display !== "bundle") errors.push("Ручна ціна комплекту можлива лише для комплектів з єдиною ціною.");
     else if (!isMoney(input.kit_price_uah)) errors.push("Ціна комплекту має бути невід’ємним числом.");
+  }
+  if (input.quantities !== undefined && input.quantities !== null) {
+    if (!isObj(input.quantities)) errors.push("quantities має бути об’єктом «id виробу → кількість».");
+    else {
+      for (const [id, v] of Object.entries(input.quantities)) {
+        const it = itemById(c, id);
+        if (!it) errors.push(`Кількість для невідомого виробу «${id}».`);
+        else if (!it.unit) errors.push(`«${it.title}» не продається на кількість.`);
+        else if (!(typeof v === "number" && Number.isFinite(v) && v > 0)) errors.push(`Кількість «${it.title}» має бути додатним числом.`);
+      }
+    }
   }
   if (input.date !== undefined && input.date !== null && !isIsoDate(input.date)) {
     errors.push(`Невірна дата «${String(input.date)}» (потрібно РРРР-ММ-ДД).`);
@@ -449,6 +492,13 @@ export function validateCatalog(c: Catalog): string[] {
     checkPrice(it.price, w, errors);
     refItems(it.compatible, `${w}, compatible`);
     photoOk(it.photo, w);
+    if (it.unit !== undefined) {
+      const u = it.unit;
+      if (!isObj(u) || typeof u.name !== "string" || !u.name || typeof u.title !== "string" || !u.title.includes("{qty}")
+        || !(typeof u.per === "number" && u.per > 0) || !(typeof u.default === "number" && u.default > 0)) {
+        errors.push(`${w}: unit має містити name, per > 0, default > 0 і title з {qty}.`);
+      }
+    }
     if (it.specs !== undefined && !isObj(it.specs)) errors.push(`${w}: specs має бути об’єктом.`);
     if (it.kp_profile !== undefined && it.kp_profile !== null) {
       if (it.kind === "trailer") {
@@ -482,16 +532,19 @@ export function validateCatalog(c: Catalog): string[] {
       if (s.required && s.default === null) errors.push(`${w}, позиція «${s.id}»: обов’язкова позиція без default.`);
     }
     for (const d of dupes(kt.choices.map((x) => x.id))) errors.push(`${w}: параметр «${d}» повторюється.`);
+    for (const ch of kt.choices) if (ch.slot !== undefined && !kt.slots.some((x) => x.id === ch.slot)) errors.push(`${w}, параметр «${ch.id}»: невідома позиція «${ch.slot}».`);
+    for (const s of kt.slots) if (s.priced && kt.price_display !== "bundle") errors.push(`${w}, позиція «${s.id}»: priced лише для комплектів з єдиною ціною.`);
     for (const ch of kt.choices) {
       for (const d of dupes(ch.options.map((o) => o.value))) errors.push(`${w}, параметр «${ch.id}»: значення «${d}» повторюється.`);
       if (!choiceOption(ch, ch.default)) errors.push(`${w}, параметр «${ch.id}»: default не серед значень.`);
       for (const o of ch.options) if (o.price_uah !== undefined && !isMoney(o.price_uah)) errors.push(`${w}, «${ch.id}=${o.value}»: price_uah має бути невід’ємним числом.`);
+      for (const o of ch.options) { refItems(o.compatible, `${w}, «${ch.id}=${o.value}» compatible`); refItems(o.default_for, `${w}, «${ch.id}=${o.value}» default_for`); }
     }
     for (const g of kt.accessory_groups) if (!ACCESSORY_GROUPS.includes(g)) errors.push(`${w}: невідома група опцій «${g}».`);
     for (const s of kt.title_slots ?? []) if (!kt.slots.some((x) => x.id === s)) errors.push(`${w}: title_slots — невідома позиція «${s}».`);
     for (const t of kt.terms ?? []) if (!termIds.has(t)) errors.push(`${w}: невідома умова «${t}».`);
-    if (kt.price_display === "bundle" && kt.id === "npl_crane" && kt.slots.length !== 2) errors.push(`${w}: комплект НПЛ-10 має рівно 2 позиції.`);
-    const def = defaultSelection(kt);
+    if (kt.price_display === "bundle" && kt.id === "npl_crane" && kt.slots.filter((x) => !x.priced).length !== 2) errors.push(`${w}: комплект НПЛ-10 має рівно 2 позиції.`);
+    const def = defaultSelection(kt, c);
     for (const e of validateSelection(c, { kit_type: kt.id, selection: def })) errors.push(`${w}, вибір за замовчуванням: ${e}`);
   }
 

@@ -1,5 +1,5 @@
-import { accessoryById, accessoryDesc, accessoryStatus, choiceOption, companyById, findBundle, itemById, itemDesc, kitTitle, kitTypeById, modelName, normalizeSelection, selectedItems, validateSelection, } from "./catalog.js";
-import { addDays, formatDate, formatNumber, formatPct, formatRate, formatUah, isIsoDate, joinUk, roundTo, todayIso } from "./format.js";
+import { accessoryById, accessoryDesc, accessoryStatus, choiceIsStandard, choiceOption, companyById, findBundle, itemById, itemDesc, kitTitle, kitTypeById, modelName, normalizeSelection, selectedItems, validateSelection, } from "./catalog.js";
+import { addDays, fillTemplate, formatDate, formatNumber, formatPct, formatRate, formatUah, isIsoDate, joinUk, roundTo, todayIso } from "./format.js";
 export const TEXT_ON_REQUEST = "ціна за запитом";
 export const TEXT_INCLUDED = "входить у комплект";
 export const TEXT_IN_KIT = "у комплекті";
@@ -149,6 +149,12 @@ export function priceRule(rule, ctx, label) {
         }
     }
 }
+/** Quantity of a unit item: the manager's value within [min, max], else the default. */
+export function unitQty(unit, v) {
+    if (typeof v !== "number" || !Number.isFinite(v) || v <= 0)
+        return unit.default;
+    return Math.min(unit.max ?? Infinity, Math.max(unit.min ?? 0, v));
+}
 function absorb(acc, p, label) {
     acc.warnings.push(...p.warnings);
     if (p.noEurRef)
@@ -184,45 +190,64 @@ export function quote(c, settings, rate, input) {
     if (errors.length)
         throw new QuoteError(errors);
     const kt = kitTypeById(c, input.kit_type);
-    const sel = normalizeSelection(kt, input.selection);
+    const sel = normalizeSelection(kt, input.selection, c);
     const date = input.date ?? todayIso();
     const eur = eurRate(settings, rate);
     const ctx = { settings, eur, rate, date };
     const bundleKit = kt.price_display === "bundle";
     const manual = input.manual_prices ?? {};
     const itemAcc = { warnings: [], noEurRef: [], noMetal: [], needsRate: false, usedRate: false };
+    const extraAcc = { warnings: [], noEurRef: [], noMetal: [], needsRate: false, usedRate: false };
     const picked = selectedItems(c, kt, sel);
     const items = picked.map((x) => x.item);
     const itemPrices = [];
+    const qtys = input.quantities ?? {};
+    // bundle kits: slots priced on their own sit on top of the kit price and are not part of the bundle
+    const ownPrice = (slotPriced) => !bundleKit || !!slotPriced;
     const rows = picked.map(({ slot, item }, i) => {
         let p;
+        const unit = item.unit;
+        const qty = unit ? unitQty(unit, qtys[item.id]) : 1;
         if (typeof manual[item.id] === "number") {
             const v = manual[item.id];
             p = { price: v, text: formatUah(v), breakdown: "ціна вказана вручну", warnings: [] };
         }
         else {
             p = priceRule(item.price, ctx, item.title);
+            if (unit && p.price !== null) {
+                const v = Math.round(p.price * qty / unit.per);
+                p = { ...p, price: v, text: formatUah(v), breakdown: `${p.breakdown} × ${formatNumber(qty)} ${unit.name} / ${formatNumber(unit.per)} ${unit.name}` };
+            }
             if (item.price.mode === "on_request")
                 p.warnings.push(`«${item.title}» — ${TEXT_ON_REQUEST}, у суму не входить.`);
         }
-        absorb(itemAcc, p, item.title);
-        itemPrices.push(p.price);
+        const own = ownPrice(slot.priced);
+        absorb(own && bundleKit ? extraAcc : itemAcc, p, item.title);
+        itemPrices.push(own && bundleKit ? null : p.price);
+        const title = unit ? fillTemplate(unit.title, { qty: formatNumber(qty) }) : item.title;
         const row = {
-            no: i + 1, item_id: item.id, title: item.title, desc: itemDesc(kt, item, sel), qty: 1,
-            price_uah: bundleKit ? null : p.price, price_text: bundleKit ? TEXT_IN_KIT : p.text, breakdown: p.breakdown,
+            no: i + 1, item_id: item.id, title, desc: itemDesc(kt, item, sel), qty: 1,
+            price_uah: own ? p.price : null, price_text: own ? p.text : TEXT_IN_KIT, breakdown: p.breakdown,
             kind: item.kind, slot: slot.id,
         };
         if (item.photo)
             row.photo = item.photo;
         return row;
     });
+    const extras = rows.filter((_, i) => bundleKit && ownPrice(picked[i].slot.priced));
+    const kitRows = rows.filter((r) => !extras.includes(r));
+    const kitPrices = itemPrices.filter((_, i) => !extras.includes(rows[i]));
     const acc = { warnings: [], noEurRef: [], noMetal: [], needsRate: false, usedRate: false };
     let kitPrice = null;
     let bundleId = null;
     let kitBreakdown = "";
     let complete = true;
     if (bundleKit) {
-        const bundle = findBundle(c, kt.id, sel.slots);
+        const bundleSlots = { ...sel.slots };
+        for (const s of kt.slots)
+            if (s.priced)
+                delete bundleSlots[s.id];
+        const bundle = findBundle(c, kt.id, bundleSlots);
         if (typeof input.kit_price_uah === "number") {
             kitPrice = input.kit_price_uah;
             kitBreakdown = "ціна комплекту вказана вручну";
@@ -237,16 +262,19 @@ export function quote(c, settings, rate, input) {
             if (kitPrice === null)
                 acc.warnings.push(`Ціна: ${label} — за запитом. Вкажіть ціну комплекту вручну.`);
         }
-        else if (itemPrices.length && itemPrices.every((x) => x !== null)) {
+        else if (kitPrices.length && kitPrices.every((x) => x !== null)) {
             merge(acc, itemAcc);
-            kitPrice = itemPrices.reduce((a, b) => a + b, 0);
-            kitBreakdown = "сума цін позицій: " + rows.map((r, i) => `${r.title} ${formatUah(itemPrices[i])}`).join(" + ");
+            kitPrice = kitPrices.reduce((a, b) => a + b, 0);
+            kitBreakdown = "сума цін позицій: " + kitRows.map((r, i) => `${r.title} ${formatUah(kitPrices[i])}`).join(" + ");
         }
         else {
-            const missing = rows.filter((_, i) => itemPrices[i] === null).map((r) => `«${r.title}»`);
+            const missing = kitRows.filter((_, i) => kitPrices[i] === null).map((r) => `«${r.title}»`);
             acc.warnings.push(`Ціну комплекту не визначено: немає ціни для ${joinUk(missing, "і")}. Вкажіть ціну комплекту вручну.`);
         }
         if (kitPrice === null)
+            complete = false;
+        merge(acc, extraAcc);
+        if (extras.some((r) => r.price_uah === null))
             complete = false;
     }
     else {
@@ -257,11 +285,13 @@ export function quote(c, settings, rate, input) {
     const choices = kt.choices.map((ch) => {
         const value = sel.choices[ch.id] ?? ch.default;
         const o = choiceOption(ch, value);
-        if (o.on_request && o.price_uah === undefined) {
+        const std = choiceIsStandard(o, items);
+        const slotEmpty = !!ch.slot && !sel.slots[ch.slot];
+        if (o.on_request && o.price_uah === undefined && !std && !slotEmpty) {
             complete = false;
             acc.warnings.push(`Доплату за «${o.title}» (${ch.title}) не визначено — уточніть ціну.`);
         }
-        return { id: ch.id, title: ch.title, value, value_title: o.title, price_uah: o.price_uah ?? 0 };
+        return { id: ch.id, title: ch.title, value, value_title: o.title, price_uah: std || slotEmpty ? 0 : o.price_uah ?? 0 };
     });
     const onRequestAcc = [];
     const accessories = sel.accessories.map((a, i) => {
@@ -304,7 +334,7 @@ export function quote(c, settings, rate, input) {
     if (acc.noMetal.length) {
         acc.warnings.push(`Не задано індекс металу: металозалежну частку цін не перераховано (${uniq(acc.noMetal).join(", ")}).`);
     }
-    const base = bundleKit ? kitPrice ?? 0 : rows.reduce((s, r) => s + (r.price_uah ?? 0), 0);
+    const base = (bundleKit ? kitPrice ?? 0 : 0) + rows.reduce((s, r) => s + (r.price_uah ?? 0), 0);
     const subtotal = base + choices.reduce((s, x) => s + x.price_uah, 0) + accessories.reduce((s, r) => s + (r.price_uah ?? 0), 0);
     const total = discount > 0 ? roundTo(subtotal * (1 - discount / 100), settings.rounding_uah) : subtotal;
     const q = {

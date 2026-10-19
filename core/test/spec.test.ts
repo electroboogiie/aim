@@ -24,7 +24,7 @@ test("НПЛ-10 kit: two rows «у комплекті», one total, НПЛ block
   assert.equal(spec.title, "НПЛ-10 + BMF 750");
   assert.equal(spec.rows.length, 2);
   assert.deepEqual(spec.rows.map((r) => [r.no, r.item_id, r.price_text]), [[1, "npl10", "у комплекті"], [2, "bmf750", "у комплекті"]]);
-  assert.equal(spec.rows[0]!.desc, "10 т · 4 коники · гідравлічні гальма · місце оператора");
+  assert.equal(spec.rows[0]!.desc, "10 т · 4 коники · гідравлічні гальма · пряме (заднє) місце оператора");
   assert.equal(spec.total_text, `1${NB}978${NB}000${NB}₴`);
   assert.deepEqual(spec.npl, { brakes: "гідравлічна", wheels: "500/45-22,5", stakes: "4" });
   assert.equal(spec.crane?.profile, "bmf750");

@@ -128,7 +128,8 @@ class Engine:
             bgs = by_name(s, 'bg')
             if not bgs: continue
             op = float(o.get('opacity', 0.18))
-            set_image(bgs[0], self.raster('underlay', R.underlay, path, op, assets=(path,)))
+            set_image(bgs[0], self.raster('underlay', R.underlay_on, bgs[0].image.blob, path, op,
+                                          float(o.get('fx', 0.5)), float(o.get('fy', 0.5)), assets=(path,)))
         for key, texts in (ov.get('texts') or {}).items():
             s = self.pages.get(key)
             if s is None: continue
@@ -401,7 +402,7 @@ class Engine:
             im = Image.open(R.asset(row['photo']))
             if im.mode in ('RGBA', 'LA', 'P') and im.convert('RGBA').getchannel('A').getextrema()[0] < 250:
                 return None, R.cutout_glow(R.alpha_crop(im)), None
-            return None, im.convert('RGB'), None
+            return None, R.grade(im.convert('RGB'), sat=0.8, bright=0.92, warm=0.0), None
         if kind == 'crane' or (not kind and iid == (self.c.get('id') or '').lower()):
             return 14, Image.open(io.BytesIO(crane_blob)), crane_blob
         if self.T and kind == 'trailer':

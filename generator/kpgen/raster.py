@@ -171,10 +171,27 @@ def end_bg(path, fx, fy):
 
 
 def underlay(path, opacity=0.18, fx=0.5, fy=0.5):
-    """Admin underlay photo for any page: the style's page background with the photo blended in at opacity."""
-    ph = cover(path, W, H, fx=fx, fy=fy).convert('RGBA')
-    ph.putalpha(int(255 * max(0.0, min(1.0, opacity))))
-    return bg_page([(ph, (0, 0))])
+    """Admin underlay photo on the style's generic page background (no template background at hand)."""
+    return underlay_on(None, path, opacity, fx, fy)
+
+
+def styled_photo(path, w, h, fx=0.5, fy=0.5):
+    """A photo treated like the style's own page photos: graded (split tone), scan lines on dark pages, soft edges."""
+    ph = grade(cover(path, w, h, fx=fx, fy=fy), **THEME['side'])
+    ph = _scan(ph)
+    return fade(ph, {'t': 0.10, 'b': 0.22, 'l': 0.06, 'r': 0.06})
+
+
+def underlay_on(base, path, opacity=0.18, fx=0.5, fy=0.5):
+    """Admin underlay photo for any page: the photo treated by the style, blended at opacity into the page's own
+    background picture (base: image bytes of the template background; None = the style's generic page)."""
+    ph = styled_photo(path, W, H, fx, fy)
+    a = max(0.0, min(1.0, opacity))
+    ph.putalpha(ph.getchannel('A').point(lambda v: int(v * a)))
+    if base is None: return bg_page([(ph, (0, 0))])
+    im = Image.open(io.BytesIO(base)).convert('RGBA')
+    im = Image.alpha_composite(im, ph.resize(im.size, Image.LANCZOS))
+    return jpg(im)
 
 
 def graded_photo(path, w, h, fx=0.5, fy=0.5):
