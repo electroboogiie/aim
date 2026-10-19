@@ -23,7 +23,7 @@ for d in (DATA, OUT, CACHE, VERSIONS, PREVIEW, os.path.join(ASSETS, 'custom')): 
 
 sys.path.insert(0, GEN)
 from kpgen.styles import STYLES, DEFAULT, HERO_PAGES, pages   # noqa: E402
-from kpgen.profiles import PROFILES, NPL10                   # noqa: E402
+from kpgen.profiles import PROFILES, NPL10, TRAILERS         # noqa: E402
 
 LOCK = threading.Lock()          # admin.json writes and in-process introspection (the engine has global state)
 IMG_EXT = {'.jpg', '.jpeg', '.png', '.webp'}
@@ -105,19 +105,41 @@ def styles_info():
 
 
 def defaults_texts():
+    from kpgen.build import LAYOUT_TEXTS, LAYOUT_SHOW, SIGHT_BOX
+    x, y, w, h = SIGHT_BOX
     return {'cranes': {k: {'lead': p.get('lead', ''), 'lead2': p.get('lead2', '')} for k, p in PROFILES.items()},
-            'npl': {'lead': NPL10.get('lead', ''), 'lead2': NPL10.get('lead2', '')}}
+            'npl': {'lead': NPL10.get('lead', ''), 'lead2': NPL10.get('lead2', '')},
+            'layout': dict(text=LAYOUT_TEXTS, show=LAYOUT_SHOW, sight=dict(x=x, y=y, w=w, h=h))}
+
+
+def covers():
+    """Cover photos the KPs use (the sight frame is placed per photo): key = photo path, 'template' = the template's."""
+    out, seen = [], set()
+    def add(key, title, d):
+        if key in seen: return
+        seen.add(key); path, fx, fy = d if d else ('', 0.5, 0.45)
+        out.append(dict(key=key, title=title, path=path, fx=fx, fy=fy))
+    for k, p in PROFILES.items():
+        m = 'BMF ' + str(p.get('model_no') or k)
+        for kit, t in (('crane_kit', m), ('npl_crane', f'НПЛ-10 + {m}')):
+            d = p['cover'].get(kit)
+            add(d[0] if d else 'template', t if d else f'{t} (фото шаблону)', d)
+    for k, t in TRAILERS.items(): add(t['cover'][0], f"BMF {t.get('no') or k} + кран", t['cover'])
+    for style, st in (read_json(ADMIN, {}).get('styles') or {}).items():
+        o = (st.get('bg') or {}).get('cover') or {}
+        if o.get('path') and style in STYLES: add(o['path'], f"Своє фото титулки ({STYLES[style]['title']})", (o['path'], o.get('fx', 0.5), o.get('fy', 0.45)))
+    return out
 
 
 def page_texts(style):
     path = os.path.join(CACHE, f'texts_{style}.json')
     tpl = os.path.join(GEN, 'templates', STYLES[style]['template'])
     cached = read_json(path, None)
-    if cached and cached.get('mtime') == os.path.getmtime(tpl): return cached['pages']
+    if cached and cached.get('mtime') == os.path.getmtime(tpl) and cached.get('v') == 2: return cached['pages']
     with LOCK:
         from kpgen.introspect import static_texts
         data = static_texts(style)
-    write_json(path, {'mtime': os.path.getmtime(tpl), 'pages': data})
+    write_json(path, {'mtime': os.path.getmtime(tpl), 'v': 2, 'pages': data})
     return data
 
 
@@ -144,7 +166,12 @@ def apply_admin(spec, admin):
         if o and key in HERO_PAGES and not (key == 'cover' and panel) and STYLES[style]['engine'] == 'v3':
             photos[key] = o['path']; photos[key + '_focus'] = [float(o.get('fx', 0.5)), float(o.get('fy', 0.45))]
     if photos: spec['photos'] = photos
-    spec['overrides'] = {'bg': bg, 'texts': st.get('texts') or {}}
+    spec['overrides'] = {'bg': bg, 'texts': st.get('texts') or {}, 'layout': admin.get('layout') or {}}
+    ct = dict(spec.get('contacts') or {})   # contacts from the admin: every style
+    for k, v in ((admin.get('layout') or {}).get('contacts') or {}).items():
+        if k in ('phones', 'sites', 'socials') and isinstance(v, str): v = [x.strip() for x in v.split('\n') if x.strip()]
+        if k in ('phones', 'email', 'sites', 'address', 'socials') and v: ct[k] = v
+    if ct: spec['contacts'] = ct
     return spec
 
 
@@ -269,6 +296,7 @@ class H(BaseHTTPRequestHandler):
                                            admin=read_json(ADMIN, default_admin()), styles=styles_info(),
                                            defaults=defaults_texts(), history=history()))
             if p == '/api/history': return self.send(200, history())
+            if p == '/api/covers': return self.send(200, covers())
             if p == '/api/eur':
                 try: return self.send(200, nbu_eur())
                 except Exception as e:  # noqa: BLE001

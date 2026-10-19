@@ -34,6 +34,8 @@ def _build(style, name, build_dir):
 
 
 def static_texts(style):
+    from .build import LAYOUT_TEXTS
+    LAYOUT = set(LAYOUT_TEXTS.values())   # edited on the admin's «Написи й елементи» tab
     tpl = list(Presentation(template_path(style)).slides)
     origin = {k: i for k, _, i in pages(style)}
     seen, changed = {}, set()
@@ -48,7 +50,7 @@ def static_texts(style):
     for key, title, _ in pages(style):
         if key not in seen: continue
         out[key] = dict(title=title, texts=[dict(id=sid, text=t) for sid, t in sorted(seen[key].items())
-                                          if (key, sid) not in changed and not SKIP.match(t.strip())])
+                                          if (key, sid) not in changed and not SKIP.match(t.strip()) and t not in LAYOUT])
     return out
 
 

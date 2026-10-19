@@ -162,7 +162,7 @@ function tab(id) {
 function sub(id) {
   $$("#adminNav button").forEach((b) => b.classList.toggle("on", b.dataset.sub === id));
   $$(".subtab").forEach((t) => t.classList.toggle("on", t.id === id));
-  ({ "a-style": renderStyleCards, "a-bg": renderBg, "a-texts": renderTexts, "a-kits": renderKitEditor, "a-choices": renderChoiceEditor,
+  ({ "a-style": renderStyleCards, "a-bg": renderBg, "a-texts": renderTexts, "a-layout": renderLayout, "a-kits": renderKitEditor, "a-choices": renderChoiceEditor,
      "a-accs": renderAccEditor, "a-items": renderItemEditor, "a-prices": renderPrices, "a-versions": renderVersions })[id]?.();
 }
 
@@ -739,6 +739,125 @@ function renderTermsLeads() {
       h("textarea", { rows: 3, placeholder: d[k], oninput: (e) => { o[k] = e.target.value; saveAdmin(); } }, o[k] || ""))));
   for (const [prof, d] of Object.entries(B.defaults.cranes)) lb.append(block(prof.toUpperCase().replace("BMF", "BMF "), d, (admin.texts.cranes[prof] ??= {})));
   lb.append(block("НПЛ-10", B.defaults.npl, admin.texts.npl));
+}
+
+// ------------------------------------------------------------------ admin: labels, switches, cover sight
+const PAGE_W = 8.27, PAGE_H = 11.69;
+let coversCache = null, sightCover = null;
+function layoutAdm() {
+  admin.layout ??= {};
+  for (const k of ["show", "text", "sight", "contacts"]) admin.layout[k] ??= {};
+  return admin.layout;
+}
+async function renderLayout() {
+  const L = layoutAdm(), D = B.defaults.layout, box = $("#layoutBox");
+  box.innerHTML = "";
+  const sw = (k, label) => h("label", { class: "chk" }, h("input", { type: "checkbox", checked: L.show[k] ?? D.show[k],
+    onchange: (e) => { if (e.target.checked === D.show[k]) delete L.show[k]; else L.show[k] = e.target.checked; saveAdmin(); if (k === "sight") drawSight(); } }), label);
+  const tx = (k, label, multi) => h("label", {}, label, h(multi ? "textarea" : "input", { rows: multi ? 2 : undefined, value: L.text[k] || "",
+    placeholder: D.text[k], oninput: (e) => { if (e.target.value.trim()) L.text[k] = e.target.value; else delete L.text[k]; saveAdmin(); if (k === "sight_title") drawSight(); } }));
+  const card = (title, ...kids) => h("div", { class: "card lay-card" }, h("h2", {}, title), ...kids);
+  const sws = (...x) => h("div", { class: "lay-sw" }, ...x);
+
+  const stage = h("div", { class: "sight-stage", id: "sightStage" });
+  const sel = h("select", { id: "sightCover", onchange: (e) => { sightCover = e.target.value; drawSight(); } });
+  const nums = h("div", { class: "sight-nums", id: "sightNums" });
+  box.append(card("Титулка",
+    sws(sw("kp_no", "№ КП"), sw("kp_date", "Дата"), sw("frames", "Рамки по кутах"), sw("sight", "Приціл"), sw("client", "«Підготовлено для»")),
+    tx("kp_title", "Заголовок над номером"), tx("cover_kicker", "Мітка зверху (кран)"), tx("cover_kicker_trailer", "Мітка зверху (НПЛ-10, причепи)"),
+    tx("sight_title", "Напис прицілу"), tx("client_label", "Напис над замовником")));
+  box.append(card("Приціл на титулці",
+    h("p", { class: "hint" }, "Тягніть рамку, щоб пересунути; тягніть край чи кут, щоб розтягнути. Помаранчевий круг у центрі лишається того ж розміру. Положення своє для кожного фото титулки."),
+    h("label", {}, "Фото титулки", sel), h("div", { class: "sight-wrap" }, stage, h("div", {}, nums,
+      h("div", { class: "row" }, h("button", { class: "sm", onclick: () => { const b = curSight(); L.sight = { "*": b }; saveAdmin(); drawSight(); toast("Приціл однаковий на всіх титулках"); } }, "На всі титулки"),
+        h("button", { class: "sm", onclick: () => { delete L.sight[sightCover]; saveAdmin(); drawSight(); } }, "Скинути"))))));
+  box.append(card("Низ сторінок",
+    sws(sw("footer", "Сайт і телефон"), sw("footer_label", "Підпис справа")),
+    tx("footer", "Сайт і телефон ({сайт}, {телефон} підставляються з контактів)"), tx("footer_label", "Підпис справа на сторінках крана")));
+  box.append(card("Назви розділів (номер «// 01 —» ставиться сам)", h("div", { class: "lay-cols" },
+    tx("sec_manifest", "Кран: маніфест"), tx("sec_crane_in_kit", "Кран у комплекті з причепом"), tx("sec_anatomy", "Конструкція"),
+    tx("sec_passport", "Технічний паспорт"), tx("sec_passport_in_kit", "Паспорт крана в комплекті з причепом"),
+    tx("sec_trailer_npl", "НПЛ-10"), tx("sec_trailer", "Причіп BMF"), tx("sec_trailer_spec", "Габарити причепа"),
+    tx("sec_config", "Конфігурація"), tx("sec_options", "Додаткові опції"), tx("sec_price", "Вартість"),
+    tx("sec_maker", "Виробник BMF"), tx("sec_own", "Власне виробництво"))));
+  box.append(card("Підписи",
+    sws(sw("module", "«Модуль 01» на плитках"), sw("term", "Номери умов «T-01»")),
+    tx("module", "Підпис плиток (номер додається)"), tx("term", "Префікс номера умови"),
+    tx("passport_note", "Примітка під паспортом ({вага} — вага крана)", true), tx("anatomy_note", "Примітка на сторінці конструкції"),
+    tx("maker_badge", "Мітка на фото виробника BMF"), tx("own_badge", "Мітка на фото власного виробництва"),
+    tx("maker_gallery", "Підпис галереї BMF"), tx("own_gallery", "Підпис галереї власного виробництва")));
+  const co = cat0.companies?.find((c) => c.id === settings.company_maker) || cat0.companies?.[0] || {};
+  const ct = (k, label, multi, def) => h("label", {}, label, h(multi ? "textarea" : "input", { rows: multi ? 2 : undefined, value: L.contacts[k] || "",
+    placeholder: def, oninput: (e) => { if (e.target.value.trim()) L.contacts[k] = e.target.value; else delete L.contacts[k]; saveAdmin(); } }));
+  box.append(card("Контакти (остання сторінка, усі стилі)",
+    h("div", { class: "lay-2" }, tx("lbl_phone", "Підпис"), ct("phones", "Телефони (кожен з нового рядка)", true, (co.phones || []).join("\n"))),
+    h("div", { class: "lay-2" }, tx("lbl_email", "Підпис"), ct("email", "E-mail", false, co.email || "")),
+    h("div", { class: "lay-2" }, tx("lbl_site", "Підпис"), ct("sites", "Сайти (кожен з нового рядка)", true, (co.sites || []).join("\n"))),
+    h("div", { class: "lay-2" }, tx("lbl_address", "Підпис"), ct("address", "Адреса (новий рядок — перенос)", true, co.address || "")),
+    h("div", { class: "lay-2" }, tx("lbl_socials", "Підпис"), ct("socials", "Соцмережі (кожна з нового рядка)", true, (co.socials || []).join("\n"))),
+    h("div", { class: "lay-2" }, tx("lbl_production", "Підпис"), tx("production", "Текст (до 3 рядків)", true))));
+  if (!coversCache) { try { coversCache = await api("/api/covers"); } catch (e) { coversCache = []; } }
+  sel.innerHTML = "";
+  for (const c of coversCache) sel.append(h("option", { value: c.key }, c.title + (L.sight[c.key] ? " ✎" : "")));
+  if (!coversCache.some((c) => c.key === sightCover)) sightCover = coversCache[0]?.key || "template";
+  sel.value = sightCover;
+  drawSight();
+}
+function curSight() {
+  const L = layoutAdm(), d = B.defaults.layout.sight;
+  return { ...(L.sight[sightCover] || L.sight["*"] || d) };
+}
+function drawSight() {
+  const stage = $("#sightStage"); if (!stage) return;
+  const L = layoutAdm(), D = B.defaults.layout, c = (coversCache || []).find((x) => x.key === sightCover);
+  const style = ["dark", "light_v3"].includes(admin.style) ? admin.style : "dark";
+  const src = !c || !c.path ? `/api/bg?style=${style}&page=cover` : `/api/preview/page?style=${style}&page=cover&path=${encodeURIComponent(c.path)}&fx=${c.fx}&fy=${c.fy}`;
+  stage.innerHTML = "";
+  stage.append(h("img", { src, alt: "титулка", draggable: false }));
+  const on = L.show.sight ?? D.show.sight;
+  const b = curSight();
+  const frame = h("div", { class: "sight-frame" + (on ? "" : " off") }, h("i", { class: "ring" }),
+    ...["tl", "tr", "bl", "br"].map((k) => h("b", { class: "c " + k })),
+    ...["n", "s", "e", "w", "ne", "nw", "se", "sw"].map((k) => h("span", { class: "hd " + k, "data-dir": k })));
+  const label = h("div", { class: "sight-label" + (on ? "" : " off") }, h("b", {}, L.text.sight_title || D.text.sight_title), h("small", {}, "BMF 720 · 7,2 M · 60 KNM"));
+  stage.append(frame, label);
+  const place = () => {
+    const pct = (v, W) => (v / W * 100) + "%";
+    Object.assign(frame.style, { left: pct(b.x, PAGE_W), top: pct(b.y, PAGE_H), width: pct(b.w, PAGE_W), height: pct(b.h, PAGE_H) });
+    const rw = 1.77, right = b.x + b.w + 0.25 + rw <= PAGE_W - 0.2;
+    const lx = right ? b.x + b.w + 0.25 : Math.max(0.2, b.x - 0.25 - rw);
+    Object.assign(label.style, { left: pct(lx, PAGE_W), top: pct(b.y + 0.02, PAGE_H), width: pct(rw, PAGE_W) });
+    const cm = (v) => (v * 2.54).toFixed(1).replace(".", ",");
+    $("#sightNums").innerHTML = `<small>Ліворуч ${cm(b.x)} см · зверху ${cm(b.y)} см<br>Ширина ${cm(b.w)} см · висота ${cm(b.h)} см</small>`;
+  };
+  place();
+  if (!on) return;
+  const clamp = () => {
+    b.w = Math.max(0.4, Math.min(b.w, PAGE_W - 0.4)); b.h = Math.max(0.4, Math.min(b.h, PAGE_H - 0.4));
+    b.x = Math.max(0.2, Math.min(b.x, PAGE_W - 0.2 - b.w)); b.y = Math.max(0.2, Math.min(b.y, PAGE_H - 0.2 - b.h));
+  };
+  frame.onpointerdown = (ev) => {
+    ev.preventDefault(); frame.setPointerCapture(ev.pointerId);
+    const dir = ev.target.dataset?.dir || "move", r = stage.getBoundingClientRect(), k = PAGE_W / r.width;
+    const sx = ev.clientX, sy = ev.clientY, o = { ...b };
+    frame.onpointermove = (e) => {
+      const dx = (e.clientX - sx) * k, dy = (e.clientY - sy) * k;
+      if (dir === "move") { b.x = o.x + dx; b.y = o.y + dy; }
+      else {
+        if (dir.includes("e")) b.w = o.w + dx;
+        if (dir.includes("s")) b.h = o.h + dy;
+        if (dir.includes("w")) { b.w = o.w - dx; b.x = o.x + dx; if (b.w < 0.4) { b.x -= 0.4 - b.w; } }
+        if (dir.includes("n")) { b.h = o.h - dy; b.y = o.y + dy; if (b.h < 0.4) { b.y -= 0.4 - b.h; } }
+      }
+      clamp(); place();
+    };
+    frame.onpointerup = () => {
+      frame.onpointermove = frame.onpointerup = null;
+      const r2 = (v) => Math.round(v * 100) / 100;
+      L.sight[sightCover] = { x: r2(b.x), y: r2(b.y), w: r2(b.w), h: r2(b.h) }; saveAdmin();
+      const opt = $("#sightCover")?.selectedOptions[0]; if (opt && !opt.textContent.endsWith(" ✎")) opt.textContent += " ✎";
+    };
+  };
 }
 
 // ------------------------------------------------------------------ admin: catalog — kit positions

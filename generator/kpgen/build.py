@@ -34,6 +34,28 @@ NOTE_CRANE = ('Аксесуари з каталогів BMF (bmf.rv.ua, bmf.ee),
 NOTE_NPL = ('Аксесуари з каталогів BMF (bmf.rv.ua, bmf.ee) для кранів і причепів, сумісні з краном комплекту. Ціни — за запитом: '
             'обрані опції додаємо в КП окремими рядками. Сумісність опцій для причепа з НПЛ-10 підтверджуємо під замовлення.')
 
+# Admin «Написи й елементи» (spec.overrides.layout = {show, text, sight, contacts}): labels the engine writes or the
+# template carries, switches for cover/footer elements, the cover sight frame per cover photo. Empty text = as now.
+LAYOUT_TEXTS = dict(
+    kp_title='КОМЕРЦІЙНА ПРОПОЗИЦІЯ', cover_kicker='FORESTRY CRANE SYSTEM', cover_kicker_trailer='TIMBER TRAILER SYSTEM',
+    sight_title='TARGET LOCKED', client_label='ПІДГОТОВЛЕНО ДЛЯ',
+    footer='{сайт}  ·  {телефон}', footer_label='СИСТЕМА ЛІСОВОГО КРАНА',
+    sec_manifest='МАНІФЕСТ', sec_crane_in_kit='КРАН-МАНІПУЛЯТОР', sec_anatomy='КОНСТРУКЦІЯ', sec_passport='ТЕХНІЧНИЙ ПАСПОРТ',
+    sec_passport_in_kit='ТЕХНІЧНИЙ ПАСПОРТ КРАНА', sec_trailer_npl='НАПІВПРИЧІП', sec_trailer='ПРИЧІП',
+    sec_trailer_spec='ГАБАРИТИ ТА ХАРАКТЕРИСТИКИ', sec_config='КОНФІГУРАЦІЯ', sec_options='ДОДАТКОВІ ОПЦІЇ', sec_price='ВАРТІСТЬ',
+    sec_maker='ВИРОБНИК', sec_own='ВЛАСНЕ ВИРОБНИЦТВО',
+    module='МОДУЛЬ', term='T-',
+    passport_note='* без захвату і ротатора. Дані виробника, bmf.ee. Вага {вага} кг — без опори, захвату і ротатора.',
+    anatomy_note='* без захвату і ротатора · bmf.ee',
+    maker_badge='ROBOT WELDING · LIVE', own_badge=OWN_PRODUCTION['badge'],
+    maker_gallery='// В ПОЛІ · КЛІЄНТИ BMF', own_gallery='// НАШІ ВИРОБИ',
+    lbl_phone='ТЕЛЕФОН', lbl_email='E-MAIL', lbl_site='САЙТ', lbl_address='АДРЕСА', lbl_socials='СОЦМЕРЕЖІ',
+    lbl_production='ВИРОБНИЦТВО', production='Напівпричепи НПЛ-10\n100+ виготовлено в Сарнах')
+LAYOUT_SHOW = dict(kp_no=True, kp_date=True, frames=True, sight=True, client=True, footer=True, footer_label=True,
+                   module=True, term=True)
+SIGHT_BOX = (4.05, 1.3, 1.75, 1.75)   # template: frame corners 5-12, centre ring 13, leader 14, label 15+16
+PAGE_W, PAGE_H = 8.27, 11.69
+
 
 def plural(n, one_, few, many):
     nums = re.findall(r'\d+', str(n))   # "2/4" agrees with the last number
@@ -59,6 +81,18 @@ class Engine:
         self.S = STYLES[self.style]
         R.set_theme(self.S['theme'])
         self.panel = self.S.get('cover') == 'panel'   # light design whose cover is an orange panel with a crane cut-out
+        lay = (spec.get('overrides') or {}).get('layout') or {}
+        self.Lset = {k: v for k, v in (lay.get('text') or {}).items() if k in LAYOUT_TEXTS and isinstance(v, str) and v.strip()}
+        self.L = dict(LAYOUT_TEXTS, **self.Lset)
+        self.show = dict(LAYOUT_SHOW, **{k: bool(v) for k, v in (lay.get('show') or {}).items() if k in LAYOUT_SHOW})
+        self.sights = lay.get('sight') or {}
+        self.cover_key = 'template'
+        ct = dict(spec['contacts'])
+        for k, v in (lay.get('contacts') or {}).items():
+            if k not in ('phones', 'email', 'sites', 'address', 'socials') or not v: continue
+            if isinstance(v, str) and k in ('phones', 'sites', 'socials'): v = [x.strip() for x in v.split('\n') if x.strip()]
+            if v: ct[k] = v
+        spec['contacts'] = ct
 
     # ------------------------------------------------------------ helpers
     def sp(self, k, default='—'):
@@ -87,6 +121,7 @@ class Engine:
             d = self.T[which] if self.T else TRUCK[which] if self.truck and TRUCK.get(which) else self.P[which][self.kit]
             if d is None: return None
             path, fx, fy = d
+        if which == 'cover': self.cover_key = path
         return self.raster(which + '_bg', maker, path, fx, fy, assets=(path,))
 
     # ------------------------------------------------------------ build
@@ -113,6 +148,7 @@ class Engine:
         self.end_page()
         self.chrome()
         if self.options: self.pages['options'] = self.options
+        self.layout()
         self.overrides()
         prune_images(prs)
         return prs
@@ -272,7 +308,7 @@ class Engine:
                 self.sp('pump_lpm'), self.sp('telescope'), self.sp('legs'), self.sp('weight_kg')]
         for i, v in enumerate(vals, 1): put(one(s, f'fld_spec_{i:02d}'), v)
         put(by_id(s, 80), self.flow())   # unit of row 07
-        put(by_id(s, 118), f"* без захвату і ротатора. Дані виробника, bmf.ee. Вага {self.sp('weight_kg')} кг — без опори, захвату і ротатора.")
+        put(by_id(s, 118), self.L['passport_note'].replace('{вага}', self.sp('weight_kg')))
 
     # ------------------------------------------------------------ НПЛ-10 trailer pages
     def tdata(self):
@@ -434,6 +470,8 @@ class Engine:
                  'BL': (22, 23, 24, 25, 26, 27, 28), 'BR': (29, 30, 31, 32, 33, 34, 35)}
         sh = lambda sid: by_id(s, sid)
         imgs = [self.tile_image(r, crane_blob) for r in rows]
+        for slot in slots.values():   # "МОДУЛЬ 01" labels: admin prefix, number kept
+            lab = sh(slot[2]); lab.name = 'module_label'; put(lab, f"{self.L['module']} {lab.text_frame.text[-2:]}")
 
         def fill(slot, row, img, box=None):
             rect, pic, label, line, title, desc, price = (sh(i) for i in slot)
@@ -452,7 +490,7 @@ class Engine:
         def drop(slot):
             for i in slot: remove(sh(i))
 
-        def relabel(slot, k): put(sh(slot[2]), f'МОДУЛЬ {k:02d}')
+        def relabel(slot, k): put(sh(slot[2]), f"{self.L['module']} {k:02d}")
 
         dy = I(7.3 * CM)   # tile + gap + tile: top tiles stretched over both rows (as in the user's НПЛ-10 KPs)
         if n == 4:
@@ -487,7 +525,7 @@ class Engine:
             x = x0 + (i % cols) * (tw + gap); y = y0 + (i // cols) * (th + gap)
             rect, pic, label, line, title, desc, price = (clone(s, p) for p in proto)
             geom(rect, x, y, tw, th)
-            geom(label, x + 0.16, y + 0.14, 1.6, 0.2); put(label, f'МОДУЛЬ {i + 1:02d}')
+            geom(label, x + 0.16, y + 0.14, 1.6, 0.2); put(label, f"{self.L['module']} {i + 1:02d}"); label.name = 'module_label'
             ph = th - 1.35
             geom(line, x + 0.16, y + th - 0.88, tw - 0.32, 0)
             geom(title, x + 0.16, y + th - 0.81, tw - 0.32, 0.22); put(title, row['title'])
@@ -647,7 +685,7 @@ class Engine:
                 if k: by_id(s, conns[k - 1]).top = I(y)
         for k, term in enumerate(terms):
             no, title, text = (by_id(s, i) for i in ids[k])
-            put(no, f'T-{k + 1:02d}'); put(title, term['title'].upper()); put(text, term['text'])
+            put(no, f"{self.L['term']}{k + 1:02d}"); no.name = 'term_no'; put(title, term['title'].upper()); put(text, term['text'])
             if pitch < 0.45: set_size(text, 750)
 
     # ------------------------------------------------------------ own production (НПЛ-10 kits)
@@ -760,12 +798,21 @@ class Engine:
 
     def chrome(self):
         S = list(self.prs.slides); n = len(S); sp = self.spec; ct = sp['contacts']
-        footer = f"{ct['sites'][0].upper()}  ·  {ct['phones'][0]}" if ct['sites'] and ct['phones'] else None
+        footer = (self.L['footer'].replace('{сайт}', ct['sites'][0].upper() if ct['sites'] else '')
+                  .replace('{телефон}', ct['phones'][0] if ct['phones'] else '').strip(' ·')) if ct['sites'] or ct['phones'] else None
         tags = {}
         if self.npl or self.trl:
             tags = {self.pages[k].slide_id: t for k, t in (('manifest', 'КРАН-МАНІПУЛЯТОР'), ('anatomy', 'КОНСТРУКЦІЯ'),
                     ('passport', 'ТЕХНІЧНИЙ ПАСПОРТ КРАНА'), ('config', 'КОНФІГУРАЦІЯ'), ('price', 'ВАРТІСТЬ'),
                     ('maker', 'ВЛАСНЕ ВИРОБНИЦТВО' if self.npl else 'ВИРОБНИК'))}
+        kit = self.npl or self.trl   # section names the admin changed
+        sec = dict(manifest='sec_crane_in_kit' if kit else 'sec_manifest', anatomy='sec_anatomy',
+                   passport='sec_passport_in_kit' if kit else 'sec_passport', config='sec_config', price='sec_price',
+                   maker='sec_own' if self.npl else 'sec_maker', trailer='sec_trailer_npl' if self.npl else 'sec_trailer',
+                   trailer_spec='sec_trailer_spec')
+        for k, lk in sec.items():
+            if k in self.pages and lk in self.Lset: tags[self.pages[k].slide_id] = self.L[lk]
+        if self.options and 'sec_options' in self.Lset: tags[self.options.slide_id] = self.L['sec_options']
         for i, s in enumerate(S, 1):
             for sh in s.shapes:
                 if sh.name == 'fld_kp_header': put(sh, [None, f"№ {sp['number']}", f"  //  {sp['title']}  //  ", sp['date']])
@@ -775,7 +822,87 @@ class Engine:
                 # page numbers follow the slide order (duplicated pages carry the template's number)
                 if i > 1 and len(sh.text_frame.paragraphs[0].runs) == 2 and re.fullmatch(r'\d\d / \d\d', t):
                     put(sh, [f'{i:02d}', f' / {n:02d}'])
-                if footer and t.startswith('BMF.RV.UA  ·  '): put(sh, footer)
+                if footer and t.startswith('BMF.RV.UA  ·  '): put(sh, footer); sh.name = 'footer_site'
                 # section tags "// NN — ..." follow the page number too
                 if sh.shape_id == 11 and 1 < i < n and re.match(r'// \d\d — ', t):
                     put(sh, f"// {i - 1:02d} — {tags.get(s.slide_id, t[8:])}")
+
+    # ------------------------------------------------------------ admin «Написи й елементи»
+    def layout(self):
+        L, show, Ls = self.L, self.show, self.Lset
+        drop = lambda sh: sh is not None and remove(sh)
+        def find(s, sid):
+            try: return by_id(s, sid)
+            except KeyError: return None
+        s = self.pages['cover']
+        kp = by_name(s, 'fld_kp_cover')
+        if kp:
+            if 'kp_title' in Ls: put(kp[0], L['kp_title'])
+            parts = ([f"№ {self.spec['number']}"] if show['kp_no'] else []) + ([self.spec['date']] if show['kp_date'] else [])
+            if not parts: set_lines(kp[0], [kp[0].text_frame.paragraphs[0].text])
+            else: put(kp[0], None, '  ·  '.join(parts))
+        kick = find(s, 18)
+        if kick is not None:
+            k = 'cover_kicker_trailer' if self.npl or self.trl else 'cover_kicker'
+            if k in Ls: put(kick, L[k])
+        cl = by_name(s, 'fld_client')
+        if cl:
+            if not show['client']: drop(cl[0])
+            elif 'client_label' in Ls: put(cl[0], L['client_label'])
+        if not show['frames']:
+            for sid in range(43, 51): drop(find(s, sid))
+        lab = find(s, 16)
+        if lab is not None and lab.has_text_frame and len(lab.text_frame.paragraphs) == 2:   # the TARGET LOCKED sight
+            if not show['sight']:
+                for sid in range(5, 17): drop(find(s, sid))
+            else:
+                if 'sight_title' in Ls: put(lab, L['sight_title'])
+                box = self.sights.get(self.cover_key) or self.sights.get('*')
+                if box: self.sight(s, box)
+        for page in self.prs.slides:
+            for sh in list(page.shapes):
+                if not sh.has_text_frame: continue
+                t = sh.text_frame.text
+                if sh.name == 'footer_site' or (sh.shape_id == 9 and t.startswith('BMF.RV.UA')):
+                    if not show['footer']: drop(sh)
+                elif sh.shape_id == 10 and sh.top > I(11):
+                    if not show['footer_label']: drop(sh)
+                    elif t == LAYOUT_TEXTS['footer_label'] and 'footer_label' in Ls: put(sh, L['footer_label'])
+                elif sh.name == 'module_label':
+                    if not show['module']: drop(sh)
+                elif sh.name == 'term_no' and not show['term']: drop(sh)
+                elif t == LAYOUT_TEXTS['anatomy_note'] and 'anatomy_note' in Ls: put(sh, L['anatomy_note'])
+        mk = self.pages['maker']
+        badge, gal = find(mk, 23), find(mk, 42)
+        bk, gk = ('own_badge', 'own_gallery') if self.npl else ('maker_badge', 'maker_gallery')
+        if badge is not None and bk in Ls: put(badge, ['● ', L[bk]])
+        if gal is not None and gk in Ls: put(gal, L[gk])
+        e = self.pages['end']
+        for sh in e.shapes:
+            if not sh.has_text_frame: continue
+            for k in ('lbl_phone', 'lbl_email', 'lbl_site', 'lbl_address', 'lbl_socials', 'lbl_production'):
+                if sh.text_frame.text == LAYOUT_TEXTS[k] and k in Ls: put(sh, L[k])
+        prod = by_name(e, 'fld_contact_5')
+        if prod and 'production' in Ls: set_lines(prod[0], L['production'].split('\n')[:3])
+
+    def sight(self, s, box):
+        """Sight frame moved/resized by the admin: corners follow the frame, the centre ring keeps its size,
+        the TARGET LOCKED label sits right of the frame (left when the page edge is too close)."""
+        try: x, y, w, h = (float(box[k]) for k in ('x', 'y', 'w', 'h'))
+        except (KeyError, TypeError, ValueError): return
+        w, h = max(0.4, min(w, PAGE_W - 0.4)), max(0.4, min(h, PAGE_H - 0.4))
+        x, y = max(0.2, min(x, PAGE_W - 0.2 - w)), max(0.2, min(y, PAGE_H - 0.2 - h))
+        a = min(0.2, w / 3, h / 3)
+        lines = {5: (x, y, a, 0), 6: (x, y, 0, a), 7: (x + w - a, y, a, 0), 8: (x + w, y, 0, a),
+                 9: (x, y + h, a, 0), 10: (x, y + h - a, 0, a), 11: (x + w - a, y + h, a, 0), 12: (x + w, y + h - a, 0, a)}
+        for sid, g in lines.items(): geom(by_id(s, sid), *g)
+        ring = by_id(s, 13); d = ring.width / EMU
+        geom(ring, x + w / 2 - d / 2, y + h / 2 - d / 2, d, d)
+        lead, rect, txt = by_id(s, 14), by_id(s, 15), by_id(s, 16)
+        rw, rh, ll = rect.width / EMU, rect.height / EMU, 0.25
+        ly = max(0.2, min(y + 0.02, PAGE_H - 0.2 - rh))
+        if x + w + ll + rw <= PAGE_W - 0.2: lx, cx = x + w + ll, x + w
+        else: lx, cx = max(0.2, x - ll - rw), x - ll
+        geom(lead, cx, ly + 0.23, ll, 0)
+        dx, dy = txt.left / EMU - rect.left / EMU, txt.top / EMU - rect.top / EMU
+        geom(rect, lx, ly, rw, rh); txt.left, txt.top = I(lx + dx), I(ly + dy)
