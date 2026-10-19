@@ -9,11 +9,18 @@ call :findpy
 if defined PY goto py_ok
 echo.
 echo Python 3.11+ не знайдено на цьому комп'ютері.
-where winget >nul 2>nul
-if errorlevel 1 goto py_manual
-choice /c YN /m "Встановити Python 3.12 автоматично? Y = так, N = ні"
+choice /c YN /m "Завантажити і встановити Python 3.12 автоматично? Y = так, N = ні"
 if errorlevel 2 goto py_manual
-winget install -e --id Python.Python.3.12 --accept-package-agreements --accept-source-agreements
+set "PYURL=https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe"
+set "PYEXE=%TEMP%\python-3.12.10-amd64.exe"
+if exist "%PYEXE%" del /q "%PYEXE%"
+echo Завантажую Python 3.12.10 з python.org...
+curl.exe -L --fail -o "%PYEXE%" "%PYURL%"
+if not exist "%PYEXE%" powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol='Tls12'; Invoke-WebRequest -UseBasicParsing -Uri '%PYURL%' -OutFile '%PYEXE%'"
+if not exist "%PYEXE%" goto py_manual
+for %%A in ("%PYEXE%") do if %%~zA LSS 5000000 goto py_manual
+echo Встановлюю Python: з'явиться вікно з прогресом, зачекайте до кінця.
+start "" /wait "%PYEXE%" /passive InstallAllUsers=0 PrependPath=1 Include_launcher=1 Include_test=0
 call :findpy
 if defined PY goto py_ok
 echo.
@@ -24,8 +31,11 @@ exit /b 1
 
 :py_manual
 echo.
-echo Встановіть Python вручну: https://www.python.org/downloads/
-echo Під час встановлення позначте "Add python.exe to PATH", потім запустіть start.bat знову.
+echo Встановіть Python вручну:
+echo   1. Завантажте https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe
+echo   2. Запустіть файл, внизу позначте "Add python.exe to PATH", натисніть "Install Now".
+echo   3. Запустіть start.bat знову.
+echo Файл .msix "Python install manager" не потрібен.
 pause
 exit /b 1
 
@@ -53,13 +63,20 @@ if defined LO goto lo_ok
 echo.
 echo LibreOffice не знайдено: без нього КП створюється лише в PPTX, без PDF.
 where winget >nul 2>nul
-if errorlevel 1 goto lo_skip
+if errorlevel 1 goto lo_page
 choice /c YN /m "Встановити LibreOffice автоматично? Y = так, N = продовжити без PDF"
 if errorlevel 2 goto lo_skip
 winget install -e --id TheDocumentFoundation.LibreOffice --accept-package-agreements --accept-source-agreements
 call :findlo
 if defined LO goto lo_ok
 :lo_skip
+goto lo_later
+:lo_page
+choice /c YN /m "Відкрити сторінку завантаження LibreOffice в браузері? Y = так, N = ні"
+if errorlevel 2 goto lo_later
+start "" "https://www.libreoffice.org/download/download-libreoffice/"
+echo Після встановлення LibreOffice запустіть start.bat знову, тоді КП будуть і в PDF.
+:lo_later
 echo Продовжую без PDF. LibreOffice можна встановити пізніше: https://www.libreoffice.org/download/
 goto run
 :lo_ok

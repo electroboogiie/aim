@@ -6,13 +6,15 @@
 ## Запуск на Windows
 
 1. Розпакуйте архів у будь-яку теку і двічі клацніть `pc\start.bat`.
-2. Якщо на комп’ютері немає Python 3.11+ чи LibreOffice (потрібен для PDF), `start.bat` запропонує встановити їх
-   автоматично (через winget, вбудований у Windows 10/11): натисніть **Y**. Після встановлення Python інколи треба
-   закрити вікно і запустити `start.bat` ще раз — про це буде написано.
+2. Якщо на комп’ютері немає Python 3.11+, `start.bat` запропонує завантажити і встановити Python 3.12.10
+   з python.org (звичайний інсталятор .exe, без .msix і без winget): натисніть **Y**. Якщо немає LibreOffice
+   (потрібен для PDF), `start.bat` запропонує встановити його через winget або відкриє сторінку завантаження.
+   Після встановлення Python інколи треба закрити вікно і запустити `start.bat` ще раз — про це буде написано.
 3. Перший запуск сам встановить бібліотеки (python-pptx, Pillow, numpy) — потрібен інтернет лише цього разу.
 4. Браузер відкриється сам (http://127.0.0.1:8765). Закрити програму — закрити чорне вікно.
 
-Вручну: Python — https://www.python.org/downloads/ (позначте «Add python.exe to PATH»),
+Вручну: Python — https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe (запустіть, позначте
+«Add python.exe to PATH», Install Now; файл .msix «Python install manager» не потрібен),
 LibreOffice — https://www.libreoffice.org/download/.
 
 ## Що є
