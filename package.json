@@ -1,0 +1,20 @@
+{
+  "name": "kp-configurator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Конструктор комерційних пропозицій: крани BMF, НПЛ-10, власні комплектуючі",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "test": "node --test \"build/**/*.test.js\"",
+    "start": "node build/server/src/main.js",
+    "dev": "bash scripts/dev.sh"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.2",
+    "typescript": "6.0.2"
+  }
+}

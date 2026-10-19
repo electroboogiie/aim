@@ -1,0 +1,2253 @@
+{
+  "bmf430": {
+    "model": "BMF 430",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf430",
+        "model": "BMF 430",
+        "specs": {
+          "reach_m": "4,3",
+          "torque_knm": "29",
+          "lift_4m_kg": "620",
+          "lift_full_kg": "470",
+          "grapple_m2": "0,15",
+          "rotator_t": "3",
+          "valve": "5/7 XY",
+          "valve_flow_l": "55",
+          "slew_knm": "4,9",
+          "slew_cyl": "2/4",
+          "turn_deg": "360",
+          "pressure_bar": "190",
+          "pump_lpm": "30–60",
+          "legs": "A",
+          "weight_kg": "448"
+        },
+        "grapple_options_m2": "0,15",
+        "rotator_options_t": "3",
+        "telescope": "ні",
+        "differs_from_base": []
+      }
+    ],
+    "specs": {
+      "reach_m": "4,3",
+      "torque_knm": "29",
+      "lift_4m_kg": "620",
+      "lift_full_kg": "470",
+      "grapple_m2": "0,15",
+      "rotator_t": "3",
+      "valve": "5/7 XY",
+      "valve_flow_l": "55",
+      "slew_knm": "4,9",
+      "slew_cyl": "2/4",
+      "turn_deg": "360",
+      "pressure_bar": "190",
+      "pump_lpm": "30–60",
+      "legs": "A",
+      "weight_kg": "448"
+    },
+    "needs_confirmation": [
+      "valve",
+      "valve_flow_l"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_header": "BMF430",
+      "telescope": "ні",
+      "wide_angle": "так",
+      "grapple_options_m2": "0,15",
+      "rotator_options_t": "3",
+      "kit_defaults_source": "bmf.ee: захват 0,15 м², ротатор 3 т; клапан — єдиний сумісний з BMF430 за таблицею клапанів bmf.ee (5/7XY 55 л)",
+      "compatible_trailers": [
+        "bmf5t1",
+        "bmf6t2",
+        "bmf7t1"
+      ],
+      "valves_compatible": [
+        "5/7XY (55 л)"
+      ],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Compact logging crane with 4.3 m reach for timber loading on trailers or tractors.",
+      "bmf_rv_ua": {
+        "reach_m": "4,3",
+        "torque_knm": "29",
+        "lift_3m_kg": "620",
+        "lift_full_kg": "420",
+        "slew_cyl": "2",
+        "legs": "А"
+      },
+      "conflicts": [
+        "bmf.rv.ua: 620 кг «на 3 м» і 420 кг на повному вильоті; bmf.ee: 620 кг на 4 м і 470 кг на повному вильоті. Поворотних циліндрів: bmf.ee 2/4, bmf.rv.ua 2."
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf430 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf430.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://bmf.rv.ua/production/bmf-430 (перевірено 18.10.2026)",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf440": {
+    "model": "BMF 440",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf440",
+        "model": "BMF 440",
+        "specs": {
+          "reach_m": "4,4",
+          "torque_knm": "12",
+          "lift_4m_kg": "245",
+          "lift_full_kg": "215",
+          "grapple_m2": "0,1",
+          "rotator_t": "1",
+          "valve": null,
+          "valve_flow_l": null,
+          "slew_knm": "3,1",
+          "slew_cyl": "2",
+          "turn_deg": "330",
+          "pressure_bar": "175",
+          "pump_lpm": "10–25",
+          "legs": "FD",
+          "weight_kg": "180"
+        },
+        "grapple_options_m2": "0,1",
+        "rotator_options_t": "1",
+        "telescope": "так",
+        "differs_from_base": []
+      }
+    ],
+    "specs": {
+      "reach_m": "4,4",
+      "torque_knm": "12",
+      "lift_4m_kg": "245",
+      "lift_full_kg": "215",
+      "grapple_m2": "0,1",
+      "rotator_t": "1",
+      "valve": null,
+      "valve_flow_l": null,
+      "slew_knm": "3,1",
+      "slew_cyl": "2",
+      "turn_deg": "330",
+      "pressure_bar": "175",
+      "pump_lpm": "10–25",
+      "legs": "FD",
+      "weight_kg": "180"
+    },
+    "needs_confirmation": [
+      "valve",
+      "valve_flow_l"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_header": "BMF440",
+      "telescope": "так",
+      "wide_angle": null,
+      "grapple_options_m2": "0,1",
+      "rotator_options_t": "1",
+      "kit_defaults_source": "bmf.ee: захват 0,1 м², ротатор 1 т; клапан BMF440 у таблиці клапанів bmf.ee відсутній",
+      "compatible_trailers": [
+        "bmf2t1"
+      ],
+      "valves_compatible": [],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Compact forestry crane designed for the BMF2T1 Forestry Trailer."
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf440 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf440.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf540": {
+    "model": "BMF 540",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf540",
+        "model": "BMF 540",
+        "specs": {
+          "reach_m": "5,4",
+          "torque_knm": "30",
+          "lift_4m_kg": "550",
+          "lift_full_kg": "390",
+          "grapple_m2": "0,15",
+          "rotator_t": "3",
+          "valve": null,
+          "valve_flow_l": null,
+          "slew_knm": "4,9",
+          "slew_cyl": "2/4",
+          "turn_deg": "360",
+          "pressure_bar": "200",
+          "pump_lpm": "30–60",
+          "legs": "A",
+          "weight_kg": "500"
+        },
+        "grapple_options_m2": "0,15",
+        "rotator_options_t": "3",
+        "telescope": "так",
+        "differs_from_base": []
+      }
+    ],
+    "specs": {
+      "reach_m": "5,4",
+      "torque_knm": "30",
+      "lift_4m_kg": "550",
+      "lift_full_kg": "390",
+      "grapple_m2": "0,15",
+      "rotator_t": "3",
+      "valve": null,
+      "valve_flow_l": null,
+      "slew_knm": "4,9",
+      "slew_cyl": "2/4",
+      "turn_deg": "360",
+      "pressure_bar": "200",
+      "pump_lpm": "30–60",
+      "legs": "A",
+      "weight_kg": "500"
+    },
+    "needs_confirmation": [
+      "valve",
+      "valve_flow_l"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_header": "BMF540",
+      "telescope": "так",
+      "wide_angle": "так",
+      "grapple_options_m2": "0,15",
+      "rotator_options_t": "3",
+      "kit_defaults_source": "bmf.ee: захват 0,15 м², ротатор 3 т; стандартний клапан не вказаний (сумісні 6/8XY, On/Off, 4/8 XYZ, Light weight — усі 55 л)",
+      "compatible_trailers": [
+        "bmf5t1",
+        "bmf6t2",
+        "bmf7t1",
+        "bmf8t1"
+      ],
+      "valves_compatible": [
+        "6/8XY (55 л)",
+        "On/Off 55 л",
+        "4/8 XYZ (55 л)",
+        "Light weight 55 л"
+      ],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Compact forestry crane with 5.4 m reach for efficient timber loading and log handling.",
+      "bmf_rv_ua": {
+        "torque_knm": "30",
+        "lift_4m_kg": "550",
+        "lift_full_kg": "390",
+        "slew_cyl": "2",
+        "weight_kg": "550"
+      },
+      "conflicts": [
+        "Вага: bmf.ee 500 кг, bmf.rv.ua 550 кг. Поворотних циліндрів: bmf.ee 2/4, bmf.rv.ua 2."
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf540 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf540.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://bmf.rv.ua/production/bmf-540 (перевірено 18.10.2026)",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf650": {
+    "model": "BMF 650",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf650",
+        "model": "BMF 650",
+        "specs": {
+          "reach_m": "6,5",
+          "torque_knm": "48",
+          "lift_4m_kg": "840",
+          "lift_full_kg": "510",
+          "grapple_m2": "0,2",
+          "rotator_t": "3",
+          "valve": "6/8 XY",
+          "valve_flow_l": "55",
+          "slew_knm": "11",
+          "slew_cyl": "4",
+          "turn_deg": "360",
+          "pressure_bar": "200",
+          "pump_lpm": "30–60",
+          "legs": "A/FD",
+          "weight_kg": "640"
+        },
+        "grapple_options_m2": "0,2",
+        "rotator_options_t": "3/4",
+        "telescope": "так",
+        "differs_from_base": []
+      },
+      {
+        "id": "bmf650_plus",
+        "model": "BMF 650+",
+        "specs": {
+          "reach_m": "6,5",
+          "torque_knm": "60",
+          "lift_4m_kg": "1120",
+          "lift_full_kg": "640",
+          "grapple_m2": "0,2",
+          "rotator_t": "3",
+          "valve": "6/8 XY",
+          "valve_flow_l": "55",
+          "slew_knm": "11",
+          "slew_cyl": "4",
+          "turn_deg": "360",
+          "pressure_bar": "200",
+          "pump_lpm": "30–60",
+          "legs": "A/FD",
+          "weight_kg": "640"
+        },
+        "grapple_options_m2": "0,2",
+        "rotator_options_t": "3/4",
+        "telescope": "так",
+        "differs_from_base": [
+          "torque_knm",
+          "lift_4m_kg",
+          "lift_full_kg"
+        ]
+      }
+    ],
+    "specs": {
+      "reach_m": "6,5",
+      "torque_knm": "48",
+      "lift_4m_kg": "840",
+      "lift_full_kg": "510",
+      "grapple_m2": "0,2",
+      "rotator_t": "3",
+      "valve": "6/8 XY",
+      "valve_flow_l": "55",
+      "slew_knm": "11",
+      "slew_cyl": "4",
+      "turn_deg": "360",
+      "pressure_bar": "200",
+      "pump_lpm": "30–60",
+      "legs": "A/FD",
+      "weight_kg": "640"
+    },
+    "needs_confirmation": [
+      "grapple_m2"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_header": "BMF650 | BMF650+",
+      "telescope": "так",
+      "wide_angle": "так",
+      "grapple_options_m2": "0,2",
+      "rotator_options_t": "3/4",
+      "kit_defaults_source": "КП користувача (КП BMF650 у комплекті 25.02.2026 / 17.03.2026, КП 8Т2+650, КП 10Т2+650, КП НПЛ-10+650): ротатор 3т, клапан 6/8 XY; «КП BMF650» 02.09.2025: 6/8XY (55l); захват 0,2 — bmf.ee і більшість КП",
+      "compatible_trailers": [
+        "bmf8t1",
+        "bmf8t2",
+        "bmf9t1",
+        "bmf10t2",
+        "bmf11t1",
+        "bmf12t2",
+        "bmf13t1",
+        "bmf14t2"
+      ],
+      "valves_compatible": [
+        "6/8XY (55 л)",
+        "On/Off 55 л",
+        "4/8 XYZ (55 л)",
+        "Light weight 55 л",
+        "HPC (55 л, пілотний)",
+        "DPX 100/8 HPC",
+        "Parker P70",
+        "Parker L90 + Autec"
+      ],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Versatile logging crane with 6.5 m reach for timber loading, forwarding and forest work.",
+      "bmf_rv_ua": {
+        "torque_knm": "59",
+        "lift_4m_kg": "1120",
+        "lift_full_kg": "640",
+        "weight_kg": "686"
+      },
+      "user_kp": [
+        {
+          "file": "КП BMF650.pptx (READY), ціни станом на 02.09.2025",
+          "torque_knm": "48",
+          "grapple_m2": "0,24",
+          "rotator_t": "3",
+          "valve": "6/8XY (55l)",
+          "weight_kg": "640",
+          "crane_line_uah": 626400
+        },
+        {
+          "file": "КП BMF650 у комплекті (25.02.2026).pptx",
+          "torque_knm": "60",
+          "lift_4m_kg": "1120",
+          "lift_full_kg": "640",
+          "grapple_m2": "0,2",
+          "rotator_t": "3",
+          "valve": "6/8 XY",
+          "weight_kg": "686",
+          "crane_line_uah": 607700
+        },
+        {
+          "file": "КП BMF650 у комплекті (17.03.2026).pptx",
+          "torque_knm": "60",
+          "lift_4m_kg": "1120",
+          "lift_full_kg": "640",
+          "grapple_m2": "0,24",
+          "rotator_t": "3",
+          "valve": "6/8 XY",
+          "weight_kg": "686",
+          "crane_line_uah": 637800
+        },
+        {
+          "file": "КП 8Т2+650 (02.04.2026) блютус./механ. розпод..pptx",
+          "torque_knm": "60",
+          "lift_4m_kg": "1120",
+          "lift_full_kg": "640",
+          "valve": "Parker P70; FE; FP; Wireless (блютус) / механічний",
+          "weight_kg": "686",
+          "kit_total_uah": "1 614 400 / 1 354 500"
+        },
+        {
+          "file": "КП 10Т2+650 (07.04.2026).pptx",
+          "torque_knm": "60",
+          "lift_4m_kg": "1120",
+          "lift_full_kg": "640",
+          "valve": "6/8 XY",
+          "weight_kg": "686",
+          "kit_total_uah": 1611100
+        },
+        {
+          "file": "КП НПЛ-10+650 (20.05), копія.pptx / READY КП НПЛ-10+650 (18.05.2026)",
+          "torque_knm": "60",
+          "lift_4m_kg": "1120",
+          "lift_full_kg": "640",
+          "valve": "6/8 XY",
+          "weight_kg": "686",
+          "kit_total_uah": 1709100
+        },
+        {
+          "file": "причіп НПЛ-10 + BMF 650(22.02).pptx (ціни 22.02.2024)",
+          "torque_knm": "48",
+          "valve": "6/8 XY",
+          "weight_kg": "800"
+        }
+      ],
+      "conflicts": [
+        "BMF 650 проти BMF 650+: bmf.ee — 48 / 60 кНм, 840 / 1120 кг на 4 м, 510 / 640 кг на повному вильоті; вага однакова 640 кг. КП користувача від 25.02.2026 (і НПЛ-10+650) друкують цифри 650+ (60 кНм / 1120 / 640) з вагою 686 кг, а «КП BMF650» 02.09.2025 — стандартні 48 кНм і 640 кг. Джерело цифр 650+ у КП — сторінка bmf.rv.ua «BMF 650» (59 кНм / 1120 / 640 / 686 кг). Яку модель реально постачаємо (650 чи 650+) — підтвердити.",
+        "Вага: bmf.ee 640 кг (без опори, грейфера, ротатора); bmf.rv.ua і КП 2026 — 686 кг; КП 22.02.2024 — 800 кг (старе покоління).",
+        "Захват: bmf.ee 0,2 м²; «КП BMF650» 02.09.2025 і КП 17.03.2026 — 0,24 м² (C24 сумісний з BMF650 за bmf.rv.ua).",
+        "Ротатор: bmf.ee «3 / 4 т», усі КП — 3 т."
+      ],
+      "charts": [
+        "http://media.voog.com/0000/0053/0154/photos/BMF650(90)_crane chart_medium.webp",
+        "http://media.voog.com/0000/0053/0154/photos/BMF650(100)_crane chart_medium.webp"
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf650 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf650.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://bmf.rv.ua/production/bmf-650 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 reference/kp/kp_text.md (КП користувача, див. extra.user_kp)",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf720": {
+    "model": "BMF 720",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf720",
+        "model": "BMF 720",
+        "specs": {
+          "reach_m": "7,2",
+          "torque_knm": "60",
+          "lift_4m_kg": "1100",
+          "lift_full_kg": "580",
+          "grapple_m2": "0,24",
+          "rotator_t": "4",
+          "valve": "6/8 XY",
+          "valve_flow_l": "55",
+          "slew_knm": "14",
+          "slew_cyl": "4",
+          "turn_deg": "370",
+          "pressure_bar": "200",
+          "pump_lpm": "30–60",
+          "legs": "A/FD",
+          "weight_kg": "675"
+        },
+        "grapple_options_m2": "0,2/0,24",
+        "rotator_options_t": "3/4",
+        "telescope": "так",
+        "differs_from_base": []
+      }
+    ],
+    "specs": {
+      "reach_m": "7,2",
+      "torque_knm": "60",
+      "lift_4m_kg": "1100",
+      "lift_full_kg": "580",
+      "grapple_m2": "0,24",
+      "rotator_t": "4",
+      "valve": "6/8 XY",
+      "valve_flow_l": "55",
+      "slew_knm": "14",
+      "slew_cyl": "4",
+      "turn_deg": "370",
+      "pressure_bar": "200",
+      "pump_lpm": "30–60",
+      "legs": "A/FD",
+      "weight_kg": "675"
+    },
+    "needs_confirmation": [],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_header": "BMF720",
+      "telescope": "так",
+      "wide_angle": "так",
+      "grapple_options_m2": "0,2/0,24",
+      "rotator_options_t": "3/4",
+      "kit_defaults_source": "KP_2_v3.pptx (затверджений дизайн): захват 0,24 м², ротатор 4 т, клапан 6/8XY 55 л",
+      "compatible_trailers": [
+        "bmf8t1",
+        "bmf8t2",
+        "bmf9t1",
+        "bmf10t2",
+        "bmf11t1",
+        "bmf12t2",
+        "bmf13t1",
+        "bmf14t2"
+      ],
+      "valves_compatible": [
+        "6/8XY (55 л)",
+        "On/Off 55 л",
+        "4/8 XYZ (55 л)",
+        "Light weight 55 л",
+        "HPC (55 л, пілотний)",
+        "DPX 100/8 HPC",
+        "Parker P70",
+        "Parker L90 + Autec"
+      ],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Logging crane with 7.2 m reach for efficient timber loading on forestry trailers or tractors.",
+      "bmf_rv_ua": {
+        "torque_knm": "60",
+        "lift_4m_kg": "1100",
+        "lift_full_kg": "580",
+        "weight_kg": "710"
+      },
+      "user_kp": [
+        {
+          "file": "KP_2_v3.pptx / KP_2.pptx (затверджений дизайн, ціни 24.08.2025)",
+          "torque_knm": "60",
+          "lift_4m_kg": "1100",
+          "lift_full_kg": "580",
+          "grapple_m2": "0,24",
+          "rotator_t": "4",
+          "valve": "6/8XY 55 л",
+          "weight_kg": "675",
+          "crane_line_uah": 686000
+        },
+        {
+          "file": "КП BMF720 у комплекті(04.03.2026).pptx",
+          "valve": "6/8XY (55l)",
+          "weight_kg": "710",
+          "crane_line_uah": 657920
+        },
+        {
+          "file": "КП 14Т2+720 (09.06.2026).pptx",
+          "valve": "6/8XY (55l)",
+          "weight_kg": "710",
+          "kit_total_uah": 1699000
+        },
+        {
+          "file": "КП НПЛ-10+720 (09.06.2026).pptx",
+          "valve": "6/8XY (55l)",
+          "weight_kg": "710",
+          "kit_total_uah": 1799000
+        },
+        {
+          "file": "КП BMF 720 + основа (лапи, бак) 08.10.2024.pptx",
+          "valve": "6/8XY (55l)",
+          "weight_kg": "710"
+        }
+      ],
+      "conflicts": [
+        "Вага: bmf.ee і KP_2_v3 — 675 кг; bmf.rv.ua та інші КП користувача — 710 кг.",
+        "Поворот стріли: bmf.ee і сторінка BMF720 у каталозі 2025 — 370°, зведена таблиця каталогу — 360°."
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf720 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf720.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://bmf.rv.ua/production/bmf-720 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 reference/kp/kp_text.md (КП користувача, див. extra.user_kp)",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf750": {
+    "model": "BMF 750",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf750",
+        "model": "BMF 750",
+        "specs": {
+          "reach_m": "7,5",
+          "torque_knm": "76",
+          "lift_4m_kg": "1410",
+          "lift_full_kg": "750",
+          "grapple_m2": "0,27",
+          "rotator_t": "4",
+          "valve": "4/8 XYZ",
+          "valve_flow_l": "80",
+          "slew_knm": "17",
+          "slew_cyl": "4",
+          "turn_deg": "370",
+          "pressure_bar": "200",
+          "pump_lpm": "50–100",
+          "legs": "FD",
+          "weight_kg": "996"
+        },
+        "grapple_options_m2": "0,24/0,27",
+        "rotator_options_t": "4",
+        "telescope": "так",
+        "differs_from_base": []
+      },
+      {
+        "id": "bmf750_hp",
+        "model": "BMF 750HP",
+        "specs": {
+          "reach_m": "7,5",
+          "torque_knm": "86",
+          "lift_4m_kg": "1570",
+          "lift_full_kg": "830",
+          "grapple_m2": "0,27",
+          "rotator_t": "4",
+          "valve": "4/8 XYZ",
+          "valve_flow_l": "80",
+          "slew_knm": "20,5",
+          "slew_cyl": "4",
+          "turn_deg": "370",
+          "pressure_bar": "225",
+          "pump_lpm": "50–100",
+          "legs": "FD",
+          "weight_kg": "996"
+        },
+        "grapple_options_m2": "0,24/0,27",
+        "rotator_options_t": "4",
+        "telescope": "так",
+        "differs_from_base": [
+          "torque_knm",
+          "lift_4m_kg",
+          "lift_full_kg",
+          "slew_knm",
+          "pressure_bar"
+        ]
+      }
+    ],
+    "specs": {
+      "reach_m": "7,5",
+      "torque_knm": "76",
+      "lift_4m_kg": "1410",
+      "lift_full_kg": "750",
+      "grapple_m2": "0,27",
+      "rotator_t": "4",
+      "valve": "4/8 XYZ",
+      "valve_flow_l": "80",
+      "slew_knm": "17",
+      "slew_cyl": "4",
+      "turn_deg": "370",
+      "pressure_bar": "200",
+      "pump_lpm": "50–100",
+      "legs": "FD",
+      "weight_kg": "996"
+    },
+    "needs_confirmation": [
+      "rotator_t"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_header": "BMF750 | BMF750HP",
+      "telescope": "так",
+      "wide_angle": "так",
+      "grapple_options_m2": "0,24/0,27",
+      "rotator_options_t": "4",
+      "kit_defaults_source": "КП користувача (КП НПЛ-10+750 18.05.2026, КП BMF750 у комплекті 20.05.2026 / 02.10.2026, КП 17Т2+750): захват 0,27, ротатор 4т, клапан 4/8 XYZ (80l)",
+      "compatible_trailers": [
+        "bmf10t2",
+        "bmf11t1",
+        "bmf12t2",
+        "bmf13t1",
+        "bmf14t2",
+        "bmf16t1",
+        "bmf17t2"
+      ],
+      "valves_compatible": [
+        "4/8 XYZ (80 л)",
+        "On/Off 80 л",
+        "DPX 100/8 HPC",
+        "Parker P70",
+        "Parker L90 + Autec"
+      ],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Forestry crane with 7.5 m reach, protected hydraulics and strong timber loading performance.",
+      "bmf_rv_ua": {
+        "torque_knm": "76",
+        "lift_4m_kg": "1410",
+        "lift_full_kg": "750",
+        "weight_kg": null
+      },
+      "user_kp": [
+        {
+          "file": "КП НПЛ-10+750 (18.05.2026).pptx",
+          "grapple_m2": "0,27",
+          "rotator_t": "4",
+          "valve": "4/8 XYZ (80l)",
+          "weight_kg": "1090",
+          "kit_total_uah": 1978000
+        },
+        {
+          "file": "КП BMF750 у комплекті(20.05.2026).pptx",
+          "valve": "4/8 XYZ (80l)",
+          "weight_kg": "1090",
+          "crane_line_uah": 835920
+        },
+        {
+          "file": "КП BMF750 у комплекті 02102026 радіатор.pptx",
+          "valve": "4/8 XYZ (80l)",
+          "weight_kg": "1090",
+          "crane_line_uah": 856800
+        },
+        {
+          "file": "КП 17Т2+750 (тех. Характеристики).pptx",
+          "valve": "4/8 XYZ (80l)",
+          "weight_kg": "1090"
+        },
+        {
+          "file": "КП КАМАЗ + 750 (26.02.2026).pptx",
+          "valve": "4/8 XYZ (80l)",
+          "weight_kg": "1090"
+        }
+      ],
+      "conflicts": [
+        "Вага: bmf.ee і каталог 2025 — 996 кг; КП користувача — 1090 кг.",
+        "Ротатор: bmf.ee — 4 т, каталог 2025 — 5 т; на сторінці ротаторів bmf.ee варіантів 4 т немає (3 / 5,5 / 10 т).",
+        "Поворотних циліндрів: bmf.ee — 4, зведена таблиця каталогу — 5 (ймовірно зсув колонок у тексті каталогу)."
+      ],
+      "damper": "Hultdins KD 1002 PRO — опція (bmf.ee)"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf750 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf750.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://bmf.rv.ua/production/bmf-750 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 reference/kp/kp_text.md (КП користувача, див. extra.user_kp)",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf850": {
+    "model": "BMF 850",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf850",
+        "model": "BMF 850",
+        "specs": {
+          "reach_m": "8,5",
+          "torque_knm": "76",
+          "lift_4m_kg": "1350",
+          "lift_full_kg": "630",
+          "grapple_m2": null,
+          "rotator_t": "4",
+          "valve": null,
+          "valve_flow_l": null,
+          "slew_knm": "17",
+          "slew_cyl": "4",
+          "turn_deg": "370",
+          "pressure_bar": "200",
+          "pump_lpm": "50–100",
+          "legs": "FD",
+          "weight_kg": "1060"
+        },
+        "grapple_options_m2": "0,24/0,27",
+        "rotator_options_t": "4",
+        "telescope": "подвійний",
+        "differs_from_base": []
+      },
+      {
+        "id": "bmf850_hp",
+        "model": "BMF 850HP",
+        "specs": {
+          "reach_m": "8,5",
+          "torque_knm": "86",
+          "lift_4m_kg": "1520",
+          "lift_full_kg": "710",
+          "grapple_m2": null,
+          "rotator_t": "4",
+          "valve": null,
+          "valve_flow_l": null,
+          "slew_knm": "20,5",
+          "slew_cyl": "4",
+          "turn_deg": "370",
+          "pressure_bar": "225",
+          "pump_lpm": "50–100",
+          "legs": "FD",
+          "weight_kg": "1060"
+        },
+        "grapple_options_m2": "0,24/0,27",
+        "rotator_options_t": "4",
+        "telescope": "подвійний",
+        "differs_from_base": [
+          "torque_knm",
+          "lift_4m_kg",
+          "lift_full_kg",
+          "slew_knm",
+          "pressure_bar"
+        ]
+      }
+    ],
+    "specs": {
+      "reach_m": "8,5",
+      "torque_knm": "76",
+      "lift_4m_kg": "1350",
+      "lift_full_kg": "630",
+      "grapple_m2": null,
+      "rotator_t": "4",
+      "valve": null,
+      "valve_flow_l": null,
+      "slew_knm": "17",
+      "slew_cyl": "4",
+      "turn_deg": "370",
+      "pressure_bar": "200",
+      "pump_lpm": "50–100",
+      "legs": "FD",
+      "weight_kg": "1060"
+    },
+    "needs_confirmation": [
+      "grapple_m2",
+      "rotator_t",
+      "valve",
+      "valve_flow_l"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_header": "BMF850 | BMF850HP",
+      "telescope": "подвійний",
+      "wide_angle": "так",
+      "grapple_options_m2": "0,24/0,27",
+      "rotator_options_t": "4",
+      "kit_defaults_source": "КП користувача з BMF 850 немає; bmf.ee: захват 0,24/0,27 м², ротатор 4 т; сумісні клапани 4/8 XYZ 80 л, On/Off 80 л, DPX, Parker",
+      "compatible_trailers": [
+        "bmf10t2",
+        "bmf11t1",
+        "bmf12t2",
+        "bmf13t1",
+        "bmf14t2",
+        "bmf16t1",
+        "bmf17t2"
+      ],
+      "valves_compatible": [
+        "4/8 XYZ (80 л)",
+        "On/Off 80 л",
+        "DPX 100/8 HPC",
+        "Parker P70",
+        "Parker L90 + Autec"
+      ],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Forestry crane with 8.5 m reach, double telescope and strong performance for timber loading.",
+      "bmf_rv_ua": {
+        "torque_knm": "76",
+        "lift_4m_kg": "1350",
+        "lift_full_kg": "630",
+        "weight_kg": "1095"
+      },
+      "conflicts": [
+        "Вага: bmf.ee 1060 кг; bmf.rv.ua 1095 кг.",
+        "Ротатор: bmf.ee 4 т; каталог 2025 — 5 т."
+      ],
+      "damper": "Hultdins KD 1002 PRO — опція (bmf.ee)"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf850 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf850.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://bmf.rv.ua/production/bmf-850 (перевірено 18.10.2026)",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf905": {
+    "model": "BMF 905",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf905",
+        "model": "BMF 905",
+        "specs": {
+          "reach_m": "9,05",
+          "torque_knm": "76",
+          "lift_4m_kg": "1210",
+          "lift_full_kg": "520",
+          "grapple_m2": "0,27",
+          "rotator_t": null,
+          "valve": "4/8 XYZ",
+          "valve_flow_l": "80",
+          "slew_knm": "20,5",
+          "slew_cyl": "4",
+          "turn_deg": "370",
+          "pressure_bar": "200",
+          "pump_lpm": "50–100",
+          "legs": "FD",
+          "weight_kg": "1160"
+        },
+        "grapple_options_m2": "0,24/0,27",
+        "rotator_options_t": "4",
+        "telescope": "подвійний",
+        "differs_from_base": []
+      },
+      {
+        "id": "bmf905_hp",
+        "model": "BMF 905HP",
+        "specs": {
+          "reach_m": "9,05",
+          "torque_knm": "86",
+          "lift_4m_kg": "1370",
+          "lift_full_kg": "590",
+          "grapple_m2": "0,27",
+          "rotator_t": null,
+          "valve": "4/8 XYZ",
+          "valve_flow_l": "80",
+          "slew_knm": "20,5",
+          "slew_cyl": "4",
+          "turn_deg": "370",
+          "pressure_bar": "225",
+          "pump_lpm": "50–100",
+          "legs": "FD",
+          "weight_kg": "1160"
+        },
+        "grapple_options_m2": "0,24/0,27",
+        "rotator_options_t": "4",
+        "telescope": "подвійний",
+        "differs_from_base": [
+          "torque_knm",
+          "lift_4m_kg",
+          "lift_full_kg",
+          "pressure_bar"
+        ]
+      }
+    ],
+    "specs": {
+      "reach_m": "9,05",
+      "torque_knm": "76",
+      "lift_4m_kg": "1210",
+      "lift_full_kg": "520",
+      "grapple_m2": "0,27",
+      "rotator_t": null,
+      "valve": "4/8 XYZ",
+      "valve_flow_l": "80",
+      "slew_knm": "20,5",
+      "slew_cyl": "4",
+      "turn_deg": "370",
+      "pressure_bar": "200",
+      "pump_lpm": "50–100",
+      "legs": "FD",
+      "weight_kg": "1160"
+    },
+    "needs_confirmation": [
+      "rotator_t"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_header": "BMF905 | BMF905HP",
+      "telescope": "подвійний",
+      "wide_angle": "так",
+      "grapple_options_m2": "0,24/0,27",
+      "rotator_options_t": "4",
+      "kit_defaults_source": "КП BMF905 (16.03.2026): захват 0,27, клапан 4/8 XYZ, ротатор «5,5 т» (bmf.ee — 4 т, каталог 2025 — 5 т); 80 л — бо з BMF905 сумісний лише 4/8 XYZ (80l) за таблицею bmf.ee",
+      "compatible_trailers": [
+        "bmf11t1",
+        "bmf12t2",
+        "bmf13t1",
+        "bmf14t2",
+        "bmf16t1",
+        "bmf17t2"
+      ],
+      "valves_compatible": [
+        "4/8 XYZ (80 л)",
+        "On/Off 80 л",
+        "DPX 100/8 HPC",
+        "Parker P70",
+        "Parker L90 + Autec"
+      ],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Forestry crane with 9.05 m reach, double telescope and protected hydraulics for demanding forest work.",
+      "bmf_rv_ua": {
+        "note": "на сторінці немає вильоту, моменту і вантажопідйомності (таблиця обрізана)",
+        "weight_kg": "1130",
+        "legs": "F/D"
+      },
+      "user_kp": [
+        {
+          "file": "КП BMF905  (16.03.2026).pptx",
+          "torque_knm": "76",
+          "lift_4m_kg": "1210",
+          "lift_full_kg": "520",
+          "grapple_m2": "0,27",
+          "rotator_t": "5,5",
+          "valve": "4/8 XYZ",
+          "weight_kg": "1130",
+          "crane_line_price": "€ 21 500 з ПДВ, без монтажу"
+        }
+      ],
+      "conflicts": [
+        "Ротатор: bmf.ee 4 т; каталог 2025 — 5 т; КП BMF905 (16.03.2026) — 5,5 т.",
+        "Вага: bmf.ee і каталог 2025 — 1160 кг; bmf.rv.ua і КП — 1130 кг.",
+        "bmf.rv.ua у таблиці грейферів пише «BMF950(HP)» — моделі 950 немає, мається на увазі BMF905(HP)."
+      ],
+      "damper": "Hultdins KD 1002 PRO — опція (bmf.ee)"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf905 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf905.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://bmf.rv.ua/production/bmf-905 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 reference/kp/kp_text.md (КП користувача, див. extra.user_kp)",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf800hd": {
+    "model": "BMF 800HD",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf800hd",
+        "model": "BMF 800HD",
+        "specs": {
+          "reach_m": "8,0",
+          "torque_knm": "119",
+          "lift_4m_kg": "2010",
+          "lift_full_kg": "1000",
+          "grapple_m2": null,
+          "rotator_t": "6",
+          "valve": null,
+          "valve_flow_l": null,
+          "slew_knm": "34,7",
+          "slew_cyl": "4",
+          "turn_deg": "385",
+          "pressure_bar": "230",
+          "pump_lpm": "100–150",
+          "legs": "—",
+          "weight_kg": "1800"
+        },
+        "grapple_options_m2": "0,27/0,37",
+        "rotator_options_t": "6",
+        "telescope": "одинарний",
+        "differs_from_base": []
+      },
+      {
+        "id": "bmf800hd_plus",
+        "model": "BMF 800HD+",
+        "specs": {
+          "reach_m": "8,0",
+          "torque_knm": "128",
+          "lift_4m_kg": "2250",
+          "lift_full_kg": "1120",
+          "grapple_m2": null,
+          "rotator_t": "6",
+          "valve": null,
+          "valve_flow_l": null,
+          "slew_knm": "40,1",
+          "slew_cyl": "4",
+          "turn_deg": "385",
+          "pressure_bar": "230",
+          "pump_lpm": "100–150",
+          "legs": "—",
+          "weight_kg": "1800"
+        },
+        "grapple_options_m2": "0,27/0,37",
+        "rotator_options_t": "6",
+        "telescope": "одинарний",
+        "differs_from_base": [
+          "torque_knm",
+          "lift_4m_kg",
+          "lift_full_kg",
+          "slew_knm"
+        ]
+      }
+    ],
+    "specs": {
+      "reach_m": "8,0",
+      "torque_knm": "119",
+      "lift_4m_kg": "2010",
+      "lift_full_kg": "1000",
+      "grapple_m2": null,
+      "rotator_t": "6",
+      "valve": null,
+      "valve_flow_l": null,
+      "slew_knm": "34,7",
+      "slew_cyl": "4",
+      "turn_deg": "385",
+      "pressure_bar": "230",
+      "pump_lpm": "100–150",
+      "legs": "—",
+      "weight_kg": "1800"
+    },
+    "needs_confirmation": [
+      "grapple_m2",
+      "valve",
+      "valve_flow_l"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_header": "BMF800HD | BMF800HD+",
+      "telescope": "одинарний",
+      "wide_angle": null,
+      "grapple_options_m2": "0,27/0,37",
+      "rotator_options_t": "6",
+      "kit_defaults_source": "bmf.ee: захват 0,27/0,37 м², ротатор 6 т; з таблиці клапанів сумісний лише Parker L90 + Autec",
+      "compatible_trailers": [
+        "bmf16t1",
+        "bmf17t2",
+        "bmf18t1"
+      ],
+      "valves_compatible": [
+        "Parker L90 + Autec"
+      ],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Powerful forestry crane with 8 m reach and single telescope for heavy-duty timber loading.",
+      "damper": "Hultdins KD 1002 PRO — стандарт на HD-моделях, опція для 750/850/905 (bmf.ee)"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf800 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf800.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf1000hd": {
+    "model": "BMF 1000HD",
+    "kind": "crane",
+    "variants": [
+      {
+        "id": "bmf1000hd",
+        "model": "BMF 1000HD",
+        "specs": {
+          "reach_m": "10,0",
+          "torque_knm": "119",
+          "lift_4m_kg": "1880",
+          "lift_full_kg": "710",
+          "grapple_m2": null,
+          "rotator_t": "6",
+          "valve": null,
+          "valve_flow_l": null,
+          "slew_knm": "34,7",
+          "slew_cyl": "4",
+          "turn_deg": "385",
+          "pressure_bar": "230",
+          "pump_lpm": "100–150",
+          "legs": "—",
+          "weight_kg": "1955"
+        },
+        "grapple_options_m2": "0,27/0,37",
+        "rotator_options_t": "6",
+        "telescope": "подвійний",
+        "differs_from_base": []
+      },
+      {
+        "id": "bmf1000hd_plus",
+        "model": "BMF 1000HD+",
+        "specs": {
+          "reach_m": "10,0",
+          "torque_knm": "128",
+          "lift_4m_kg": "1960",
+          "lift_full_kg": "760",
+          "grapple_m2": null,
+          "rotator_t": "6",
+          "valve": null,
+          "valve_flow_l": null,
+          "slew_knm": "40,1",
+          "slew_cyl": "4",
+          "turn_deg": "385",
+          "pressure_bar": "230",
+          "pump_lpm": "100–150",
+          "legs": "—",
+          "weight_kg": "2000"
+        },
+        "grapple_options_m2": "0,27/0,37",
+        "rotator_options_t": "6",
+        "telescope": "подвійний",
+        "differs_from_base": [
+          "torque_knm",
+          "lift_4m_kg",
+          "lift_full_kg",
+          "slew_knm",
+          "weight_kg"
+        ]
+      }
+    ],
+    "specs": {
+      "reach_m": "10,0",
+      "torque_knm": "119",
+      "lift_4m_kg": "1880",
+      "lift_full_kg": "710",
+      "grapple_m2": null,
+      "rotator_t": "6",
+      "valve": null,
+      "valve_flow_l": null,
+      "slew_knm": "34,7",
+      "slew_cyl": "4",
+      "turn_deg": "385",
+      "pressure_bar": "230",
+      "pump_lpm": "100–150",
+      "legs": "—",
+      "weight_kg": "1955"
+    },
+    "needs_confirmation": [
+      "grapple_m2",
+      "valve",
+      "valve_flow_l"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_header": "BMF1000HD | BMF1000HD",
+      "telescope": "подвійний",
+      "wide_angle": null,
+      "grapple_options_m2": "0,27/0,37",
+      "rotator_options_t": "6",
+      "kit_defaults_source": "bmf.ee: захват 0,27/0,37 м², ротатор 6 т; з таблиці клапанів сумісний лише Parker L90 + Autec",
+      "compatible_trailers": [
+        "bmf16t1",
+        "bmf17t2",
+        "bmf18t1"
+      ],
+      "valves_compatible": [
+        "Parker L90 + Autec"
+      ],
+      "includes_default": [
+        "ротатор",
+        "грейфер (захват)"
+      ],
+      "summary_en": "Powerful forestry crane with 10 m reach and double telescope for heavy-duty timber loading.",
+      "conflicts": [
+        "bmf.ee підписує обидві колонки «BMF1000HD | BMF1000HD»; за каталогом 2025 друга — BMF 1000HD+."
+      ],
+      "damper": "Hultdins KD 1002 PRO — стандарт на HD-моделях, опція для 750/850/905 (bmf.ee)"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/cranes/bmf1000 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/cranes/bmf1000.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Cranes",
+      "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks — таблиця сумісності клапанів"
+    ]
+  },
+  "bmf8t2": {
+    "model": "BMF 8T2",
+    "kind": "trailer",
+    "variants": [
+      {
+        "id": "bmf8t2_pro",
+        "model": "BMF 8T2 Pro",
+        "bolsters": "Pro"
+      },
+      {
+        "id": "bmf8t2_hybrid",
+        "model": "BMF 8T2 Hybrid",
+        "bolsters": "Hybrid"
+      },
+      {
+        "id": "bmf8t2_standard",
+        "model": "BMF 8T2",
+        "bolsters": "Standard"
+      }
+    ],
+    "specs": {
+      "capacity_kg": "8000",
+      "length_mm": "6150",
+      "load_length_mm": "3650",
+      "width_mm": "2120",
+      "height_mm": "2145",
+      "wheels_std": "400/60-15,5",
+      "wheels_options": "500/50-17; 520/50-17",
+      "chassis_mm": "2x(200x100x6)",
+      "axles": "60x60-6",
+      "bunk_area_m2": "2,0–2,3",
+      "drawbar_cyl": "1 (2)",
+      "drawbar_angle_deg": "±35",
+      "clearance_mm": "550",
+      "legs": "A/FD",
+      "frame_ext_mm": "725",
+      "stakes": "4",
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 650, BMF 720"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_name": "BMF8T2",
+      "compatible_cranes": [
+        "bmf650",
+        "bmf720"
+      ],
+      "bolsters": [
+        "Pro",
+        "Hybrid",
+        "Standard"
+      ],
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Trailer with two beams and capacity of up to 8 t.",
+      "kit_default_brakes": "без гальм (КП 8Т2+650)",
+      "bmf_rv_ua": {
+        "length_mm": "6095",
+        "load_length_mm": "3500",
+        "chassis_mm": "200x100x6",
+        "bunk_area_m2": "2,2",
+        "drawbar_cyl": "2"
+      },
+      "user_kp": [
+        {
+          "file": "КП 8Т2+650 (02.04.2026) блютус. / механ. розпод..pptx",
+          "length_mm": "6150",
+          "load_length_mm": "3650",
+          "width_mm": "2120",
+          "stakes": "4",
+          "wheels": "400/60-15.5",
+          "bunk_area_m2": "2.1-2.4",
+          "brakes": "—",
+          "operator_seat": "—",
+          "legs": "FD"
+        }
+      ],
+      "conflicts": [
+        "bmf.rv.ua: довжина 6095 / площа завантаження 3500 / шасі 200x100x6 / переріз 2,2 м² — старі дані; bmf.ee і КП користувача: 6150 / 3650 / 2x(200x100x6). Переріз: bmf.ee 2,0–2,3 м², КП — 2,1–2,4 м²."
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf8t2 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf8t2.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://bmf.rv.ua/production/bmf-8t2 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 reference/kp/kp_text.md (КП користувача, див. extra.user_kp)",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf9t1": {
+    "model": "BMF 9T1",
+    "kind": "trailer",
+    "variants": [
+      {
+        "id": "bmf9t1_pro",
+        "model": "BMF 9T1 Pro",
+        "bolsters": "Pro"
+      },
+      {
+        "id": "bmf9t1_standard",
+        "model": "BMF 9T1",
+        "bolsters": "Standard"
+      }
+    ],
+    "specs": {
+      "capacity_kg": "9000",
+      "length_mm": "6315",
+      "load_length_mm": "3800",
+      "width_mm": "2165",
+      "height_mm": "2080",
+      "wheels_std": "400/60-15,5",
+      "wheels_options": "500/50-17; 520/50-17",
+      "chassis_mm": "160x160x8",
+      "axles": "70x70-6",
+      "bunk_area_m2": "2,0–2,3 (E: 2,3)",
+      "drawbar_cyl": "2",
+      "drawbar_angle_deg": "±35",
+      "clearance_mm": "565",
+      "legs": "FD",
+      "frame_ext_mm": "800",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 650, BMF 720"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_name": "BMF9T1",
+      "compatible_cranes": [
+        "bmf650",
+        "bmf720"
+      ],
+      "bolsters": [
+        "Pro",
+        "Standard"
+      ],
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Forestry trailer with one beam and capacity of 9 t.",
+      "bmf_rv_ua": {
+        "length_mm": "6160",
+        "load_length_mm": "3850",
+        "width_mm": "2170",
+        "bunk_area_m2": "1,95"
+      }
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf9t1 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf9t1.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://bmf.rv.ua/production/bmf-9t1 (перевірено 18.10.2026)",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf10t2": {
+    "model": "BMF 10T2",
+    "kind": "trailer",
+    "variants": [
+      {
+        "id": "bmf10t2_standard",
+        "model": "BMF 10T2",
+        "bolsters": "Standard"
+      },
+      {
+        "id": "bmf10t2_hybrid",
+        "model": "BMF 10T2 Hybrid",
+        "bolsters": "Hybrid"
+      },
+      {
+        "id": "bmf10t2_pro",
+        "model": "BMF 10T2 Pro",
+        "bolsters": "Pro"
+      }
+    ],
+    "specs": {
+      "capacity_kg": "10000",
+      "length_mm": "6500",
+      "load_length_mm": "4000",
+      "width_mm": "2120",
+      "height_mm": "2160",
+      "wheels_std": "400/60-15,5",
+      "wheels_options": "500/50-17; 520/50-17",
+      "chassis_mm": "2x(200x100x6)",
+      "axles": "70x70-6",
+      "bunk_area_m2": "2,0–2,35",
+      "drawbar_cyl": "2",
+      "drawbar_angle_deg": "±35",
+      "clearance_mm": "565",
+      "legs": "A/FD",
+      "frame_ext_mm": "725",
+      "stakes": "4",
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 650, BMF 720, BMF 750, BMF 850"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_name": "BMF10T2",
+      "compatible_cranes": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850"
+      ],
+      "bolsters": [
+        "Standard",
+        "Hybrid",
+        "Pro"
+      ],
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Two-beam trailer with payload up to 10 t.",
+      "kit_default_brakes": "гідравлічна (КП 10Т2+650)",
+      "bmf_rv_ua": {
+        "length_mm": "6380",
+        "bunk_area_m2": "2,2",
+        "drawbar_angle_deg": "±40"
+      },
+      "user_kp": [
+        {
+          "file": "КП 10Т2+650 (07.04.2026).pptx",
+          "length_mm": "6510",
+          "load_length_mm": "4000",
+          "width_mm": "2120",
+          "stakes": "4",
+          "wheels": "500/50-17 (4 шт)",
+          "bunk_area_m2": "2.1-2.45",
+          "brakes": "гідравлічна",
+          "operator_seat": "+",
+          "autonomous_hydraulics": "+"
+        }
+      ],
+      "conflicts": [
+        "Довжина: bmf.ee 6500 мм, КП 10Т2+650 — 6510 мм, bmf.rv.ua — 6380 мм. Переріз: bmf.ee 2,0–2,35, КП 2,1–2,45, bmf.rv.ua 2,2 м². Кут дишла: bmf.ee ±35°, bmf.rv.ua ±40°."
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf10t2 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf10t2.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://bmf.rv.ua/production/bmf-10t2 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 reference/kp/kp_text.md (КП користувача, див. extra.user_kp)",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf11t1": {
+    "model": "BMF 11T1",
+    "kind": "trailer",
+    "variants": [
+      {
+        "id": "bmf11t1_pro",
+        "model": "BMF 11T1 Pro",
+        "bolsters": "Pro"
+      }
+    ],
+    "specs": {
+      "capacity_kg": "11000",
+      "length_mm": "6295",
+      "load_length_mm": "3605",
+      "width_mm": "2185",
+      "height_mm": "2160",
+      "wheels_std": "400/60-15,5",
+      "wheels_options": "500/50-17; 520/50-17",
+      "chassis_mm": "200x200x8",
+      "axles": "70x70-6",
+      "bunk_area_m2": "2,35–2,95",
+      "drawbar_cyl": "2",
+      "drawbar_angle_deg": "±30",
+      "clearance_mm": "565",
+      "legs": "FD",
+      "frame_ext_mm": "850",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 650, BMF 720, BMF 750, BMF 850, BMF 905"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_name": "BMF11T1",
+      "compatible_cranes": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+      ],
+      "bolsters": [
+        "Pro"
+      ],
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Single-beam trailer with capacity of up to 11 t.",
+      "bmf_rv_ua": {
+        "length_mm": "6185",
+        "load_length_mm": "3870",
+        "width_mm": "2275",
+        "bunk_area_m2": "2,3",
+        "drawbar_angle_deg": "±40"
+      },
+      "conflicts": [
+        "Довжина площі завантаження: bmf.ee 3605 мм, каталог 2025 — 3670 мм, bmf.rv.ua — 3870 мм. Кут дишла: bmf.ee ±30°, bmf.rv.ua ±40°."
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf11t1 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf11t1.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://bmf.rv.ua/production/bmf-11t1 (перевірено 18.10.2026)",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf12t2": {
+    "model": "BMF 12T2 Pro",
+    "kind": "trailer",
+    "variants": [
+      {
+        "id": "bmf12t2_pro",
+        "model": "BMF 12T2 Pro",
+        "bolsters": "Pro"
+      },
+      {
+        "id": "bmf12t2_standard",
+        "model": "BMF 12T2",
+        "bolsters": "Standard"
+      },
+      {
+        "id": "bmf12t2_hybrid",
+        "model": "BMF 12T2 Hybrid",
+        "bolsters": "Hybrid"
+      }
+    ],
+    "specs": {
+      "capacity_kg": "12000",
+      "length_mm": "6700",
+      "load_length_mm": "4200",
+      "width_mm": "2185",
+      "height_mm": "2350",
+      "wheels_std": "400/60-15,5",
+      "wheels_options": "500/50-17; 520/50-17",
+      "chassis_mm": "2x(200x100x8)",
+      "axles": "70x70-6",
+      "bunk_area_m2": "2,6–3,0",
+      "drawbar_cyl": "2",
+      "drawbar_angle_deg": "±35",
+      "clearance_mm": "565",
+      "legs": "A/FD",
+      "frame_ext_mm": "725",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 650, BMF 720, BMF 750, BMF 850, BMF 905"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_name": "BMF12T2",
+      "compatible_cranes": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+      ],
+      "bolsters": [
+        "Pro",
+        "Standard",
+        "Hybrid"
+      ],
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Two-beam trailer with capacity of up to 12 t",
+      "bmf_rv_ua": {
+        "length_mm": "6600",
+        "chassis_mm": "2x(200x100x6)",
+        "bunk_area_m2": "2,45",
+        "drawbar_angle_deg": "±40"
+      },
+      "conflicts": [
+        "Шасі: bmf.ee і каталог 2x(200x100x8), bmf.rv.ua 2x(200x100x6). Довжина: bmf.ee 6700, bmf.rv.ua 6600. Переріз: bmf.ee 2,6–3,0, bmf.rv.ua 2,45 м²."
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf12t2 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf12t2.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://bmf.rv.ua/production/bmf-12t2-pro (перевірено 18.10.2026)",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf14t2": {
+    "model": "BMF 14T2 Pro",
+    "kind": "trailer",
+    "variants": [
+      {
+        "id": "bmf14t2_pro",
+        "model": "BMF 14T2 Pro",
+        "bolsters": "Pro"
+      },
+      {
+        "id": "bmf14t2_pro_l",
+        "model": "BMF 14T2 Pro L",
+        "bolsters": "Pro",
+        "note": "назва з КП 14Т2+720 (09.06.2026); значення «L» не підтверджене"
+      }
+    ],
+    "specs": {
+      "capacity_kg": "14000",
+      "length_mm": "6700",
+      "load_length_mm": "4200",
+      "width_mm": "2425",
+      "height_mm": "2535",
+      "wheels_std": "550/45-22,5",
+      "wheels_options": null,
+      "chassis_mm": "2x(200x100x8)",
+      "axles": "80x80-8",
+      "bunk_area_m2": "2,7–3,15",
+      "drawbar_cyl": "2",
+      "drawbar_angle_deg": "±35",
+      "clearance_mm": "670",
+      "legs": "A/FD",
+      "frame_ext_mm": "725",
+      "stakes": "5",
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 650, BMF 720, BMF 750, BMF 850, BMF 905"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_name": "BMF14T2",
+      "compatible_cranes": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+      ],
+      "bolsters": [
+        "Pro"
+      ],
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Two-beam forestry trailer with capacity of up to 14 t",
+      "bmf_rv_ua": {
+        "length_mm": "6600",
+        "width_mm": "2435",
+        "chassis_mm": "2x(200x100x6)",
+        "bunk_area_m2": "2,45–2,8",
+        "drawbar_angle_deg": "±40"
+      },
+      "user_kp": [
+        {
+          "file": "КП 14Т2+720 (09.06.2026).pptx — «14T2 Pro L»",
+          "capacity_kg": "10000,00",
+          "load_length_mm": "4150",
+          "length_mm": "6680",
+          "width_mm": "2435",
+          "frame_extension": "+",
+          "stakes": "5",
+          "wheels": "500/45-22,5 (4 шт)",
+          "frame_wall_mm": "8",
+          "legs": "V-типу"
+        }
+      ],
+      "conflicts": [
+        "КП 14Т2+720 (09.06.2026) друкує «Вантажопідйомність 10000» і «Колесо 500/45-22,5» — схоже на перенесення з шаблону НПЛ-10; bmf.ee: 14000 кг і 550/45-22,5.",
+        "«Pro L» у КП: значення «L» не пояснене; у таблиці КП є «Подовжена рама +» — ймовірно версія з подовжувачем рами. Підтвердити.",
+        "Довжина: bmf.ee 6700, КП 6680, bmf.rv.ua 6600. Ширина: bmf.ee 2425, КП і bmf.rv.ua 2435. Шасі: bmf.ee 2x(200x100x8), bmf.rv.ua 2x(200x100x6)."
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf14t2 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf14t2.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://bmf.rv.ua/production/bmf-14t2-pro (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 reference/kp/kp_text.md (КП користувача, див. extra.user_kp)",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf17t2": {
+    "model": "BMF 17T2 Pro",
+    "kind": "trailer",
+    "variants": [
+      {
+        "id": "bmf17t2_pro",
+        "model": "BMF 17T2 Pro",
+        "bolsters": "Pro"
+      }
+    ],
+    "specs": {
+      "capacity_kg": "17000",
+      "length_mm": "7725",
+      "load_length_mm": "4975",
+      "width_mm": "2520",
+      "height_mm": "2710",
+      "wheels_std": "600/50-22,5",
+      "wheels_options": "550/45-22,5; 710/40-22,5",
+      "chassis_mm": "2x(250x100x6), Raex 400 (8 мм)",
+      "axles": "90x90-8",
+      "bunk_area_m2": "3,0–3,4",
+      "drawbar_cyl": "2",
+      "drawbar_angle_deg": "±30",
+      "clearance_mm": "670",
+      "legs": "A/FD",
+      "frame_ext_mm": "725",
+      "stakes": "5",
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 750, BMF 850, BMF 905, BMF 800HD, BMF 1000HD"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes"
+    ],
+    "extra": {
+      "ua_lineup": true,
+      "bmf_ee_name": "BMF17T2",
+      "compatible_cranes": [
+        "bmf750",
+        "bmf850",
+        "bmf905",
+        "bmf800hd",
+        "bmf1000hd"
+      ],
+      "bolsters": [
+        "Pro"
+      ],
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Two-beam timber trailer with payload of 17 t",
+      "kit_default_brakes": "пневматична (КП 17Т2+750)",
+      "bmf_rv_ua": {
+        "length_mm": "6920",
+        "load_length_mm": "4200",
+        "wheels": "550/45-22,5 / 600/50-22,5",
+        "chassis_mm": "2x(200x100x8) raex400 (8 мм)",
+        "bunk_area_m2": "2,9–3,4",
+        "drawbar_angle_deg": "±40"
+      },
+      "user_kp": [
+        {
+          "file": "КП 17Т2+750 (тех. Характеристики).pptx",
+          "gross_mass_kg": "20500,00",
+          "curb_mass_with_crane_kg": "3500,00",
+          "capacity_kg": "17000,00",
+          "log_length_m": "2-3-4-5-6",
+          "load_length_mm": "5100",
+          "width_mm": "2515",
+          "frame_extension": "+",
+          "stakes": "5",
+          "wheels": "550/45-22,5 (AP), 4 шт",
+          "brakes": "пневматична"
+        }
+      ],
+      "conflicts": [
+        "КП 17Т2+750: «Споряджена маса (з маніпулятором) 3500» і «Повна конструктивна маса 20500» — ті самі 3500 кг, що в шаблоні НПЛ-10; власна маса 17T2 у джерелах BMF не вказана.",
+        "Ширина: bmf.ee 2520, каталог 2025 — 2475, КП 2515. Просвіт: bmf.ee 670, каталог 655. Довжина площі завантаження: bmf.ee 4975, КП 5100, bmf.rv.ua 4200. Шасі: bmf.ee 2x(250x100x6) raex400(8 мм), bmf.rv.ua 2x(200x100x8) raex400.",
+        "Опори: у технічних даних bmf.ee «A / FD», в описі «comes with FD support legs».",
+        "BMF 650 і BMF 720 з 17T2 не сумісні (таблиця bmf.ee) — мінімум BMF 750."
+      ]
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf17t2 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf17t2.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://bmf.rv.ua/production/bmf-17t2-pro (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 reference/kp/kp_text.md (КП користувача, див. extra.user_kp)",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf2t1": {
+    "model": "BMF 2T1",
+    "kind": "trailer",
+    "variants": [],
+    "specs": {
+      "capacity_kg": "2000",
+      "length_mm": "4500",
+      "load_length_mm": "3100",
+      "width_mm": "1450",
+      "height_mm": "1345",
+      "wheels_std": "300/65-12",
+      "wheels_options": null,
+      "chassis_mm": "STRENX 700 MC 100x100x3",
+      "axles": "40x40x5 або 50x50x6",
+      "bunk_area_m2": "0,8",
+      "drawbar_cyl": null,
+      "drawbar_angle_deg": null,
+      "clearance_mm": "430",
+      "legs": "FD",
+      "frame_ext_mm": "1000",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 440"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_name": "BMF2T1",
+      "compatible_cranes": [
+        "bmf440"
+      ],
+      "bolsters": null,
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Compact 2-tonne forestry trailer for ATVs and tractors."
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf2t1 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf2t1.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf5t1": {
+    "model": "BMF 5T1",
+    "kind": "trailer",
+    "variants": [],
+    "specs": {
+      "capacity_kg": "5000",
+      "length_mm": "4965",
+      "load_length_mm": "2900",
+      "width_mm": "1800",
+      "height_mm": "1790",
+      "wheels_std": "400/60-15,5",
+      "wheels_options": "11,5/80-15,3",
+      "chassis_mm": "120x120x8",
+      "axles": "60x60-6",
+      "bunk_area_m2": "1,2–1,4",
+      "drawbar_cyl": null,
+      "drawbar_angle_deg": null,
+      "clearance_mm": "550",
+      "legs": "A",
+      "frame_ext_mm": "600",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 430, BMF 540"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_name": "BMF5T1",
+      "compatible_cranes": [
+        "bmf430",
+        "bmf540"
+      ],
+      "bolsters": null,
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Small single-beam forestry trailer with capacity of 5 t"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf5t1 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf5t1.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf6t2": {
+    "model": "BMF 6T2",
+    "kind": "trailer",
+    "variants": [],
+    "specs": {
+      "capacity_kg": "6000",
+      "length_mm": "5070",
+      "load_length_mm": "2970",
+      "width_mm": "2000",
+      "height_mm": "1725",
+      "wheels_std": "400/60-15,5",
+      "wheels_options": "11,5/80-15,3",
+      "chassis_mm": "платформа",
+      "axles": "70x70-6",
+      "bunk_area_m2": "1,30",
+      "drawbar_cyl": null,
+      "drawbar_angle_deg": null,
+      "clearance_mm": "510",
+      "legs": "A",
+      "frame_ext_mm": null,
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 430, BMF 540"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_name": "BMF6T2",
+      "compatible_cranes": [
+        "bmf430",
+        "bmf540"
+      ],
+      "bolsters": null,
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Two-wheeled platform trailer with capacity of up to 6 t"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf6t2 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf6t2.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf7t1": {
+    "model": "BMF 7T1",
+    "kind": "trailer",
+    "variants": [],
+    "specs": {
+      "capacity_kg": "7000",
+      "length_mm": "5005",
+      "load_length_mm": "2850",
+      "width_mm": "1995",
+      "height_mm": "1800",
+      "wheels_std": "400/60-15,5",
+      "wheels_options": "11,5/80-15,3",
+      "chassis_mm": "140x140x6",
+      "axles": "60x60-6",
+      "bunk_area_m2": "1,4–1,6",
+      "drawbar_cyl": "0/1/2",
+      "drawbar_angle_deg": null,
+      "clearance_mm": "550",
+      "legs": "A",
+      "frame_ext_mm": "600",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 430, BMF 540"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_name": "BMF7T1",
+      "compatible_cranes": [
+        "bmf430",
+        "bmf540"
+      ],
+      "bolsters": null,
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Single-beam forestry trailer with capacity of 7 tonnes"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf7t1 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf7t1.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf8t1": {
+    "model": "BMF 8T1E",
+    "kind": "trailer",
+    "variants": [],
+    "specs": {
+      "capacity_kg": "8000",
+      "length_mm": "5615",
+      "load_length_mm": "3100",
+      "width_mm": "2000",
+      "height_mm": "2060",
+      "wheels_std": "400/60-15,5",
+      "wheels_options": "500/50-17; 520/50-17",
+      "chassis_mm": "160x160x8",
+      "axles": "60x60",
+      "bunk_area_m2": "1,85–2,15 (E: 2,1)",
+      "drawbar_cyl": "1 (2)",
+      "drawbar_angle_deg": "±35",
+      "clearance_mm": "565",
+      "legs": "FD",
+      "frame_ext_mm": "800",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 540, BMF 650, BMF 720"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_name": "BMF8T1E",
+      "compatible_cranes": [
+        "bmf540",
+        "bmf650",
+        "bmf720"
+      ],
+      "bolsters": null,
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "One-beam trailer with capacity of 8t"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf8t1 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf8t1.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf13t1": {
+    "model": "BMF 13T1 Pro",
+    "kind": "trailer",
+    "variants": [],
+    "specs": {
+      "capacity_kg": "13000",
+      "length_mm": "6495",
+      "load_length_mm": "3800",
+      "width_mm": "2425",
+      "height_mm": "2455",
+      "wheels_std": "550/45-22,5",
+      "wheels_options": null,
+      "chassis_mm": "200x200x8",
+      "axles": "80x80-8",
+      "bunk_area_m2": "2,7–3,15",
+      "drawbar_cyl": "2",
+      "drawbar_angle_deg": "±30",
+      "clearance_mm": "670",
+      "legs": "FD",
+      "frame_ext_mm": "850",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 650, BMF 720, BMF 750, BMF 850, BMF 905"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_name": "BMF13T1",
+      "compatible_cranes": [
+        "bmf650",
+        "bmf720",
+        "bmf750",
+        "bmf850",
+        "bmf905"
+      ],
+      "bolsters": null,
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Single-beam trailer with capacity of up to 13 t"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf13t1 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf13t1.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf16t1": {
+    "model": "BMF 16T1 Pro",
+    "kind": "trailer",
+    "variants": [],
+    "specs": {
+      "capacity_kg": "16000",
+      "length_mm": "7945",
+      "load_length_mm": "5230",
+      "width_mm": "2520",
+      "height_mm": "2765",
+      "wheels_std": "600/50-22,5",
+      "wheels_options": "550/45-22,5",
+      "chassis_mm": "250x250x10",
+      "axles": "90x90-8",
+      "bunk_area_m2": "3,1–3,6",
+      "drawbar_cyl": "2",
+      "drawbar_angle_deg": "±30",
+      "clearance_mm": "725",
+      "legs": "FD",
+      "frame_ext_mm": "850",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 750, BMF 850, BMF 905, BMF 800HD, BMF 1000HD"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_name": "BMF16T1",
+      "compatible_cranes": [
+        "bmf750",
+        "bmf850",
+        "bmf905",
+        "bmf800hd",
+        "bmf1000hd"
+      ],
+      "bolsters": null,
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "One beam forestry machine with up to 16 t payload"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf16t1 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf16t1.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  },
+  "bmf18t1": {
+    "model": "BMF 18T1 Pro",
+    "kind": "trailer",
+    "variants": [],
+    "specs": {
+      "capacity_kg": "18000",
+      "length_mm": "8240",
+      "load_length_mm": "5475",
+      "width_mm": "2520",
+      "height_mm": "2870",
+      "wheels_std": "600/50-22,5",
+      "wheels_options": "710/40-22,5",
+      "chassis_mm": "300x300x10",
+      "axles": "90x90-8",
+      "bunk_area_m2": "3,5–4,0",
+      "drawbar_cyl": "2",
+      "drawbar_angle_deg": "±30",
+      "clearance_mm": "725",
+      "legs": "A/FD",
+      "frame_ext_mm": "850",
+      "stakes": null,
+      "brakes": null,
+      "weight_kg": null,
+      "cranes": "BMF 800HD, BMF 1000HD"
+    },
+    "needs_confirmation": [
+      "weight_kg",
+      "brakes",
+      "stakes"
+    ],
+    "extra": {
+      "ua_lineup": false,
+      "bmf_ee_name": "BMF18T1",
+      "compatible_cranes": [
+        "bmf800hd",
+        "bmf1000hd"
+      ],
+      "bolsters": null,
+      "brake_options": "гідравлічні (циліндр зовні) 2x / 4x; пневматичні 2x / 4x; гібридні 2x / 4x; стоянкове 2x; накатні 2x (bmf.ee); bmf.rv.ua: гідравлічні зовнішні / внутрішні 2x / 4x, пневматичні 2x / 4x",
+      "summary_en": "Sturdy one-beam trailer with up to 18t payload"
+    },
+    "sources": [
+      "https://www.bmf.ee/products/trailers/bmf18t1 (перевірено 18.10.2026)",
+      "bmf-clone@d6d4b33 (branch claude/focused-mccarthy-sfhu6f) reference/bmf-ee/bmf-ee-site.zip, HTTrack 07.10.2026: www.bmf.ee/products/trailers/bmf18t1.html",
+      "bmf-clone@d6d4b33 reference/bmf-ee/catalogue-2025.txt (BMF Forestry Products Catalogue 2025, text) — Measures & data, Forestry trailers; Trailer / crane compatibility",
+      "https://www.bmf.ee/products/accessories/for-trailers/brakes"
+    ]
+  }
+}

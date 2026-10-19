@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Конструктор КП</title>
+  <meta name="description" content="Конструктор комерційних пропозицій: крани BMF, напівпричепи НПЛ-10, власні комплектуючі.">
+  <meta name="theme-color" content="#171B21">
+  <meta name="color-scheme" content="dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Конструктор КП">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/web/src/main.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Перейти до змісту</a>
+  <header class="topbar">
+    <div class="topbar__row">
+      <a class="brand" href="#/" aria-label="Конструктор КП — на початок">
+        <span class="brand__mark" aria-hidden="true">КП</span>
+        <span class="brand__text">Конструктор <span class="accent">КП</span></span>
+      </a>
+      <p class="brand__tag" aria-hidden="true">// КРАНИ BMF · НПЛ-10 · ВЛАСНЕ ВИРОБНИЦТВО</p>
+    </div>
+    <nav class="tabs" id="nav" aria-label="Розділи"></nav>
+  </header>
+  <div id="offline" class="banner banner--offline" role="status" hidden>
+    <b>ОФЛАЙН</b><span>Немає з’єднання з сервером. Розрахунок працює зі збереженими даними; КП сформується, коли зв’язок повернеться.</span>
+  </div>
+  <div id="banners"></div>
+  <main id="main" tabindex="-1">
+    <noscript><p class="page">Для роботи конструктора потрібен JavaScript.</p></noscript>
+  </main>
+  <div id="dock" class="dock" hidden></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

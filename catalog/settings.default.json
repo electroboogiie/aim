@@ -1,0 +1,17 @@
+{
+  "eur": { "mode": "nbu", "manual_rate": null, "buffer_pct": 0 },
+  "metal": { "index_uah_per_kg": null, "ref_index_uah_per_kg": null, "grades": {} },
+  "labor_rate_uah": null,
+  "groups": {
+    "bmf_cranes": { "markup_pct": 0, "logistics_pct": 0 },
+    "bmf_trailers": { "markup_pct": 0, "logistics_pct": 0 },
+    "own_production": { "markup_pct": 0, "logistics_pct": 0 },
+    "accessories": { "markup_pct": 0, "logistics_pct": 0 }
+  },
+  "vat_pct": 20,
+  "rounding_uah": 50,
+  "validity_days": 7,
+  "max_discount_pct": 5,
+  "company_maker": "gidman",
+  "kp_number_prefix": "КП"
+}

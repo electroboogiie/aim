@@ -1,0 +1,15 @@
+node_modules/
+build/
+web/dist/
+data/
+generator/.build/
+__pycache__/
+*.pyc
+.DS_Store
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+generator/tests/out/
+.env
+web/dist-demo/

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Конструктор КП</string>
+
+    <string name="settings_title">Адреса сервера</string>
+    <string name="settings_intro">Вкажіть адресу сервера конструктора КП. Через інтернет — https://kp.example.com, у локальній мережі офісу — http://192.168.1.10:8080.</string>
+    <string name="settings_url_hint">https://kp.example.com</string>
+    <string name="settings_check">Перевірити з’єднання</string>
+    <string name="settings_save">Зберегти</string>
+    <string name="settings_checking">Перевіряю з’єднання…</string>
+    <string name="settings_ok">З’єднання є. Версія сервера: %1$s</string>
+    <string name="settings_ok_no_version">З’єднання є.</string>
+    <string name="settings_fail">Сервер не відповідає: %1$s</string>
+    <string name="settings_fail_http">Сервер відповів з кодом %1$d. Перевірте адресу.</string>
+    <string name="settings_not_kp">За цією адресою працює не сервер конструктора КП.</string>
+    <string name="settings_saved">Адресу збережено</string>
+    <string name="settings_clear">Очистити дані сторінки</string>
+    <string name="settings_clear_confirm">Буде видалено кеш, збережені дані сторінки та вхід. Продовжити?</string>
+    <string name="settings_cleared">Дані сторінки очищено</string>
+    <string name="settings_about">Версія застосунку %1$s (%2$d) · WebView %3$s</string>
+    <string name="settings_webview_unknown">невідома</string>
+
+    <string name="url_error_empty">Вкажіть адресу сервера</string>
+    <string name="url_error_invalid">Невірна адреса. Приклад: https://kp.example.com</string>
+    <string name="url_error_insecure">Адреса http:// дозволена лише в локальній мережі (192.168.x.x, 10.x.x.x, 172.16–31.x.x). Для доступу через інтернет використовуйте https://</string>
+
+    <string name="action_back">Назад</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="action_continue">Продовжити</string>
+    <string name="action_retry">Повторити</string>
+    <string name="action_settings">Налаштування</string>
+    <string name="action_open">Відкрити</string>
+    <string name="action_share">Поділитися</string>
+    <string name="action_save_copy">Зберегти копію</string>
+
+    <string name="error_offline_title">Немає з’єднання з мережею</string>
+    <string name="error_offline_text">Перевірте Wi‑Fi або мобільний інтернет. Сторінка відкриється, щойно з’явиться зв’язок.</string>
+    <string name="error_server_title">Сервер недоступний</string>
+    <string name="error_server_text">Не вдалося відкрити %1$s\n%2$s</string>
+    <string name="error_http_text">Сервер відповів з помилкою %1$d. Спробуйте пізніше або зверніться до адміністратора.</string>
+    <string name="error_ssl_title">Помилка захищеного з’єднання</string>
+    <string name="error_ssl_text">Сертифікат сервера недійсний або прострочений, тому з’єднання скасовано. Перевірте адресу сервера та дату й час на телефоні.</string>
+    <string name="error_no_server_title">Сервер не налаштовано</string>
+    <string name="error_no_server_text">Вкажіть адресу сервера конструктора КП у налаштуваннях.</string>
+    <string name="error_blocked_link">Незахищене посилання http:// заблоковано</string>
+    <string name="error_no_app_for_link">Немає застосунку, щоб відкрити це посилання</string>
+
+    <string name="dl_started">Завантажую файл…</string>
+    <string name="dl_ready_title">Файл готовий</string>
+    <string name="dl_ready_text">%1$s (%2$s)</string>
+    <string name="dl_saved">Копію збережено</string>
+    <string name="dl_save_failed">Не вдалося зберегти копію</string>
+    <string name="dl_error_title">Не вдалося завантажити файл</string>
+    <string name="dl_error_network">Помилка мережі: %1$s</string>
+    <string name="dl_error_http">Сервер відповів з кодом %1$d</string>
+    <string name="dl_error_auth">Немає доступу до файлу (код %1$d). Оновіть сторінку й увійдіть ще раз.</string>
+    <string name="dl_error_not_found">Файл не знайдено на сервері (404)</string>
+    <string name="dl_error_insecure">Завантаження через незахищене з’єднання http:// заблоковано</string>
+    <string name="dl_error_redirects">Забагато переадресувань</string>
+    <string name="dl_error_storage">Не вдалося записати файл: %1$s</string>
+    <string name="dl_error_unsupported">Такий тип посилання не підтримується</string>
+    <string name="dl_error_page">Сторінка не змогла передати файл: %1$s</string>
+    <string name="chooser_share">Надіслати КП</string>
+    <string name="no_app_to_open">Немає застосунку, щоб відкрити цей файл</string>
+    <string name="file_chooser_failed">Не вдалося відкрити вибір файлів</string>
+
+    <string name="shortcut_settings_short">Сервер</string>
+    <string name="shortcut_settings_long">Налаштування сервера</string>
+</resources>

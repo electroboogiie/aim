@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kp_bg">#171B21</color>
+    <color name="kp_surface">#20262E</color>
+    <color name="kp_line">#2E3640</color>
+    <color name="kp_orange">#F2530A</color>
+    <color name="kp_text">#F3F5F7</color>
+    <color name="kp_text_dim">#9BA4AE</color>
+    <color name="ic_launcher_background">#171B21</color>
+</resources>

@@ -1,0 +1,1046 @@
+[
+  {
+    "id": "rv_valve",
+    "group": "crane",
+    "title": "Регулюючий клапан",
+    "desc": "Гідророзподільник крана на вибір: 5/7 XY, 6/8 XY, 4/8 XYZ, 2/8 XY el. On/Off або HPC.",
+    "photo": "acc_rv/01_valve_4-8xyz.png",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf430",
+      "bmf540",
+      "bmf650",
+      "bmf650_plus",
+      "bmf720",
+      "bmf750",
+      "bmf750_hp",
+      "bmf850",
+      "bmf850_hp",
+      "bmf905",
+      "bmf905_hp"
+    ],
+    "source": "https://bmf.rv.ua/production/regulyuyuchyy-klapan (перевірено 18.10.2026); сумісність і витрати — https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks",
+    "origin": "bmf.rv.ua",
+    "variants": [
+      {
+        "id": "valve_57xy",
+        "title": "5/7 XY",
+        "photo": "",
+        "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/nvmxz_8u.png",
+        "desc": "Механічний розподільник Walvoil Hydrocontrol D3M, 55 л (bmf.ee: код V1, 30–55 л/хв, до 200 бар).",
+        "compatible": [
+          "bmf430"
+        ]
+      },
+      {
+        "id": "valve_68xy",
+        "title": "6/8 XY",
+        "photo": "",
+        "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/qvkck2bx.png",
+        "desc": "Механічний розподільник Walvoil Hydrocontrol D3M, 55 л (bmf.ee: код V2, 30–55 л/хв, до 200 бар).",
+        "compatible": [
+          "bmf540",
+          "bmf650",
+          "bmf650_plus",
+          "bmf720"
+        ]
+      },
+      {
+        "id": "valve_48xyz",
+        "title": "4/8 XYZ",
+        "photo": "acc_rv/01_valve_4-8xyz.png",
+        "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/gqm4lsio.png",
+        "desc": "Механічний розподільник: 55 л для BMF 540/650/720, 80 л для BMF 750/850/905 (таблиця сумісності bmf.ee).",
+        "compatible": [
+          "bmf540",
+          "bmf650",
+          "bmf650_plus",
+          "bmf720",
+          "bmf750",
+          "bmf750_hp",
+          "bmf850",
+          "bmf850_hp",
+          "bmf905",
+          "bmf905_hp"
+        ]
+      },
+      {
+        "id": "valve_28xy_onoff",
+        "title": "2/8 XY el. On/Off",
+        "photo": "",
+        "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/vtf0f6oj.png",
+        "desc": "Механічний розподільник, секції телескопа і грейфера — електричні. bmf.ee: On/Off 55 л D3M (V4) і полегшений 55 л (V15) для BMF 540/650/720; On/Off 80 л D4 (V5, 40–80 л/хв) для BMF 750/850/905.",
+        "compatible": [
+          "bmf540",
+          "bmf650",
+          "bmf650_plus",
+          "bmf720",
+          "bmf750",
+          "bmf750_hp",
+          "bmf850",
+          "bmf850_hp",
+          "bmf905",
+          "bmf905_hp"
+        ]
+      },
+      {
+        "id": "valve_hpc",
+        "title": "HPC",
+        "photo": "",
+        "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/zici47ze.png",
+        "desc": "Розподільник 55 л з пілотними джойстиками HPC (bmf.ee: код V19, 30–55 л/хв, пропорційне керування, телескоп і грейфер — On/Off).",
+        "compatible": [
+          "bmf650",
+          "bmf650_plus",
+          "bmf720"
+        ],
+        "needs_confirmation": [
+          "compatible: у таблиці bmf.ee — BMF 650, 720; в описі V19 — також BMF 540"
+        ]
+      }
+    ],
+    "notes": "Стандартний клапан комплекту: BMF 650/720 — 6/8 XY 55 л, BMF 750/905 — 4/8 XYZ 80 л (КП користувача). Інший варіант — за запитом."
+  },
+  {
+    "id": "rv_grapples",
+    "group": "crane",
+    "title": "Грейфери Hardox",
+    "desc": "Грейфери для колод зі сталі Hardox (SSAB): C15, C20, C24, C27, C37 — від 0,15 до 0,37 м². Штатний грейфер уже входить у ціну крана; інший розмір — за запитом.",
+    "photo": "acc_rv/02_grapple_forest.jpg",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf430",
+      "bmf540",
+      "bmf650",
+      "bmf650_plus",
+      "bmf720",
+      "bmf750",
+      "bmf750_hp",
+      "bmf850",
+      "bmf850_hp",
+      "bmf905",
+      "bmf905_hp",
+      "bmf800hd",
+      "bmf800hd_plus",
+      "bmf1000hd",
+      "bmf1000hd_plus"
+    ],
+    "source": "https://bmf.rv.ua/production/greyfery (перевірено 18.10.2026) (таблиця сумісності кранів/захватів; розміри і вага — зображення https://bmf.rv.ua/files/styles/medium/public/prodimgs/dyzayn_bez_nazvy.jpg); HD-крани і C37 — каталог BMF 2025 (bmf-clone reference/bmf-ee/catalogue-2025.txt), Grapples",
+    "origin": "bmf.rv.ua",
+    "variants": [
+      {
+        "id": "grapple_c15",
+        "title": "C15",
+        "area_m2": "0,15",
+        "weight_kg": "56",
+        "reach_mm": "1143",
+        "compatible": [
+          "bmf430",
+          "bmf540",
+          "bmf650",
+          "bmf650_plus"
+        ],
+        "desc": "Грейфер для колод C15: площа 0,15 м², вага 56 кг, розкриття (A) 1143 мм."
+      },
+      {
+        "id": "grapple_c20",
+        "title": "C20",
+        "area_m2": "0,2",
+        "weight_kg": "82",
+        "reach_mm": "1178",
+        "compatible": [
+          "bmf650",
+          "bmf650_plus",
+          "bmf720",
+          "bmf750",
+          "bmf750_hp",
+          "bmf850",
+          "bmf850_hp",
+          "bmf905",
+          "bmf905_hp"
+        ],
+        "desc": "Грейфер для колод C20: площа 0,2 м², вага 82 кг, розкриття (A) 1178 мм."
+      },
+      {
+        "id": "grapple_c24",
+        "title": "C24",
+        "area_m2": "0,24",
+        "weight_kg": "126",
+        "reach_mm": "1313",
+        "compatible": [
+          "bmf650",
+          "bmf650_plus",
+          "bmf720",
+          "bmf750",
+          "bmf750_hp",
+          "bmf850",
+          "bmf850_hp",
+          "bmf905",
+          "bmf905_hp"
+        ],
+        "needs_confirmation": [
+          "weight_kg: bmf.rv.ua 126 кг, каталог 2025 — 120 кг (126 кг — у C24B)"
+        ],
+        "desc": "Грейфер для колод C24: площа 0,24 м², вага 126 кг, розкриття (A) 1313 мм."
+      },
+      {
+        "id": "grapple_c27",
+        "title": "C27",
+        "area_m2": "0,27",
+        "weight_kg": "143",
+        "reach_mm": "1560",
+        "compatible": [
+          "bmf720",
+          "bmf750",
+          "bmf750_hp",
+          "bmf850",
+          "bmf850_hp",
+          "bmf905",
+          "bmf905_hp",
+          "bmf800hd",
+          "bmf800hd_plus",
+          "bmf1000hd",
+          "bmf1000hd_plus"
+        ],
+        "desc": "Грейфер для колод C27: площа 0,27 м², вага 143 кг, розкриття (A) 1560 мм."
+      },
+      {
+        "id": "grapple_c37",
+        "title": "C37",
+        "area_m2": "0,37",
+        "weight_kg": "215",
+        "reach_mm": "1876",
+        "compatible": [
+          "bmf800hd",
+          "bmf800hd_plus",
+          "bmf1000hd",
+          "bmf1000hd_plus"
+        ],
+        "needs_confirmation": [
+          "weight_kg: bmf.rv.ua 215 кг, каталог 2025 — 240 кг",
+          "compatible: на bmf.rv.ua C37 не сумісний з жодним краном лінійки; HD-крани — за каталогом 2025"
+        ],
+        "desc": "Грейфер для колод C37: площа 0,37 м², вага 215 кг, розкриття (A) 1876 мм."
+      }
+    ],
+    "notes": "bmf.rv.ua пише «BMF950(HP)» — у джерелах BMF такої моделі немає, взято як BMF905(HP). Каталог 2025 також містить грейфери для гілок C20B–C37B, C10 (BMF 440) і C50 (BMF 860Z)."
+  },
+  {
+    "id": "rv_rotators",
+    "group": "crane",
+    "title": "Ротатори",
+    "desc": "Ротатори GR 3, GR 30, GR 46, CR 300 або CR 400. Штатний ротатор уже входить у ціну крана; інший — за запитом.",
+    "photo": "acc_rv/03_rotator.jpg",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf430",
+      "bmf440",
+      "bmf540",
+      "bmf650",
+      "bmf650_plus",
+      "bmf720",
+      "bmf750",
+      "bmf750_hp",
+      "bmf850",
+      "bmf850_hp",
+      "bmf905",
+      "bmf905_hp",
+      "bmf800hd",
+      "bmf800hd_plus",
+      "bmf1000hd",
+      "bmf1000hd_plus"
+    ],
+    "source": "https://bmf.rv.ua/production/rotatory (перевірено 18.10.2026); сумісність — https://www.bmf.ee/products/accessories/for-cranes/rotators (усі крани)",
+    "origin": "bmf.rv.ua",
+    "variants": [
+      {
+        "id": "rotator_gr3",
+        "title": "Ротатор GR 3",
+        "desc": "Ротатор GR 3 (bmf.rv.ua; вантажопідйомність на сайті не вказана)."
+      },
+      {
+        "id": "rotator_gr30",
+        "title": "Ротатор GR 30",
+        "desc": "Ротатор GR 30 (bmf.rv.ua; вантажопідйомність на сайті не вказана)."
+      },
+      {
+        "id": "rotator_gr46",
+        "title": "Ротатор GR 46",
+        "desc": "Ротатор GR 46 (bmf.rv.ua; вантажопідйомність на сайті не вказана)."
+      },
+      {
+        "id": "rotator_cr300",
+        "title": "Ротатор CR 300",
+        "desc": "Ротатор CR 300 (bmf.rv.ua; вантажопідйомність на сайті не вказана)."
+      },
+      {
+        "id": "rotator_cr400",
+        "title": "Ротатор CR 400",
+        "desc": "Ротатор CR 400 (bmf.rv.ua; вантажопідйомність на сайті не вказана)."
+      }
+    ],
+    "notes": "bmf.ee: ротатори 3 т (вал), 3 т (болтове кріплення), 5,5 т (болти), 10 т (болти). Відповідність назв GR/CR цим класам на сайтах не наведена.",
+    "needs_confirmation": [
+      "variants: вантажопідйомність і сумісність кожного ротатора з краном"
+    ]
+  },
+  {
+    "id": "rv_leg_a",
+    "group": "crane",
+    "title": "Опора крана типу А",
+    "desc": "Опора крана типу А: гідравлічні А-подібні лапи, кріпляться до переднього щита — компактно для вузьких просік.",
+    "photo": "",
+    "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/photo.png",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf430",
+      "bmf540",
+      "bmf650",
+      "bmf650_plus",
+      "bmf720"
+    ],
+    "compatible_trailers": [
+      "bmf8t2",
+      "bmf10t2",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf5t1",
+      "bmf6t2",
+      "bmf7t1",
+      "bmf18t1"
+    ],
+    "source": "https://bmf.rv.ua/production/opory-typ (перевірено 18.10.2026) (фото https://bmf.rv.ua/files/styles/medium/public/prodimgs/photo.png); опис і сумісність — bmf.ee (сторінки кранів і причепів «Trailer-mounted support leg type», опис «A-type support legs»)",
+    "origin": "bmf.rv.ua",
+    "notes": "bmf.rv.ua: «Опора типу А, підходять для всіх кранів»; bmf.ee: тип А — лише BMF 430, 540, 650, 720 (750/850/905 — тільки FD).",
+    "needs_confirmation": [
+      "compatible: bmf.rv.ua «для всіх кранів» проти bmf.ee"
+    ]
+  },
+  {
+    "id": "rv_leg_fd",
+    "group": "crane",
+    "title": "Опора F/D-типу («метелик»)",
+    "desc": "Гідравлічні відкидні опори FD («метелик»): широка база і максимальна стійкість під час навантаження.",
+    "photo": "acc_rv/04_leg_fd.jpg",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf440",
+      "bmf650",
+      "bmf650_plus",
+      "bmf720",
+      "bmf750",
+      "bmf750_hp",
+      "bmf850",
+      "bmf850_hp",
+      "bmf905",
+      "bmf905_hp"
+    ],
+    "compatible_trailers": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf2t1",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "source": "https://bmf.rv.ua/production/opora-fd-typu-babochka (перевірено 18.10.2026); опис і сумісність — bmf.ee (сторінки кранів і причепів, опис «Flap Down (FD) Legs»)",
+    "origin": "bmf.rv.ua"
+  },
+  {
+    "id": "rv_wheel_drive",
+    "group": "trailer",
+    "title": "Привід 2WD або 4WD",
+    "desc": "Гідропривід коліс причепа: Black Bruin BB5 для 2WD, Robson для 4WD.",
+    "photo": "acc_rv/05_wheel_drive.jpg",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "source": "https://bmf.rv.ua/production/2-abo-4-wd (перевірено 18.10.2026); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/black-bruin-drive-system, https://www.bmf.ee/products/accessories/for-trailers/robson-drive-system",
+    "origin": "bmf.rv.ua",
+    "variants": [
+      {
+        "id": "drive_bb5_2wd",
+        "title": "Black Bruin BB5 (2WD)",
+        "photo": "",
+        "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/waedktv0.jpg",
+        "desc": "Гідромотори коліс Black Bruin: клапан, гідромотор, блок керування і дисплей; керування CTR101 (будь-який трактор) або CTR201 (ISOBUS).",
+        "compatible": [
+          "bmf8t2",
+          "bmf10t2",
+          "bmf12t2",
+          "bmf14t2",
+          "bmf16t1",
+          "bmf17t2",
+          "bmf18t1"
+        ]
+      },
+      {
+        "id": "drive_robson_4wd",
+        "title": "Robson (4WD)",
+        "photo": "acc_rv/05_wheel_drive.jpg",
+        "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/t0s8a62t.jpg",
+        "desc": "Роликовий привід Robson: ролики притискаються до коліс; живлення від гідравліки трактора (плаваюче положення) або розподільника крана, витрата 40–80 л/хв.",
+        "compatible": [
+          "bmf8t1",
+          "bmf8t2",
+          "bmf9t1",
+          "bmf10t2",
+          "bmf11t1",
+          "bmf12t2",
+          "bmf13t1",
+          "bmf14t2"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rv_wheels",
+    "group": "trailer",
+    "title": "Колеса",
+    "desc": "Колеса для причепів BMF: 11,5/80-15,3 (AW), 400/60-15,5 (SG), 500/50-17 (SG), 520/50-17 (SG), 550/45-22,5 (SG).",
+    "photo": "acc_rv/06_wheel.jpg",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf5t1",
+      "bmf6t2",
+      "bmf7t1",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "source": "https://bmf.rv.ua/production/kolesa (перевірено 18.10.2026); розміри для кожного причепа — сторінки причепів bmf.ee «Wheels (*standard)»; додаткові розміри і типи протектора — https://www.bmf.ee/products/accessories/for-trailers/wheels-for-trailers",
+    "origin": "bmf.rv.ua",
+    "variants": [
+      {
+        "id": "wheel_11_5_80_15_3",
+        "title": "11,5/80-15,3 (AW)",
+        "desc": "Колесо 11,5/80-15,3, протектор AW.",
+        "compatible": [
+          "bmf5t1",
+          "bmf6t2",
+          "bmf7t1"
+        ],
+        "origin": "bmf.rv.ua"
+      },
+      {
+        "id": "wheel_400_60_15_5",
+        "title": "400/60-15,5 (SG)",
+        "desc": "Колесо 400/60-15,5, протектор SG.",
+        "compatible": [
+          "bmf8t2",
+          "bmf9t1",
+          "bmf10t2",
+          "bmf11t1",
+          "bmf12t2",
+          "bmf5t1",
+          "bmf6t2",
+          "bmf7t1",
+          "bmf8t1"
+        ],
+        "origin": "bmf.rv.ua"
+      },
+      {
+        "id": "wheel_500_50_17",
+        "title": "500/50-17 (SG)",
+        "desc": "Колесо 500/50-17, протектор SG.",
+        "compatible": [
+          "bmf8t2",
+          "bmf9t1",
+          "bmf10t2",
+          "bmf11t1",
+          "bmf12t2",
+          "bmf8t1"
+        ],
+        "origin": "bmf.rv.ua"
+      },
+      {
+        "id": "wheel_520_50_17",
+        "title": "520/50-17 (SG)",
+        "desc": "Колесо 520/50-17, протектор SG.",
+        "compatible": [
+          "bmf8t2",
+          "bmf9t1",
+          "bmf10t2",
+          "bmf11t1",
+          "bmf12t2",
+          "bmf8t1"
+        ],
+        "origin": "bmf.rv.ua"
+      },
+      {
+        "id": "wheel_550_45_22_5",
+        "title": "550/45-22,5 (SG)",
+        "desc": "Колесо 550/45-22,5, протектор SG.",
+        "compatible": [
+          "bmf14t2",
+          "bmf17t2",
+          "bmf13t1",
+          "bmf16t1"
+        ],
+        "origin": "bmf.rv.ua"
+      },
+      {
+        "id": "wheel_600_50_22_5",
+        "title": "600/50-22,5 (SG)",
+        "desc": "Колесо 600/50-22,5, протектор SG.",
+        "compatible": [
+          "bmf17t2",
+          "bmf16t1",
+          "bmf18t1"
+        ],
+        "origin": "bmf.ee"
+      },
+      {
+        "id": "wheel_600_40_22_5",
+        "title": "600/40-22,5 (AP)",
+        "desc": "Колесо 600/40-22,5, протектор AP.",
+        "compatible": [],
+        "origin": "bmf.ee",
+        "needs_confirmation": [
+          "compatible: на сторінках причепів bmf.ee цей розмір не вказаний"
+        ]
+      },
+      {
+        "id": "wheel_710_40_22_5",
+        "title": "710/40-22,5 (AP)",
+        "desc": "Колесо 710/40-22,5, протектор AP.",
+        "compatible": [
+          "bmf17t2",
+          "bmf18t1"
+        ],
+        "origin": "bmf.ee"
+      }
+    ],
+    "notes": "bmf.ee: диски SG і AP повністю зварні, посилені, із захистом вентиля. Стандартні колеса кожного причепа — specs.wheels_std у bmf_specs.json."
+  },
+  {
+    "id": "rv_brakes",
+    "group": "trailer",
+    "title": "Гальма",
+    "desc": "Гальма для причепів BMF: гідравлічні циліндричні (зовнішні або внутрішні) 2x / 4x, пневматичні 2x / 4x.",
+    "photo": "",
+    "photo_url": "https://bmf.rv.ua/files/styles/medium/public/prodimgs/2062-800x531.png",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf5t1",
+      "bmf6t2",
+      "bmf7t1",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "source": "https://bmf.rv.ua/production/galma (перевірено 18.10.2026) (фото https://bmf.rv.ua/files/styles/medium/public/prodimgs/2062-800x531.png); гібридні, стоянкові, накатні і сумісність — https://www.bmf.ee/products/accessories/for-trailers/brakes; коди — каталог BMF 2025 (bmf-clone reference/bmf-ee/catalogue-2025.txt), Trailer accessories / Brakes",
+    "origin": "bmf.rv.ua",
+    "variants": [
+      {
+        "id": "brake_hyd_out_2x",
+        "title": "Гідравлічні циліндричні зовнішні 2x",
+        "origin": "bmf.rv.ua",
+        "desc": "Гідравлічні циліндричні зовнішні 2x (код BMF HBO2)."
+      },
+      {
+        "id": "brake_hyd_out_4x",
+        "title": "Гідравлічні циліндричні зовнішні 4x",
+        "origin": "bmf.rv.ua",
+        "desc": "Гідравлічні циліндричні зовнішні 4x (код BMF HBO4)."
+      },
+      {
+        "id": "brake_hyd_in_2x",
+        "title": "Гідравлічні циліндричні внутрішні 2x",
+        "origin": "bmf.rv.ua",
+        "desc": "Гідравлічні циліндричні внутрішні 2x.",
+        "needs_confirmation": [
+          "code: у bmf.ee і каталозі 2025 внутрішніх гідравлічних гальм немає"
+        ]
+      },
+      {
+        "id": "brake_hyd_in_4x",
+        "title": "Гідравлічні циліндричні внутрішні 4x",
+        "origin": "bmf.rv.ua",
+        "desc": "Гідравлічні циліндричні внутрішні 4x.",
+        "needs_confirmation": [
+          "code: у bmf.ee і каталозі 2025 внутрішніх гідравлічних гальм немає"
+        ]
+      },
+      {
+        "id": "brake_pneu_2x",
+        "title": "Пневматичні 2x",
+        "origin": "bmf.rv.ua",
+        "desc": "Пневматичні 2x (код BMF PNB2)."
+      },
+      {
+        "id": "brake_pneu_4x",
+        "title": "Пневматичні 4x",
+        "origin": "bmf.rv.ua",
+        "desc": "Пневматичні 4x (код BMF PNB4)."
+      },
+      {
+        "id": "brake_combi_2x",
+        "title": "Гібридні 2x",
+        "origin": "bmf.ee",
+        "desc": "Гібридні 2x (код BMF COMBI2)."
+      },
+      {
+        "id": "brake_combi_4x",
+        "title": "Гібридні 4x",
+        "origin": "bmf.ee",
+        "desc": "Гібридні 4x (код BMF COMBI4)."
+      },
+      {
+        "id": "brake_parking_2x",
+        "title": "Стоянкове гальмо 2x",
+        "origin": "bmf.ee",
+        "desc": "Стоянкове гальмо 2x (код BMF PABR)."
+      },
+      {
+        "id": "brake_overrun_2x",
+        "title": "Накатні гальма 2x",
+        "origin": "bmf.ee",
+        "desc": "Накатні гальма 2x (код BMF OB2)."
+      }
+    ],
+    "notes": "bmf.ee: усі гальма відповідають вимогам ЄС; більшість причепів BMF мають типове схвалення ЄС 167/2013. Для НПЛ-10 гальма — характеристика комплекту (вибір), не позиція."
+  },
+  {
+    "id": "rv_lights",
+    "group": "trailer",
+    "title": "Ліхтарі",
+    "desc": "Задні ліхтарі для руху дорогами: гнучкі Kilpi (стоп, габарит, поворот, катафот), механічно складані або вбудовані в задній коник на найбільших причепах.",
+    "photo": "acc_rv/09_lights.jpg",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf5t1",
+      "bmf6t2",
+      "bmf7t1",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "source": "https://bmf.rv.ua/production/lihtari (перевірено 18.10.2026) (лише фото); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/lights-for-trailers",
+    "origin": "bmf.rv.ua"
+  },
+  {
+    "id": "rv_poles",
+    "group": "trailer",
+    "title": "Додаткові полюси (стійки)",
+    "desc": "Додаткові полюси (стійки) для коників причепа.",
+    "photo": "acc_rv/07_poles.png",
+    "price": {
+      "mode": "on_request"
+    },
+    "source": "https://bmf.rv.ua/production/dodatkovi-polyusy (перевірено 18.10.2026) (лише фото); bmf.ee радить додатковий коник і комплект полюсів разом із подовжувачем рами (https://www.bmf.ee/products/accessories/for-trailers/frame-extensions)",
+    "origin": "bmf.rv.ua",
+    "needs_confirmation": [
+      "compatible: сумісність на сайтах не вказана",
+      "desc: склад комплекту (пара полюсів чи коник з полюсами)"
+    ]
+  },
+  {
+    "id": "rv_frame_ext",
+    "group": "trailer",
+    "title": "Подовжувач рами",
+    "desc": "Подовжує вантажну раму під довші сортименти; довжина подовження залежить від моделі причепа.",
+    "photo": "acc_rv/08_frame_ext.png",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf5t1",
+      "bmf6t2",
+      "bmf7t1",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "lengths_mm": {
+      "bmf8t2": "725",
+      "bmf9t1": "800",
+      "bmf10t2": "725",
+      "bmf11t1": "850",
+      "bmf12t2": "725",
+      "bmf14t2": "725",
+      "bmf17t2": "725",
+      "bmf2t1": "1000",
+      "bmf5t1": "600",
+      "bmf7t1": "600",
+      "bmf8t1": "800",
+      "bmf13t1": "850",
+      "bmf16t1": "850",
+      "bmf18t1": "850"
+    },
+    "source": "https://bmf.rv.ua/production/podovzhuvach-ramy (перевірено 18.10.2026) (лише фото); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/frame-extensions; довжини — сторінки причепів bmf.ee «Extension»",
+    "origin": "bmf.rv.ua",
+    "notes": "bmf.ee: для BMF16T1 і BMF18T1 подовжувач гідравлічний, для BMF11T1 і BMF13T1 — гідравлічний або механічний; рекомендують додати коник і комплект полюсів. BMF6T2 є у списку сумісності сторінки подовжувача, але в його технічних даних «Extension: n/a»."
+  },
+  {
+    "id": "ee_xcrane",
+    "group": "crane",
+    "title": "Система керування xCrane PLUS",
+    "desc": "Електронне керування краном: одночасні рухи з джойстиків, паралельний режим стріли, сенсорний екран 4,3″ (опц. 5″), до 24 гідрофункцій, налаштування швидкості й рамп, лічильник мотогодин.",
+    "photo": "",
+    "photo_url": "https://media.voog.com/0000/0053/0154/photos/xcrane_for%20BMF_set2.png",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf430",
+      "bmf540",
+      "bmf650",
+      "bmf650_plus",
+      "bmf720",
+      "bmf750",
+      "bmf750_hp",
+      "bmf850",
+      "bmf850_hp",
+      "bmf905",
+      "bmf905_hp",
+      "bmf800hd",
+      "bmf800hd_plus",
+      "bmf1000hd",
+      "bmf1000hd_plus"
+    ],
+    "source": "https://www.bmf.ee/products/accessories/for-cranes/crane-control (перевірено 18.10.2026)",
+    "origin": "bmf.ee",
+    "also_in_crane_kit": true,
+    "notes": "У KP_2_v3 серед опцій для апгрейду — «Системи керування»."
+  },
+  {
+    "id": "ee_damper",
+    "group": "crane",
+    "title": "Гідродемпфер Hultdins KD 1002 PRO",
+    "desc": "Гасить розгойдування і вібрацію крана під час навантаження: точніші рухи і менше зношування вузлів.",
+    "photo": "",
+    "photo_url": "https://media.voog.com/0000/0053/0154/photos/Hultdins%20crane%20damper.png",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf750",
+      "bmf750_hp",
+      "bmf850",
+      "bmf850_hp",
+      "bmf905",
+      "bmf905_hp",
+      "bmf800hd",
+      "bmf800hd_plus",
+      "bmf1000hd",
+      "bmf1000hd_plus"
+    ],
+    "source": "https://www.bmf.ee/products/accessories/for-cranes/dampers (перевірено 18.10.2026)",
+    "origin": "bmf.ee",
+    "notes": "bmf.ee: сумісний з BMF750, BMF800, BMF850, BMF905, BMF1000; на HD-кранах — стандартне обладнання."
+  },
+  {
+    "id": "ee_parker",
+    "group": "crane",
+    "title": "Електричне керування Parker",
+    "desc": "Повністю електричні пропорційні розподільники Parker з кабельним джойстиком або бездротовим пультом.",
+    "photo": "",
+    "photo_url": "https://media.voog.com/0000/0053/0154/photos/BMF_Parker_LC6_joystick_medium.webp",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf650",
+      "bmf650_plus",
+      "bmf720",
+      "bmf750",
+      "bmf750_hp",
+      "bmf850",
+      "bmf850_hp",
+      "bmf905",
+      "bmf905_hp",
+      "bmf800hd",
+      "bmf800hd_plus",
+      "bmf1000hd",
+      "bmf1000hd_plus"
+    ],
+    "source": "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks (перевірено 18.10.2026)",
+    "origin": "bmf.ee",
+    "also_in_crane_kit": true,
+    "variants": [
+      {
+        "id": "parker_p70",
+        "title": "Parker P70",
+        "desc": "Код V26, 70 л/хв, до 200 бар (HP — 225 бар), для насосів постійної подачі.",
+        "compatible": [
+          "bmf650",
+          "bmf650_plus",
+          "bmf720",
+          "bmf750",
+          "bmf750_hp",
+          "bmf850",
+          "bmf850_hp",
+          "bmf905",
+          "bmf905_hp"
+        ]
+      },
+      {
+        "id": "parker_l90",
+        "title": "Parker L90 (з Autec — бездротовий)",
+        "desc": "Код V41, до 130 л/хв, до 200 бар (HP — 225 бар), компенсовані золотники, LS або постійна подача.",
+        "compatible": [
+          "bmf650",
+          "bmf650_plus",
+          "bmf720",
+          "bmf750",
+          "bmf750_hp",
+          "bmf850",
+          "bmf850_hp",
+          "bmf905",
+          "bmf905_hp",
+          "bmf800hd",
+          "bmf800hd_plus",
+          "bmf1000hd",
+          "bmf1000hd_plus"
+        ]
+      }
+    ],
+    "notes": "Джойстики: Parker LC5, LC6, бездротовий Autec, xCrane Plus. КП 8Т2+650 (02.04.2026) з «блютус» розподільником друкує «Parker P70; FE; FP; Wireless»."
+  },
+  {
+    "id": "ee_valve_dpx",
+    "group": "crane",
+    "title": "Розподільник Walvoil DPX 100/8 з джойстиками HPC",
+    "desc": "Пілотне пропорційне керування, компенсовані золотники, 50–100 л/хв, до 200 бар (HP — 225 бар), код V09/pr.",
+    "photo": "",
+    "photo_url": "https://media.voog.com/0000/0053/0154/photos/DPX%20joystick_block.webp",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf650",
+      "bmf650_plus",
+      "bmf720",
+      "bmf750",
+      "bmf750_hp",
+      "bmf850",
+      "bmf850_hp",
+      "bmf905",
+      "bmf905_hp"
+    ],
+    "source": "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks (перевірено 18.10.2026)",
+    "origin": "bmf.ee"
+  },
+  {
+    "id": "ee_coupler",
+    "group": "crane",
+    "title": "Швидкозмінне з’єднання (Quick Coupler)",
+    "desc": "Ставиться між ротатором і навісним обладнанням для швидкої заміни; комплект з болтами і гідравлічними з’єднаннями. Сумісне з усіма грейферами BMF, крім C15.",
+    "photo": "",
+    "photo_url": "https://media.voog.com/0000/0053/0154/photos/BMF%20quick%20coupler%20for%20log%20crane%20%288%29_huge.webp",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf430",
+      "bmf540",
+      "bmf650",
+      "bmf650_plus",
+      "bmf720",
+      "bmf750",
+      "bmf750_hp",
+      "bmf850",
+      "bmf850_hp",
+      "bmf905",
+      "bmf905_hp",
+      "bmf800hd",
+      "bmf800hd_plus",
+      "bmf1000hd",
+      "bmf1000hd_plus"
+    ],
+    "source": "https://www.bmf.ee/products/accessories/for-grapples/quick-coupler (перевірено 18.10.2026)",
+    "origin": "bmf.ee",
+    "notes": "BMF 430 і 540 у bmf.ee значаться сумісними, але їхній грейфер C15 з coupler не працює."
+  },
+  {
+    "id": "ee_oil_cooler",
+    "group": "trailer",
+    "title": "Масляний радіатор (теплообмінник)",
+    "desc": "Радіатор «олива — повітря» для стабільної роботи крана в спеку. bmf.ee також постачає баки 50–200 л з фільтром, термометром і покажчиком рівня.",
+    "photo": "",
+    "photo_url": "https://media.voog.com/0000/0053/0154/photos/BMF%20Oil%20Cooler%20for%20forest%20log%20crane%281%29.jpg",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf5t1",
+      "bmf6t2",
+      "bmf7t1",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "source": "https://www.bmf.ee/products/accessories/for-trailers/oil-coolers-and-tanks (перевірено 18.10.2026)",
+    "origin": "bmf.ee",
+    "also_in_crane_kit": true,
+    "notes": "У KP_2_v3 «Теплообмінник» — опція для апгрейду комплекту крана; у КП BMF750 у комплекті (02.10.2026) — позиція «Теплообмінник (радіатор)»."
+  },
+  {
+    "id": "ee_pumps",
+    "group": "trailer",
+    "title": "Гідронасоси",
+    "desc": "Насоси 80–130 см³: постійної подачі та LS, поршневі й шестеренні (Sunfab; OMFB серій HDT і HDS). На великих причепах насос захищений усередині дишла.",
+    "photo": "",
+    "photo_url": "https://media.voog.com/0000/0053/0154/photos/MEL_5808-Edit__BMF_accessory_pumps_sunfab90%20ja%20130cc_r_huge.webp",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf5t1",
+      "bmf6t2",
+      "bmf7t1",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "source": "https://www.bmf.ee/products/accessories/for-trailers/hydraulic-pumps (перевірено 18.10.2026)",
+    "origin": "bmf.ee",
+    "also_in_crane_kit": true,
+    "notes": "У KP_2_v3 «Насос» — опція для апгрейду комплекту крана."
+  },
+  {
+    "id": "ee_toolbox",
+    "group": "trailer",
+    "title": "Ящик для інструментів",
+    "desc": "Металевий ящик двох розмірів з надійною кришкою, можна закрити навісним замком.",
+    "photo": "",
+    "photo_url": "https://media.voog.com/0000/0053/0154/photos/Toolbox%20TBX01_24_for%20BMF%20forestry%20trailer.jpg",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf5t1",
+      "bmf6t2",
+      "bmf7t1",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "source": "https://www.bmf.ee/products/accessories/for-trailers/toolboxes (перевірено 18.10.2026)",
+    "origin": "bmf.ee",
+    "also_in_crane_kit": true,
+    "notes": "У KP_2_v3 «Ящик для інструмента» — опція для апгрейду комплекту крана. Окремо bmf.ee має передній щит з вбудованими ящиками (лише з Pro-кониками)."
+  },
+  {
+    "id": "ee_chainsaw",
+    "group": "trailer",
+    "title": "Тримач бензопили",
+    "desc": "Тримає пилу ручкою догори, підходить для шин будь-якої довжини; металевий корпус із захисною пластиковою вставкою.",
+    "photo": "",
+    "photo_url": "https://media.voog.com/0000/0053/0154/photos/BMF14T2Pro_BMF750HP-5_chainsaw%20holder_3.jpg",
+    "price": {
+      "mode": "on_request"
+    },
+    "compatible": [
+      "bmf8t2",
+      "bmf9t1",
+      "bmf10t2",
+      "bmf11t1",
+      "bmf12t2",
+      "bmf14t2",
+      "bmf17t2",
+      "bmf5t1",
+      "bmf6t2",
+      "bmf7t1",
+      "bmf8t1",
+      "bmf13t1",
+      "bmf16t1",
+      "bmf18t1"
+    ],
+    "source": "https://www.bmf.ee/products/accessories/for-trailers/chainsaw-holders (перевірено 18.10.2026)",
+    "origin": "bmf.ee"
+  }
+]

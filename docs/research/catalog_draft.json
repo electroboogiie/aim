@@ -1,0 +1,1867 @@
+{
+  "version": "2026-10-18",
+  "companies": [
+    {
+      "id": "gidman",
+      "name": "ТОВ «ГІДМАН»",
+      "short": "ГІДМАН",
+      "address": "вул. Заводська 5, м. Сарни, Рівненська обл., Україна, 34500",
+      "phones": [
+        "(+380) 67 363 0629",
+        "(+380) 68 177 5997"
+      ],
+      "email": "debeliy78@ukr.net",
+      "sites": [
+        "bmf.rv.ua",
+        "bmf.ee"
+      ],
+      "role": "both"
+    },
+    {
+      "id": "fop_debelyi",
+      "name": "ФОП Дебелий Володимир Миколайович",
+      "short": "ФОП Дебелий В. М.",
+      "address": "вул. Заводська 5, м. Сарни, Рівненська обл., Україна, 34500",
+      "phones": [
+        "(+380) 67 363 0629",
+        "(+380) 68 177 5997"
+      ],
+      "email": "debeliy78@ukr.net",
+      "sites": [
+        "bmf.rv.ua",
+        "bmf.ee"
+      ],
+      "role": "both"
+    }
+  ],
+  "items": [
+    {
+      "id": "bmf650",
+      "kind": "crane",
+      "family": "bmf_crane",
+      "title": "Кран-маніпулятор BMF 650",
+      "short": "у комплекті з ротатором 3 т і захватом 0,2 м²",
+      "includes": [
+        "ротатор 3 т",
+        "захват 0,2 м²"
+      ],
+      "specs": {
+        "reach_m": "6,5",
+        "torque_knm": "60",
+        "lift_4m_kg": "1120",
+        "lift_full_kg": "640",
+        "grapple_m2": "0,2",
+        "rotator_t": "3",
+        "valve": "6/8 XY",
+        "valve_flow_l": "55",
+        "slew_knm": "11",
+        "slew_cyl": "4",
+        "turn_deg": "360",
+        "pressure_bar": "200",
+        "pump_lpm": "30–60",
+        "weight_kg": "686",
+        "telescope": "так",
+        "wide_angle": "так"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 637800,
+        "date": "2026-03-17",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 1,
+        "metal_share": 0,
+        "group": "bmf_crane"
+      },
+      "photo": "bmf/650_a.jpg",
+      "kp_profile": "bmf650",
+      "source": "Ціна: drive_kp/КП BMF650 у комплекті (17.03.2026).pptx, рядок «Гідравлічний кран-маніпулятор BMF 650» 637 800 ₴ з ПДВ, станом на 17.03.2026. Характеристики: КП 2026 р. (НПЛ-10+650 18.05.2026, 10Т2+650, 8Т2+650, BMF650 25.02/17.03.2026); valve_flow_l — reference/kp/kp_text.md CP/READY/КП BMF650.pptx (02.09.2025).",
+      "needs_confirmation": [
+        "eur_rate_ref",
+        "specs.torque_knm",
+        "specs.lift_4m_kg",
+        "specs.lift_full_kg",
+        "specs.weight_kg",
+        "specs.grapple_m2",
+        "specs.legs"
+      ]
+    },
+    {
+      "id": "bmf720",
+      "kind": "crane",
+      "family": "bmf_crane",
+      "title": "Кран-маніпулятор BMF 720",
+      "short": "у комплекті з ротатором 4 т і захватом 0,24 м²",
+      "includes": [
+        "ротатор 4 т",
+        "захват 0,24 м²"
+      ],
+      "specs": {
+        "reach_m": "7,2",
+        "torque_knm": "60",
+        "lift_4m_kg": "1100",
+        "lift_full_kg": "580",
+        "grapple_m2": "0,24",
+        "rotator_t": "4",
+        "valve": "6/8XY",
+        "valve_flow_l": "55",
+        "slew_knm": "14",
+        "slew_cyl": "4",
+        "turn_deg": "370",
+        "pressure_bar": "200",
+        "pump_lpm": "30–60",
+        "legs": "A/FD",
+        "weight_kg": "675",
+        "telescope": "так",
+        "wide_angle": "так"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 686000,
+        "date": "2025-08-24",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 1,
+        "metal_share": 0,
+        "group": "bmf_crane"
+      },
+      "photo": "bmf/720_b.jpg",
+      "kp_profile": "bmf720",
+      "source": "Ціна: KP_2_v3.pptx (затверджений дизайн, КП від 06.10.2026), рядок 01 «Кран-маніпулятор BMF 720» 686 000 ₴, ціни станом на 24.08.2025; та сама ціна в reference/kp/kp_text.md CP/READY/КП BMF720 887.pptx; підтверджено сумою drive_kp/КП_BMF720_у_комплекті___лапи_ (1).pdf (17.07.2026): 841 000 = 686 000 + 155 000. Характеристики: KP_2_v3.pptx (вага 675 кг і опори A/FD — дані bmf.ee у КП).",
+      "needs_confirmation": [
+        "eur_rate_ref",
+        "specs.weight_kg"
+      ]
+    },
+    {
+      "id": "bmf750",
+      "kind": "crane",
+      "family": "bmf_crane",
+      "title": "Кран-маніпулятор BMF 750",
+      "short": "у комплекті з ротатором 4 т і захватом 0,27 м²",
+      "includes": [
+        "ротатор 4 т",
+        "захват 0,27 м²"
+      ],
+      "specs": {
+        "reach_m": "7,5",
+        "torque_knm": "76",
+        "lift_4m_kg": "1410",
+        "lift_full_kg": "750",
+        "grapple_m2": "0,27",
+        "rotator_t": "4",
+        "valve": "4/8 XYZ",
+        "valve_flow_l": "80",
+        "slew_knm": "17",
+        "slew_cyl": "4",
+        "turn_deg": "370",
+        "pressure_bar": "200",
+        "pump_lpm": "50–100",
+        "weight_kg": "1090",
+        "telescope": "так",
+        "wide_angle": "так"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 856800,
+        "date": "2026-10-02",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 1,
+        "metal_share": 0,
+        "group": "bmf_crane"
+      },
+      "photo": "bmf/750_forest_load.jpg",
+      "kp_profile": "bmf750",
+      "source": "Ціна: reference/kp/kp_text.md CP/Комерційні пропозиції/КП BMF750 у комплекті 02102026 радіатор.pptx, рядок «Гідравлічний кран-маніпулятор BMF 750» 856 800 ₴ з ПДВ, станом на 02.10.2026. Характеристики: усі КП з BMF 750 (однакові).",
+      "needs_confirmation": [
+        "eur_rate_ref",
+        "specs.weight_kg",
+        "specs.legs"
+      ]
+    },
+    {
+      "id": "bmf905",
+      "kind": "crane",
+      "family": "bmf_crane",
+      "title": "Кран-маніпулятор BMF 905",
+      "short": "у комплекті з ротатором 5,5 т і захватом 0,27 м²",
+      "includes": [
+        "ротатор 5,5 т",
+        "захват 0,27 м²"
+      ],
+      "specs": {
+        "reach_m": "9,05",
+        "torque_knm": "76",
+        "lift_4m_kg": "1210",
+        "lift_full_kg": "520",
+        "grapple_m2": "0,27",
+        "rotator_t": "5,5",
+        "valve": "4/8 XYZ",
+        "slew_knm": "20,5",
+        "slew_cyl": "4",
+        "turn_deg": "370",
+        "pressure_bar": "200",
+        "pump_lpm": "50–100",
+        "weight_kg": "1130",
+        "telescope": "подвійний",
+        "wide_angle": "так"
+      },
+      "price": {
+        "mode": "on_request"
+      },
+      "kp_profile": null,
+      "source": "drive_kp/КП BMF905  (16.03.2026).pptx: «Гідравлічний кран-маніпулятор BMF 905» € 21 500, «Ціна вказана із урахуванням ПДВ», станом на 16.03.2026. Ціна в EUR з ПДВ (не чиста закупівельна), тому не mode «eur»; для «ref» потрібен курс НБУ на 16.03.2026.",
+      "needs_confirmation": [
+        "price",
+        "eur_rate_ref",
+        "specs.valve_flow_l",
+        "specs.legs"
+      ]
+    },
+    {
+      "id": "bmf850",
+      "kind": "crane",
+      "family": "bmf_crane",
+      "title": "Кран-маніпулятор BMF 850",
+      "short": "характеристики та комплектація уточнюються",
+      "specs": {},
+      "price": {
+        "mode": "on_request"
+      },
+      "kp_profile": null,
+      "source": "Лише згадка: опис НПЛ-10 (сумісні крани BMF 650, 720, 750, 850) та опис причепів 10Т2/14Т2/17Т2 (BMF 850 HP). Характеристик і ціни в КП немає.",
+      "needs_confirmation": [
+        "title",
+        "short",
+        "includes",
+        "specs",
+        "price"
+      ]
+    },
+    {
+      "id": "npl10",
+      "kind": "trailer",
+      "family": "npl",
+      "title": "Напівпричіп-лісовоз НПЛ-10",
+      "short": "10 т · 4 коники · місце оператора",
+      "specs": {
+        "gross_mass_kg": "13 500",
+        "curb_mass_kg": "3 500",
+        "payload_kg": "10 000",
+        "log_length_m": "2–3–4–5",
+        "volume_m3": "10,0",
+        "load_area_mm": "4500 × 2140",
+        "dims_mm": "6950 × 2412 × 2789",
+        "stakes": "4",
+        "frame_wall_mm": "10",
+        "hub": "TVZ, 8 болтів",
+        "wheels": "500/45-22,5",
+        "wheels_qty": "4",
+        "suspension": "ресорна, 4 півосі",
+        "brakes": "на 2 півосі: гідравлічна або пневматична",
+        "outriggers": "V-типу",
+        "balancer": "посилений",
+        "drawbar": "поворотний причіпний механізм",
+        "coupling": "механічний тягово-зчіпний пристрій із петлею",
+        "guard_grid": "так",
+        "lights_plate": "так",
+        "hydraulics": "автономна гідравлічна система",
+        "operator_seat": "так",
+        "color": "помаранчево-чорне",
+        "cranes": "BMF 650, BMF 720, BMF 750, BMF 850"
+      },
+      "price": {
+        "mode": "on_request"
+      },
+      "photo": "npl/npl10_cutout.png",
+      "kp_profile": "npl10",
+      "source": "Таблиця «Технічні характеристики» і опис у drive_kp/КП НПЛ-10+750 (18.05.2026).pptx та reference/kp/kp_text.md CP/READY/КП НПЛ-10+720 2909.pptx (29.09.2026). Окремо НПЛ-10 у КП не продавали: ціна лише комплекту з краном (див. bundles).",
+      "needs_confirmation": [
+        "price",
+        "specs.load_area_mm",
+        "specs.wheels"
+      ]
+    },
+    {
+      "id": "bmf8t2",
+      "kind": "trailer",
+      "family": "bmf_trailer",
+      "title": "Лісовозний тракторний причіп BMF 8T2",
+      "short": "двобалковий, вантажопідйомність до 8 т",
+      "specs": {
+        "payload_kg": "8000",
+        "total_length_mm": "6150",
+        "load_length_mm": "3650",
+        "width_mm": "2120",
+        "stakes": "4",
+        "wheels": "400/60-15,5",
+        "chassis": "2 × (200 × 100 × 6) мм",
+        "axle": "60 × 60-6",
+        "load_area_m2": "2,1–2,4",
+        "drawbar_cyl": "2",
+        "drawbar_angle_deg": "±35",
+        "clearance_mm": "550",
+        "brakes": "—",
+        "operator_seat": "—",
+        "legs": "FD",
+        "cranes": "BMF 650, BMF 720"
+      },
+      "price": {
+        "mode": "on_request"
+      },
+      "kp_profile": null,
+      "source": "drive_kp/КП 8Т2+650 (02.04.2026) механ. розпод..pptx та блютус. розпод..pptx, слайди 2 і 4. Окремої ціни причепа немає.",
+      "needs_confirmation": [
+        "price",
+        "specs"
+      ]
+    },
+    {
+      "id": "bmf10t2",
+      "kind": "trailer",
+      "family": "bmf_trailer",
+      "title": "Двоосьовий лісовозний тракторний причіп BMF 10T2",
+      "short": "двобалковий, вантажопідйомність до 10 т",
+      "specs": {
+        "payload_kg": "10 000",
+        "total_length_mm": "6510",
+        "load_length_mm": "4000",
+        "width_mm": "2120",
+        "stakes": "4",
+        "guard_grid": "так",
+        "lights_plate": "так",
+        "outriggers": "V-типу",
+        "chassis": "2 × (200 × 100 × 6) мм",
+        "axle": "70 × 70-6",
+        "wheels": "500/50-17",
+        "wheels_qty": "4",
+        "brakes": "гідравлічна",
+        "operator_seat": "так",
+        "drawbar_cyl": "2",
+        "load_area_m2": "2,1–2,45",
+        "hydraulics": "автономна гідравлічна система",
+        "legs": "A або FD",
+        "cranes": "BMF 650, BMF 720, BMF 750 (HP), BMF 850 (HP)"
+      },
+      "price": {
+        "mode": "on_request"
+      },
+      "kp_profile": null,
+      "source": "reference/kp/kp_text.md CP/Комерційні пропозиції/КП 10Т2+650 (07.04.2026).pptx, слайди 2 і 4 (у drive_kp цього файлу немає). Окремої ціни причепа немає.",
+      "needs_confirmation": [
+        "price",
+        "specs"
+      ]
+    },
+    {
+      "id": "bmf14t2_pro_l",
+      "kind": "trailer",
+      "family": "bmf_trailer",
+      "title": "Двоосьовий лісовозний тракторний причіп BMF 14T2 Pro L",
+      "short": "двобалковий, вантажопідйомність до 14 т, подовжена рама",
+      "specs": {
+        "payload_kg": "10 000",
+        "log_length_m": "2–3–4–5",
+        "total_length_mm": "6680",
+        "load_length_mm": "4150",
+        "width_mm": "2435",
+        "frame": "подовжена",
+        "stakes": "5",
+        "guard_grid": "так",
+        "lights_plate": "так",
+        "outriggers": "V-типу",
+        "balancer": "посилений",
+        "frame_wall_mm": "8",
+        "hub": "TVZ, 8 болтів",
+        "wheels": "500/45-22,5",
+        "wheels_qty": "4",
+        "legs": "A або FD",
+        "cranes": "BMF 650, BMF 720, BMF 750 (HP), BMF 850 (HP), BMF 905 (HP)"
+      },
+      "price": {
+        "mode": "on_request"
+      },
+      "kp_profile": null,
+      "source": "drive_kp/КП 14Т2+720 (09.06.2026).pptx, слайди 2 і 4. У таблиці «Вантажопідйомність 10000», в описі «до 14 т». Окремої ціни причепа немає.",
+      "needs_confirmation": [
+        "price",
+        "specs.payload_kg",
+        "specs"
+      ]
+    },
+    {
+      "id": "bmf17t2",
+      "kind": "trailer",
+      "family": "bmf_trailer",
+      "title": "Двобалковий причіп-лісовоз BMF 17T2",
+      "short": "двобалковий, вантажопідйомність до 17 т",
+      "specs": {
+        "gross_mass_kg": "20 500",
+        "curb_mass_kg": "3 500",
+        "payload_kg": "17 000",
+        "log_length_m": "2–3–4–5–6",
+        "load_length_mm": "5100",
+        "width_mm": "2515",
+        "frame": "подовжена",
+        "stakes": "5",
+        "guard_grid": "так",
+        "lights_plate": "так",
+        "outriggers": "V-типу",
+        "balancer": "посилений",
+        "frame_wall_mm": "8",
+        "hub": "TVZ, 8 болтів",
+        "wheels": "550/45-22,5 (AP)",
+        "wheels_qty": "4",
+        "brakes": "пневматична",
+        "drawbar": "поворотний причіпний механізм",
+        "legs": "FD",
+        "cranes": "BMF 750, BMF 850 (HP), BMF 905 (HP), BMF 800HD, BMF 800HD+, BMF 1000HD, BMF 1000HD+"
+      },
+      "price": {
+        "mode": "on_request"
+      },
+      "kp_profile": null,
+      "source": "drive_kp/КП 17Т2+750 (тех. Характеристики).pptx, слайди 2 і 4. КП без ціни й без дати.",
+      "needs_confirmation": [
+        "price",
+        "specs.curb_mass_kg",
+        "specs"
+      ]
+    },
+    {
+      "id": "base_outriggers_650",
+      "kind": "component",
+      "family": "own_component",
+      "title": "Платформа з аутригерами",
+      "short": "опорні лапи, РВТ, з’єднувальні болти, фланці",
+      "includes": [
+        "опорні лапи",
+        "рукави високого тиску",
+        "з’єднувальні болти",
+        "фланці"
+      ],
+      "specs": {
+        "crane": "BMF 650"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 160000,
+        "date": "2025-09-02",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.3,
+        "metal_share": 0.5,
+        "group": "own_production"
+      },
+      "photo": "prod/base_outriggers.jpg",
+      "kp_profile": null,
+      "source": "reference/kp/kp_text.md CP/READY/КП BMF650.pptx: «Основа із аутригерами» 160 000 ₴ з ПДВ, станом на 02.09.2025.",
+      "needs_confirmation": [
+        "price",
+        "чи залежить основа від моделі крана",
+        "eur_share",
+        "metal_share",
+        "metal_index_ref"
+      ]
+    },
+    {
+      "id": "base_outriggers_720",
+      "kind": "component",
+      "family": "own_component",
+      "title": "Платформа з аутригерами",
+      "short": "опорні лапи, РВТ, з’єднувальні болти, фланці",
+      "includes": [
+        "опорні лапи",
+        "рукави високого тиску",
+        "з’єднувальні болти",
+        "фланці"
+      ],
+      "specs": {
+        "crane": "BMF 720"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 155000,
+        "date": "2025-08-24",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.3,
+        "metal_share": 0.5,
+        "group": "own_production"
+      },
+      "photo": "prod/base_outriggers.jpg",
+      "kp_profile": null,
+      "source": "KP_2_v3.pptx, рядок 02 «Платформа з аутригерами» 155 000 ₴, ціни станом на 24.08.2025 (так само reference/kp/kp_text.md CP/READY/КП BMF720 887.pptx; сума PDF 17.07.2026 841 000 = 686 000 + 155 000).",
+      "needs_confirmation": [
+        "price",
+        "чи залежить основа від моделі крана",
+        "eur_share",
+        "metal_share",
+        "metal_index_ref"
+      ]
+    },
+    {
+      "id": "base_outriggers_750",
+      "kind": "component",
+      "family": "own_component",
+      "title": "Платформа з аутригерами",
+      "short": "опорні лапи, РВТ, з’єднувальні болти, фланці",
+      "includes": [
+        "опорні лапи",
+        "рукави високого тиску",
+        "з’єднувальні болти",
+        "фланці"
+      ],
+      "specs": {
+        "crane": "BMF 750"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 180000,
+        "date": "2026-10-02",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.3,
+        "metal_share": 0.5,
+        "group": "own_production"
+      },
+      "photo": "prod/base_outriggers.jpg",
+      "kp_profile": null,
+      "source": "reference/kp/kp_text.md CP/Комерційні пропозиції/КП BMF750 у комплекті 02102026 радіатор.pptx: «Основа із аутригерами» 180 000 ₴ з ПДВ, станом на 02.10.2026.",
+      "needs_confirmation": [
+        "price",
+        "чи залежить основа від моделі крана",
+        "eur_share",
+        "metal_share",
+        "metal_index_ref"
+      ]
+    },
+    {
+      "id": "tank",
+      "kind": "component",
+      "family": "own_component",
+      "title": "Гідравлічний бак в зборі",
+      "short": "живлення робочої системи крана",
+      "price": {
+        "mode": "ref",
+        "uah": 18500,
+        "date": "2026-10-02",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.3,
+        "metal_share": 0.5,
+        "group": "own_production"
+      },
+      "photo": "prod/tank.jpg",
+      "kp_profile": null,
+      "source": "«Бак» 18 500 ₴ з ПДВ: reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx (02.10.2026), CP/READY/КП BMF650.pptx (02.09.2025), KP_2_v3.pptx (24.08.2025). Без оливи (КП BMF650 02.09.2025: «Гідробак в зборі (без оливи)»).",
+      "needs_confirmation": [
+        "eur_share",
+        "metal_share",
+        "metal_index_ref"
+      ]
+    },
+    {
+      "id": "seat",
+      "kind": "component",
+      "family": "own_component",
+      "title": "Місце оператора",
+      "short": "ергономічне робоче місце з органами керування",
+      "price": {
+        "mode": "ref",
+        "uah": 27750,
+        "date": "2026-10-02",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.3,
+        "metal_share": 0.5,
+        "group": "own_production"
+      },
+      "kp_profile": null,
+      "source": "«Місце оператора» 27 750 ₴ з ПДВ: reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx (02.10.2026, «заднє, по центру»), CP/READY/КП BMF650.pptx (02.09.2025), KP_2_v3.pptx (24.08.2025).",
+      "needs_confirmation": [
+        "варіанти розташування (заднє, по центру)",
+        "eur_share",
+        "metal_share",
+        "metal_index_ref"
+      ]
+    },
+    {
+      "id": "oil_90l",
+      "kind": "component",
+      "family": "component",
+      "title": "Олива гідравлічна 90 л",
+      "short": "заправка гідробака",
+      "price": {
+        "mode": "ref",
+        "uah": 16200,
+        "date": "2026-10-02",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0,
+        "metal_share": 0,
+        "group": "components"
+      },
+      "kp_profile": null,
+      "source": "reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx: «Олива 90л.» 16 200 ₴ з ПДВ, станом на 02.10.2026.",
+      "needs_confirmation": [
+        "eur_share",
+        "metal_share",
+        "об’єм оливи для BMF 650/720 (у КП 2024: 80 л)"
+      ]
+    },
+    {
+      "id": "heat_exchanger",
+      "kind": "component",
+      "family": "component",
+      "title": "Теплообмінник (радіатор)",
+      "short": "охолодження оливи гідросистеми крана",
+      "price": {
+        "mode": "ref",
+        "uah": 27000,
+        "date": "2026-10-02",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0,
+        "metal_share": 0,
+        "group": "components"
+      },
+      "kp_profile": null,
+      "source": "reference/kp/kp_text.md КП BMF750 у комплекті 02102026 радіатор.pptx: «Теплообмінник (радіатор)» 27 000 ₴ з ПДВ, станом на 02.10.2026.",
+      "needs_confirmation": [
+        "short",
+        "eur_share",
+        "metal_share"
+      ]
+    },
+    {
+      "id": "pump",
+      "kind": "component",
+      "family": "component",
+      "title": "Насос аксіально-поршневий",
+      "short": "привід гідросистеми крана",
+      "price": {
+        "mode": "on_request"
+      },
+      "kp_profile": null,
+      "source": "Лише у складі рядків «Основа із аутригерами, баком, насосом та місцем оператора»: drive_kp/КП BMF650 у комплекті (25.02.2026).pptx (223 266 ₴), drive_kp/КП BMF750 у комплекті(20.05.2026).pptx (242 525 ₴); КП КАМАЗ + 750 (26.02.2026). Окремої ціни немає.",
+      "needs_confirmation": [
+        "price",
+        "short",
+        "продуктивність насоса"
+      ]
+    },
+    {
+      "id": "truck_pyramid_outriggers",
+      "kind": "component",
+      "family": "own_component",
+      "title": "Піраміда з аутригерами",
+      "short": "основа під кран-маніпулятор на вантажівці",
+      "price": {
+        "mode": "on_request"
+      },
+      "kp_profile": null,
+      "source": "drive_kp/КП КАМАЗ + 750 (26.02.2026).pptx, слайд 3 «Піраміда з аутригерами +». Окремої ціни немає.",
+      "needs_confirmation": [
+        "price",
+        "short"
+      ]
+    },
+    {
+      "id": "kamaz_platform",
+      "kind": "service",
+      "family": "truck_conversion",
+      "title": "Дообладнання автомобіля КАМАЗ у лісовоз",
+      "short": "бортова платформа з 4 стійками, рама 6 мм / 5 м, щит, монтаж",
+      "includes": [
+        "бортова платформа із стійками (4 шт)",
+        "рама: товщина 6 мм, довжина 5 м",
+        "щит",
+        "монтажні роботи"
+      ],
+      "specs": {
+        "stakes": "4",
+        "frame_wall_mm": "6",
+        "frame_length_m": "5",
+        "headboard": "так",
+        "installation": "входить"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 455000,
+        "date": "2026-04-02",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.3,
+        "metal_share": 0.5,
+        "group": "own_production"
+      },
+      "photo": "prod/truck_conversion.png",
+      "kp_profile": null,
+      "source": "drive_kp/КП КАМАЗ + 750 (23.10.2025), копія.pptx: «Дообладнання автомобіля КАМАЗ у лісовоз» 455 000 грн з ПДВ, станом на 02.04.2026; аутригери та основа під маніпулятор не входять.",
+      "needs_confirmation": [
+        "eur_share",
+        "metal_share",
+        "metal_index_ref"
+      ]
+    },
+    {
+      "id": "valf_s58",
+      "kind": "component",
+      "family": "hydraulic_part",
+      "title": "Клапан гідравлічний (розподільник) VALF S58",
+      "short": "VALF S58/IL-003(195)-B01 · 8 секцій · 50 л/хв · 315 бар",
+      "specs": {
+        "viscosity_cst": "10…75",
+        "flow_lpm": "50",
+        "sections": "8",
+        "pressure_max_bar": "315",
+        "return_pressure_max_bar": "30"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 59140,
+        "date": "2026-05-25",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 1,
+        "metal_share": 0,
+        "group": "parts"
+      },
+      "kp_profile": null,
+      "source": "drive_kp/_Клапан_гідравлічний_розподільникVALF_S525_05_2026.pptx (= reference/kp/kp_text.md CP/READY/Клапан_…VALF_S525_05_2026.pptx): 59 140 ₴ з ПДВ, станом на 25.05.2026, «прив’язана до курсу купівлі Євро».",
+      "needs_confirmation": [
+        "eur_rate_ref",
+        "модель: у назві файлу S525, у КП S58"
+      ]
+    }
+  ],
+  "kit_types": [
+    {
+      "id": "crane_kit",
+      "title": "Кран-маніпулятор BMF у комплекті",
+      "price_display": "itemized",
+      "slots": [
+        {
+          "id": "crane",
+          "title": "Кран-маніпулятор",
+          "candidates": [
+            "bmf650",
+            "bmf720",
+            "bmf750",
+            "bmf905",
+            "bmf850"
+          ],
+          "required": true,
+          "default": "bmf720"
+        },
+        {
+          "id": "base",
+          "title": "Платформа з аутригерами",
+          "candidates": [
+            "base_outriggers_650",
+            "base_outriggers_720",
+            "base_outriggers_750"
+          ],
+          "required": false,
+          "default": "base_outriggers_720"
+        },
+        {
+          "id": "tank",
+          "title": "Гідравлічний бак",
+          "candidates": [
+            "tank"
+          ],
+          "required": false,
+          "default": "tank"
+        },
+        {
+          "id": "oil",
+          "title": "Олива гідравлічна",
+          "candidates": [
+            "oil_90l"
+          ],
+          "required": false,
+          "default": null
+        },
+        {
+          "id": "seat",
+          "title": "Місце оператора",
+          "candidates": [
+            "seat"
+          ],
+          "required": false,
+          "default": "seat"
+        },
+        {
+          "id": "heat_exchanger",
+          "title": "Теплообмінник",
+          "candidates": [
+            "heat_exchanger"
+          ],
+          "required": false,
+          "default": null
+        },
+        {
+          "id": "pump",
+          "title": "Насос",
+          "candidates": [
+            "pump"
+          ],
+          "required": false,
+          "default": null
+        }
+      ],
+      "choices": [],
+      "accessory_groups": [
+        "crane"
+      ],
+      "generator": "kp_v3"
+    },
+    {
+      "id": "npl_crane",
+      "title": "Напівпричіп-лісовоз НПЛ-10 з краном-маніпулятором BMF",
+      "price_display": "bundle",
+      "slots": [
+        {
+          "id": "trailer",
+          "title": "Напівпричіп",
+          "candidates": [
+            "npl10"
+          ],
+          "required": true,
+          "default": "npl10"
+        },
+        {
+          "id": "crane",
+          "title": "Кран-маніпулятор",
+          "candidates": [
+            "bmf650",
+            "bmf720",
+            "bmf750",
+            "bmf850"
+          ],
+          "required": true,
+          "default": "bmf720"
+        }
+      ],
+      "choices": [
+        {
+          "id": "brakes",
+          "title": "Гальмівна система",
+          "default": "hydraulic",
+          "options": [
+            {
+              "value": "hydraulic",
+              "title": "гідравлічна"
+            },
+            {
+              "value": "pneumatic",
+              "title": "пневматична"
+            },
+            {
+              "value": "none",
+              "title": "без гальмівної системи"
+            }
+          ]
+        },
+        {
+          "id": "wheels",
+          "title": "Колеса",
+          "default": "w500_45_22_5",
+          "options": [
+            {
+              "value": "w500_45_22_5",
+              "title": "500/45-22,5"
+            },
+            {
+              "value": "w400_60_15_5",
+              "title": "400/60-15,5"
+            },
+            {
+              "value": "w500_50_17",
+              "title": "500/50-17"
+            },
+            {
+              "value": "w550_45_22_5",
+              "title": "550/45-22,5"
+            }
+          ]
+        },
+        {
+          "id": "stakes",
+          "title": "Кількість коників",
+          "default": "4",
+          "options": [
+            {
+              "value": "4",
+              "title": "4 коники"
+            }
+          ]
+        }
+      ],
+      "accessory_groups": [
+        "crane",
+        "trailer"
+      ],
+      "generator": "kp_v3"
+    },
+    {
+      "id": "bmf_trailer_crane",
+      "title": "Причіп BMF з краном-маніпулятором BMF",
+      "price_display": "bundle",
+      "slots": [
+        {
+          "id": "trailer",
+          "title": "Причіп BMF",
+          "candidates": [
+            "bmf8t2",
+            "bmf10t2",
+            "bmf14t2_pro_l",
+            "bmf17t2"
+          ],
+          "required": true,
+          "default": "bmf10t2"
+        },
+        {
+          "id": "crane",
+          "title": "Кран-маніпулятор",
+          "candidates": [
+            "bmf650",
+            "bmf720",
+            "bmf750",
+            "bmf850",
+            "bmf905"
+          ],
+          "required": true,
+          "default": "bmf650"
+        }
+      ],
+      "choices": [
+        {
+          "id": "valve",
+          "title": "Розподільник крана",
+          "default": "mech",
+          "options": [
+            {
+              "value": "mech",
+              "title": "механічний, стандарт крана"
+            },
+            {
+              "value": "parker_p70_wireless",
+              "title": "електричний Parker P70; FE; FP; Wireless (Bluetooth)",
+              "price_uah": 259900
+            }
+          ]
+        }
+      ],
+      "accessory_groups": [
+        "crane",
+        "trailer"
+      ],
+      "generator": "kp_v3"
+    },
+    {
+      "id": "truck_crane",
+      "title": "Дообладнання вантажівки КАМАЗ під лісовоз",
+      "price_display": "bundle",
+      "slots": [
+        {
+          "id": "conversion",
+          "title": "Дообладнання",
+          "candidates": [
+            "kamaz_platform"
+          ],
+          "required": true,
+          "default": "kamaz_platform"
+        },
+        {
+          "id": "crane",
+          "title": "Кран-маніпулятор",
+          "candidates": [
+            "bmf650",
+            "bmf720",
+            "bmf750",
+            "bmf850",
+            "bmf905"
+          ],
+          "required": false,
+          "default": "bmf750"
+        },
+        {
+          "id": "base",
+          "title": "Піраміда з аутригерами",
+          "candidates": [
+            "truck_pyramid_outriggers"
+          ],
+          "required": false,
+          "default": "truck_pyramid_outriggers"
+        },
+        {
+          "id": "tank",
+          "title": "Гідравлічний бак",
+          "candidates": [
+            "tank"
+          ],
+          "required": false,
+          "default": "tank"
+        },
+        {
+          "id": "oil",
+          "title": "Олива гідравлічна",
+          "candidates": [
+            "oil_90l"
+          ],
+          "required": false,
+          "default": "oil_90l"
+        },
+        {
+          "id": "pump",
+          "title": "Насос",
+          "candidates": [
+            "pump"
+          ],
+          "required": false,
+          "default": "pump"
+        }
+      ],
+      "choices": [],
+      "accessory_groups": [
+        "crane"
+      ],
+      "generator": "kp_v3"
+    },
+    {
+      "id": "part",
+      "title": "Окрема позиція (гідравліка, запчастини)",
+      "price_display": "itemized",
+      "slots": [
+        {
+          "id": "item",
+          "title": "Позиція",
+          "candidates": [
+            "valf_s58"
+          ],
+          "required": true,
+          "default": "valf_s58"
+        }
+      ],
+      "choices": [],
+      "accessory_groups": [],
+      "generator": "kp_v3"
+    }
+  ],
+  "presets": [
+    {
+      "id": "kp2v3_bmf720_kit",
+      "title": "BMF 720 у комплекті (KP_2_v3, ціни 24.08.2025)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf720",
+          "base": "base_outriggers_720",
+          "tank": "tank",
+          "oil": null,
+          "seat": "seat",
+          "heat_exchanger": null,
+          "pump": null
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "KP_2_v3.pptx (= CP/READY/КП BMF720 887.pptx і дизайн-варіанти KP_2)",
+        "date": "2025-08-24",
+        "total_uah": 887250
+      }
+    },
+    {
+      "id": "bmf720_kit_2026-07-17",
+      "title": "BMF 720 з основою з аутригерами (КП 17.07.2026)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf720",
+          "base": "base_outriggers_720",
+          "tank": null,
+          "oil": null,
+          "seat": null,
+          "heat_exchanger": null,
+          "pump": null
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП_BMF720_у_комплекті___лапи_ (1).pdf",
+        "date": "2026-07-17",
+        "total_uah": 841000
+      }
+    },
+    {
+      "id": "bmf720_kit_2026-03-04",
+      "title": "BMF 720 у комплекті з основою та місцем оператора (КП 04.03.2026)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf720",
+          "base": "base_outriggers_720",
+          "tank": null,
+          "oil": null,
+          "seat": "seat",
+          "heat_exchanger": null,
+          "pump": null
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП BMF720 у комплекті(04.03.2026).pptx",
+        "date": "2026-03-04",
+        "total_uah": 827190
+      }
+    },
+    {
+      "id": "bmf720_kit_2024-10-09",
+      "title": "BMF 720 + основа (лапи, бак), місце оператора (КП 09.10.2024)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf720",
+          "base": "base_outriggers_720",
+          "tank": "tank",
+          "oil": "oil_90l",
+          "seat": "seat",
+          "heat_exchanger": null,
+          "pump": null
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП BMF 720 + основа (лапи, бак) 08.10.2024.pptx",
+        "date": "2024-10-09",
+        "total_uah": 776000
+      }
+    },
+    {
+      "id": "ready_bmf650_kit",
+      "title": "BMF 650 у комплекті (КП 02.09.2025)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf650",
+          "base": "base_outriggers_650",
+          "tank": "tank",
+          "oil": null,
+          "seat": "seat",
+          "heat_exchanger": null,
+          "pump": null
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "reference/kp: CP/READY/КП BMF650.pptx",
+        "date": "2025-09-02",
+        "total_uah": 832650
+      }
+    },
+    {
+      "id": "bmf650_kit_2026-03-17",
+      "title": "BMF 650 з основою та баком (КП 17.03.2026)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf650",
+          "base": "base_outriggers_650",
+          "tank": "tank",
+          "oil": null,
+          "seat": null,
+          "heat_exchanger": null,
+          "pump": null
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП BMF650 у комплекті (17.03.2026).pptx",
+        "date": "2026-03-17",
+        "total_uah": 812300
+      }
+    },
+    {
+      "id": "bmf650_kit_2026-02-25",
+      "title": "BMF 650 з основою, баком, насосом і місцем оператора (КП 25.02.2026)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf650",
+          "base": "base_outriggers_650",
+          "tank": "tank",
+          "oil": "oil_90l",
+          "seat": "seat",
+          "heat_exchanger": null,
+          "pump": "pump"
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП BMF650 у комплекті (25.02.2026).pptx",
+        "date": "2026-02-25",
+        "total_uah": 830966
+      }
+    },
+    {
+      "id": "bmf750_kit_2026-10-02",
+      "title": "BMF 750 у комплекті з теплообмінником (КП 02.10.2026)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf750",
+          "base": "base_outriggers_750",
+          "tank": "tank",
+          "oil": "oil_90l",
+          "seat": "seat",
+          "heat_exchanger": "heat_exchanger",
+          "pump": null
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "reference/kp: CP/Комерційні пропозиції/КП BMF750 у комплекті 02102026 радіатор.pptx",
+        "date": "2026-10-02",
+        "total_uah": 1126250
+      }
+    },
+    {
+      "id": "bmf750_kit_2026-05-20",
+      "title": "BMF 750 з основою, баком, насосом і місцем оператора (КП 20.05.2026)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf750",
+          "base": "base_outriggers_750",
+          "tank": "tank",
+          "oil": "oil_90l",
+          "seat": "seat",
+          "heat_exchanger": null,
+          "pump": "pump"
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП BMF750 у комплекті(20.05.2026).pptx",
+        "date": "2026-05-20",
+        "total_uah": 1078445
+      }
+    },
+    {
+      "id": "bmf905_2026-03-16",
+      "title": "BMF 905 (КП 16.03.2026, € 21 500 з ПДВ)",
+      "kit_type": "crane_kit",
+      "selection": {
+        "slots": {
+          "crane": "bmf905",
+          "base": null,
+          "tank": null,
+          "oil": null,
+          "seat": null,
+          "heat_exchanger": null,
+          "pump": null
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП BMF905  (16.03.2026).pptx",
+        "date": "2026-03-16",
+        "total_uah": null
+      }
+    },
+    {
+      "id": "npl10_bmf650_2026-05-18",
+      "title": "НПЛ-10 + BMF 650 (КП 18.05.2026)",
+      "kit_type": "npl_crane",
+      "selection": {
+        "slots": {
+          "trailer": "npl10",
+          "crane": "bmf650"
+        },
+        "choices": {
+          "brakes": "hydraulic",
+          "wheels": "w500_45_22_5",
+          "stakes": "4"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "reference/kp: CP/READY/КП НПЛ-10+650.pptx (= drive_kp/КП НПЛ-10+650 (20.05), копія.pptx)",
+        "date": "2026-05-18",
+        "total_uah": 1709100
+      }
+    },
+    {
+      "id": "npl10_bmf650_2024-02-22",
+      "title": "НПЛ-10 + BMF 650 (КП 22.02.2024)",
+      "kit_type": "npl_crane",
+      "selection": {
+        "slots": {
+          "trailer": "npl10",
+          "crane": "bmf650"
+        },
+        "choices": {
+          "brakes": "none",
+          "wheels": "w500_50_17",
+          "stakes": "4"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/причіп НПЛ-10 + BMF 650(22.02).pptx",
+        "date": "2024-02-22",
+        "total_uah": 1317700
+      }
+    },
+    {
+      "id": "npl10_bmf720_2026-09-29",
+      "title": "НПЛ-10 + BMF 720, пневматичні гальма (КП 29.09.2026)",
+      "kit_type": "npl_crane",
+      "selection": {
+        "slots": {
+          "trailer": "npl10",
+          "crane": "bmf720"
+        },
+        "choices": {
+          "brakes": "pneumatic",
+          "wheels": "w500_45_22_5",
+          "stakes": "4"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "reference/kp: CP/READY/КП НПЛ-10+720 2909.pptx",
+        "date": "2026-09-29",
+        "total_uah": 1886600
+      }
+    },
+    {
+      "id": "npl10_bmf720_2026-06-09",
+      "title": "НПЛ-10 + BMF 720 (КП 09.06.2026)",
+      "kit_type": "npl_crane",
+      "selection": {
+        "slots": {
+          "trailer": "npl10",
+          "crane": "bmf720"
+        },
+        "choices": {
+          "brakes": "hydraulic",
+          "wheels": "w500_45_22_5",
+          "stakes": "4"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП НПЛ-10+720 (09.06.2026).pptx",
+        "date": "2026-06-09",
+        "total_uah": 1799000
+      }
+    },
+    {
+      "id": "npl10_bmf720_2026-05-18",
+      "title": "НПЛ-10 + BMF 720 (КП 18.05.2026)",
+      "kit_type": "npl_crane",
+      "selection": {
+        "slots": {
+          "trailer": "npl10",
+          "crane": "bmf720"
+        },
+        "choices": {
+          "brakes": "hydraulic",
+          "wheels": "w500_45_22_5",
+          "stakes": "4"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП НПЛ-10+720 (18.05.2026).pptx",
+        "date": "2026-05-18",
+        "total_uah": 1709100
+      }
+    },
+    {
+      "id": "npl10_bmf720_2026-01-14",
+      "title": "НПЛ-10 + BMF 720 (КП 14.01.2026)",
+      "kit_type": "npl_crane",
+      "selection": {
+        "slots": {
+          "trailer": "npl10",
+          "crane": "bmf720"
+        },
+        "choices": {
+          "brakes": "hydraulic",
+          "wheels": "w500_45_22_5",
+          "stakes": "4"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП НПЛ-10+720 (14.01.2026).pptx",
+        "date": "2026-01-14",
+        "total_uah": 1709100
+      }
+    },
+    {
+      "id": "npl10_bmf720_2024-08-20",
+      "title": "НПЛ-10 + BMF 720, кредит (КП 20.08.2024)",
+      "kit_type": "npl_crane",
+      "selection": {
+        "slots": {
+          "trailer": "npl10",
+          "crane": "bmf720"
+        },
+        "choices": {
+          "brakes": "hydraulic",
+          "wheels": "w500_50_17",
+          "stakes": "4"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/НПЛ-10 + 720 (20.08) кредит.pptx",
+        "date": "2024-08-20",
+        "total_uah": 1411000
+      }
+    },
+    {
+      "id": "npl10_bmf750_2026-05-18",
+      "title": "НПЛ-10 + BMF 750 (КП 18.05.2026)",
+      "kit_type": "npl_crane",
+      "selection": {
+        "slots": {
+          "trailer": "npl10",
+          "crane": "bmf750"
+        },
+        "choices": {
+          "brakes": "hydraulic",
+          "wheels": "w500_45_22_5",
+          "stakes": "4"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП НПЛ-10+750 (18.05.2026).pptx",
+        "date": "2026-05-18",
+        "total_uah": 1978000
+      }
+    },
+    {
+      "id": "bmf8t2_bmf650_mech_2026-04-02",
+      "title": "BMF 8T2 + BMF 650, механічний розподільник (КП 02.04.2026)",
+      "kit_type": "bmf_trailer_crane",
+      "selection": {
+        "slots": {
+          "trailer": "bmf8t2",
+          "crane": "bmf650"
+        },
+        "choices": {
+          "valve": "mech"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП 8Т2+650 (02.04.2026) механ. розпод..pptx",
+        "date": "2026-04-02",
+        "total_uah": 1354500
+      }
+    },
+    {
+      "id": "bmf8t2_bmf650_bt_2026-04-02",
+      "title": "BMF 8T2 + BMF 650, розподільник з Bluetooth (КП 02.04.2026)",
+      "kit_type": "bmf_trailer_crane",
+      "selection": {
+        "slots": {
+          "trailer": "bmf8t2",
+          "crane": "bmf650"
+        },
+        "choices": {
+          "valve": "parker_p70_wireless"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП 8Т2+650 (02.04.2026) блютус. розпод..pptx",
+        "date": "2026-04-02",
+        "total_uah": 1614400
+      }
+    },
+    {
+      "id": "bmf10t2_bmf650_2026-04-07",
+      "title": "BMF 10T2 + BMF 650 (КП 07.04.2026)",
+      "kit_type": "bmf_trailer_crane",
+      "selection": {
+        "slots": {
+          "trailer": "bmf10t2",
+          "crane": "bmf650"
+        },
+        "choices": {
+          "valve": "mech"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "reference/kp: CP/Комерційні пропозиції/КП 10Т2+650 (07.04.2026).pptx",
+        "date": "2026-04-07",
+        "total_uah": 1611100
+      }
+    },
+    {
+      "id": "bmf14t2_bmf720_2026-06-09",
+      "title": "BMF 14T2 Pro L + BMF 720 (КП 09.06.2026)",
+      "kit_type": "bmf_trailer_crane",
+      "selection": {
+        "slots": {
+          "trailer": "bmf14t2_pro_l",
+          "crane": "bmf720"
+        },
+        "choices": {
+          "valve": "mech"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП 14Т2+720 (09.06.2026).pptx",
+        "date": "2026-06-09",
+        "total_uah": 1699000
+      }
+    },
+    {
+      "id": "bmf17t2_bmf750",
+      "title": "BMF 17T2 + BMF 750 (КП з характеристиками, без ціни)",
+      "kit_type": "bmf_trailer_crane",
+      "selection": {
+        "slots": {
+          "trailer": "bmf17t2",
+          "crane": "bmf750"
+        },
+        "choices": {
+          "valve": "mech"
+        },
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП 17Т2+750 (тех. Характеристики).pptx",
+        "date": "",
+        "total_uah": null
+      }
+    },
+    {
+      "id": "kamaz_platform_2026-04-02",
+      "title": "Дообладнання КАМАЗ у лісовоз (КП 23.10.2025, ціна 02.04.2026)",
+      "kit_type": "truck_crane",
+      "selection": {
+        "slots": {
+          "conversion": "kamaz_platform",
+          "crane": null,
+          "base": null,
+          "tank": null,
+          "oil": null,
+          "pump": null
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП КАМАЗ + 750 (23.10.2025), копія.pptx",
+        "date": "2026-04-02",
+        "total_uah": 455000
+      }
+    },
+    {
+      "id": "kamaz_bmf750_2026-02-26",
+      "title": "КАМАЗ + BMF 750 з пірамідою, баком і насосом (КП 26.02.2026, ціна без ПДВ)",
+      "kit_type": "truck_crane",
+      "selection": {
+        "slots": {
+          "conversion": "kamaz_platform",
+          "crane": "bmf750",
+          "base": "truck_pyramid_outriggers",
+          "tank": "tank",
+          "oil": "oil_90l",
+          "pump": "pump"
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/КП КАМАЗ + 750 (26.02.2026).pptx",
+        "date": "2026-02-26",
+        "total_uah": 1553160
+      }
+    },
+    {
+      "id": "valf_s58_2026-05-25",
+      "title": "Клапан гідравлічний VALF S58 (КП 25.05.2026)",
+      "kit_type": "part",
+      "selection": {
+        "slots": {
+          "item": "valf_s58"
+        },
+        "choices": {},
+        "accessories": []
+      },
+      "source": {
+        "file": "drive_kp/_Клапан_гідравлічний_розподільникVALF_S525_05_2026.pptx (= CP/READY/…)",
+        "date": "2026-05-25",
+        "total_uah": 59140
+      }
+    }
+  ],
+  "accessories": [],
+  "bundles": [
+    {
+      "id": "npl10_bmf650",
+      "kit_type": "npl_crane",
+      "slots": {
+        "trailer": "npl10",
+        "crane": "bmf650"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 1709100,
+        "date": "2026-05-18",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.56,
+        "metal_share": 0.31,
+        "group": "npl_kit"
+      },
+      "source": "reference/kp CP/READY/КП НПЛ-10+650.pptx і drive_kp/КП НПЛ-10+650 (20.05), копія.pptx: 1 709 100 ₴ з ПДВ, станом на 18.05.2026 (гідравлічні гальма). Раніше: 1 317 700 ₴ (22.02.2024). Частки: кран 637 800 / 1 709 100, решта як власне виробництво 0,3/0,5 — оцінка."
+    },
+    {
+      "id": "npl10_bmf720",
+      "kit_type": "npl_crane",
+      "slots": {
+        "trailer": "npl10",
+        "crane": "bmf720"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 1886600,
+        "date": "2026-09-29",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.55,
+        "metal_share": 0.32,
+        "group": "npl_kit"
+      },
+      "source": "reference/kp CP/READY/КП НПЛ-10+720 2909.pptx: 1 886 600 ₴ з ПДВ, станом на 29.09.2026 (пневматичні гальма). Раніше: 1 799 000 ₴ (09.06.2026), 1 709 100 ₴ (18.05.2026, 14.01.2026), 1 411 000 ₴ (20.08.2024). Частки — оцінка (кран 686 000)."
+    },
+    {
+      "id": "npl10_bmf750",
+      "kit_type": "npl_crane",
+      "slots": {
+        "trailer": "npl10",
+        "crane": "bmf750"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 1978000,
+        "date": "2026-05-18",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.6,
+        "metal_share": 0.29,
+        "group": "npl_kit"
+      },
+      "source": "drive_kp/КП НПЛ-10+750 (18.05.2026).pptx: 1 978 000 ₴ з ПДВ, станом на 18.05.2026 (гідравлічні гальма). Частки — оцінка (кран 835 920, 20.05.2026)."
+    },
+    {
+      "id": "bmf8t2_bmf650",
+      "kit_type": "bmf_trailer_crane",
+      "slots": {
+        "trailer": "bmf8t2",
+        "crane": "bmf650"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 1354500,
+        "date": "2026-04-02",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 1,
+        "metal_share": 0,
+        "group": "bmf_trailer_kit"
+      },
+      "source": "drive_kp/КП 8Т2+650 (02.04.2026) механ. розпод..pptx: 1 354 500 ₴ з ПДВ, станом на 02.04.2026. З розподільником Parker P70 Wireless (КП «блютус. розпод.», той самий день) — 1 614 400 ₴: різниця 259 900 ₴ задана як ціна варіанта valve=parker_p70_wireless."
+    },
+    {
+      "id": "bmf10t2_bmf650",
+      "kit_type": "bmf_trailer_crane",
+      "slots": {
+        "trailer": "bmf10t2",
+        "crane": "bmf650"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 1611100,
+        "date": "2026-04-07",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 1,
+        "metal_share": 0,
+        "group": "bmf_trailer_kit"
+      },
+      "source": "reference/kp CP/Комерційні пропозиції/КП 10Т2+650 (07.04.2026).pptx: 1 611 100 ₴ з ПДВ, станом на 07.04.2026."
+    },
+    {
+      "id": "bmf14t2_bmf720",
+      "kit_type": "bmf_trailer_crane",
+      "slots": {
+        "trailer": "bmf14t2_pro_l",
+        "crane": "bmf720"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 1699000,
+        "date": "2026-06-09",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 1,
+        "metal_share": 0,
+        "group": "bmf_trailer_kit"
+      },
+      "source": "drive_kp/КП 14Т2+720 (09.06.2026).pptx: 1 699 000 ₴ з ПДВ, станом на 09.06.2026."
+    },
+    {
+      "id": "kamaz_bmf750",
+      "kit_type": "truck_crane",
+      "slots": {
+        "conversion": "kamaz_platform",
+        "crane": "bmf750",
+        "base": "truck_pyramid_outriggers",
+        "tank": "tank",
+        "oil": "oil_90l",
+        "pump": "pump"
+      },
+      "price": {
+        "mode": "ref",
+        "uah": 1863792,
+        "date": "2026-02-26",
+        "eur_rate_ref": null,
+        "metal_index_ref": null,
+        "eur_share": 0.61,
+        "metal_share": 0.28,
+        "group": "truck_kit"
+      },
+      "source": "drive_kp/КП КАМАЗ + 750 (26.02.2026).pptx: 1 553 160 грн БЕЗ ПДВ (актуальна до 30.03.2026); у каталозі з ПДВ 20 %: 1 553 160 × 1 2 = 1 863 792 ₴ — потребує підтвердження. Частки — оцінка (кран 835 920)."
+    }
+  ],
+  "texts": {
+    "terms": [
+      {
+        "id": "documents",
+        "title": "Документація",
+        "text": "Договір з усіма ключовими умовами; повний пакет документів разом із товаром."
+      },
+      {
+        "id": "documents_npl",
+        "title": "Документація",
+        "text": "Договір з усіма ключовими умовами; повний пакет документів для реєстрації НПЛ-10 разом із товаром."
+      },
+      {
+        "id": "production",
+        "title": "Терміни",
+        "text": "Під замовлення — до 60 календарних днів з моменту підписання договору."
+      },
+      {
+        "id": "payment",
+        "title": "Оплата",
+        "text": "Повна оплата, частинами за договором або кредитні умови."
+      },
+      {
+        "id": "delivery",
+        "title": "Доставка",
+        "text": "Здійснюється за рахунок покупця."
+      },
+      {
+        "id": "bonus_crane",
+        "title": "Бонуси",
+        "text": "Від 2 кранів BMF — персональна система знижок."
+      },
+      {
+        "id": "bonus_npl",
+        "title": "Бонуси",
+        "text": "Від 2 одиниць НПЛ-10 — персональна система знижок."
+      },
+      {
+        "id": "eur_rate",
+        "title": "Курс EUR",
+        "text": "Ціна прив’язана до курсу EUR і може переглядатись у разі його зростання. Рекомендуємо зафіксувати комплект договором."
+      },
+      {
+        "id": "supply_stock",
+        "title": "Терміни постачання",
+        "text": "За наявності на складі — протягом 7 календарних днів з моменту підписання договору (терміни залежать від об’єму замовлення)."
+      },
+      {
+        "id": "payment_part",
+        "title": "Оплата",
+        "text": "Повна оплата, оплата частинами відповідно до умов договору."
+      },
+      {
+        "id": "delivery_pickup",
+        "title": "Доставка",
+        "text": "В межах України здійснюється за рахунок покупця від місця знаходження продавця: м. Сарни, Рівненська обл., вул. Заводська, 5."
+      },
+      {
+        "id": "payment_50_50",
+        "title": "Умови оплати",
+        "text": "Перший етап — покупець оплачує авансовий платіж у розмірі 50 % від загальної вартості товару/послуг протягом трьох робочих днів з моменту підписання договору та виставлення рахунку (за наявності товару на складі). Другий етап — кінцевий платіж 50 % протягом 10 робочих днів з моменту підписання видаткової накладної / акту виконаних робіт."
+      },
+      {
+        "id": "delivery_maker",
+        "title": "Умови поставки",
+        "text": "Поставка товару здійснюється за місцем господарської діяльності виробника: Рівненська обл., м. Сарни, вул. Заводська, 5."
+      }
+    ],
+    "advantages": [
+      "Офіційні дистриб’ютори BMF в Україні",
+      "Індивідуальний підхід",
+      "Якісні матеріали",
+      "Контроль якості",
+      "Бонуси постійним клієнтам",
+      "Понад 100 одиниць виготовлених НПЛ-10",
+      "Надійність",
+      "Виготовлення під замовлення",
+      "Сертифікати якості виробництва",
+      "Досвід"
+    ],
+    "notes": {
+      "vat": "З урахуванням ПДВ",
+      "no_installation": "Без монтажних робіт",
+      "registration_pack": "Пакет для реєстрації",
+      "crane_included_title": "Вже в ціні крана · без доплат",
+      "crane_included": "Кран-маніпулятор BMF постачається готовим до роботи: безперервне обертання і щелепи зі зносостійкої сталі.",
+      "target_customers": "+ ЛІСОГОСПОДАРСТВА · + ФЕРМЕРИ · + ДЕРЕВООБРОБНИКИ",
+      "distributor": "Офіційний дистриб’ютор BMF в Україні",
+      "socials": "TikTok @bmf.ua / Instagram @bmf.rv.ua",
+      "production_contact": "Напівпричепи НПЛ-10 / 100+ виготовлено в Сарнах",
+      "individual_terms": "Усі умови узгоджуємо індивідуально з клієнтом до підписання договору — вони можуть відрізнятись від вищезазначених.",
+      "info_only": "Дана комерційна пропозиція має виключно інформаційний характер.",
+      "closing": "Ми готові відповісти на всі ваші запитання та обговорити деталі співпраці. Очікуємо на вашу відповідь для узгодження замовлення.",
+      "condition_color": "Стан: новий · Колір: комбінований — чорно-помаранчевий",
+      "npl_drawing": "* Креслення відповідають стандартному розміру. Габаритні та конструктивні розміри можуть змінюватися за погодженням із замовником.",
+      "crane_photo_note": "Примітка: зображення на фото наведено для орієнтовного представлення зовнішнього вигляду крана. Причіп, на якому встановлено кран, не є частиною комерційної пропозиції та у вартість не включений.",
+      "kamaz_installation": "У комплект враховано вартість монтажних робіт.",
+      "kamaz_excluded": "Аутригери та основа під маніпулятор не входять у комплект.",
+      "price_change": "Надалі вартість може бути змінено відповідно до економічної ситуації в країні та залежить від курсу євро.",
+      "own_production": "Під замовлення виготовляємо напівпричепи НПЛ-10, основи з аутригерами, гідробаки й місця оператора, а також дообладнуємо вантажівки під лісовоз.",
+      "accessories": "Аксесуари з каталогу BMF (bmf.rv.ua) для кранів і причепів, сумісні з краном комплекту. Ціни — за запитом: обрані опції додаємо в КП окремими рядками. Сумісність опцій для причепа з НПЛ-10 підтверджуємо під замовлення."
+    }
+  }
+}

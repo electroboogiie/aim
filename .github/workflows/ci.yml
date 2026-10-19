@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Build and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dev dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Python packages for the generator
+        run: python -m pip install --disable-pip-version-check python-pptx pillow numpy
+
+      - name: Build
+        run: npm run build
+
+      - name: Tests
+        run: npm test
+
+      - name: Generator syntax check
+        run: python -m compileall -q generator
+
+  generator-smoke:
+    name: Generator smoke (LibreOffice)
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Optional: depends on apt mirrors and LibreOffice rendering, so it never blocks the build.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install LibreOffice and fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-impress fonts-dejavu-core fonts-liberation fonts-liberation2 fonts-crosextra-carlito poppler-utils
+
+      - name: Python packages
+        run: python -m pip install --disable-pip-version-check python-pptx pillow numpy
+
+      - name: Render sample KPs
+        working-directory: generator
+        run: |
+          shopt -s nullglob
+          specs=(tests/specs/*.json)
+          if [ "${#specs[@]}" -eq 0 ]; then
+            echo "::notice::generator/tests/specs has no specs, nothing to render"
+            exit 0
+          fi
+          out="$RUNNER_TEMP/kp"
+          mkdir -p "$out"
+          for spec in "${specs[@]}"; do
+            echo "== $spec"
+            python -m kpgen --spec "$spec" --out "$out/$(basename "$spec" .json)" > "$RUNNER_TEMP/kpgen.log"
+            tail -n 1 "$RUNNER_TEMP/kpgen.log" > "$RUNNER_TEMP/result.json"
+            cat "$RUNNER_TEMP/result.json"
+            python - "$RUNNER_TEMP/result.json" <<'PY'
+          import json, sys
+          r = json.load(open(sys.argv[1]))
+          assert r["pptx"] and r["pdf"] and r["pages"] > 0, r
+          PY
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kp-samples
+          path: ${{ runner.temp }}/kp
+          if-no-files-found: ignore
+          retention-days: 14
+
+  docker:
+    name: Docker image (smoke)
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Optional like generator-smoke: the image must build, start as a non-root user and answer /api/health.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t kp-configurator:ci .
+
+      - name: Start and check the API
+        run: |
+          data="$RUNNER_TEMP/data"
+          mkdir -p "$data"
+          sudo chown 1000:1000 "$data"
+          docker run -d --name kp --init -p 8080:8080 \
+            -e KP_ADMIN_TOKEN=ci-admin -e KP_ACCESS_TOKEN=ci-access \
+            -v "$data:/data" kp-configurator:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/api/health; then
+              echo
+              curl -fsS -o /dev/null -H "Authorization: Bearer ci-access" http://127.0.0.1:8080/api/catalog
+              curl -fsS -o /dev/null http://127.0.0.1:8080/
+              docker exec kp sh -c 'soffice --version && python3 -c "import pptx, PIL, numpy" && fc-match Arial'
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs kp
+          exit 1
+
+      - name: Container log
+        if: always()
+        run: docker logs kp || true

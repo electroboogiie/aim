@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Plain HTTP must work for a server on the office network (http://192.168.x.x:8080), but the
+  network security config can only list exact host names, not address ranges. Cleartext is
+  therefore allowed here and restricted in code: NetPolicy rejects every http:// URL whose host
+  is not a loopback or private-network IP address (settings, page navigation, sub-requests,
+  service worker requests and file downloads). Everything else must use HTTPS.
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

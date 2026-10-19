@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Kp" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/kp_bg</item>
+        <item name="colorPrimaryDark">@color/kp_bg</item>
+        <item name="colorAccent">@color/kp_orange</item>
+        <item name="colorControlNormal">@color/kp_text_dim</item>
+        <item name="colorControlActivated">@color/kp_orange</item>
+        <item name="android:windowBackground">@color/kp_bg</item>
+        <item name="android:statusBarColor">@color/kp_bg</item>
+        <item name="android:navigationBarColor">@color/kp_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:textColorPrimary">@color/kp_text</item>
+        <item name="android:textColorSecondary">@color/kp_text_dim</item>
+        <item name="android:textColorHint">@color/kp_text_dim</item>
+    </style>
+
+    <style name="Kp.Button" parent="Widget.AppCompat.Button.Colored">
+        <item name="android:textColor">@color/kp_bg</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:minHeight">52dp</item>
+    </style>
+
+    <style name="Kp.Button.Text" parent="Widget.AppCompat.Button.Borderless.Colored">
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:minHeight">52dp</item>
+    </style>
+</resources>

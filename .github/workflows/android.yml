@@ -1,0 +1,73 @@
+name: Android
+
+on:
+  push:
+    paths:
+      - "android/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: "Адреса сервера за замовчуванням (можна залишити порожньою — застосунок спитає при першому запуску)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  apk:
+    name: Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;34.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      # A stable signing key lets a new APK install over the old one. Without the secret every
+      # run signs with a fresh temporary key and the app has to be reinstalled (docs/ANDROID.md).
+      - name: Debug signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            dir="${ANDROID_USER_HOME:-$HOME/.android}"
+            mkdir -p "$dir"
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > "$dir/debug.keystore"
+            echo "Using the debug keystore from the ANDROID_DEBUG_KEYSTORE_B64 secret"
+          else
+            echo "::notice::ANDROID_DEBUG_KEYSTORE_B64 is not set: the APK is signed with a temporary key"
+          fi
+
+      - name: Build
+        env:
+          SERVER_URL: ${{ inputs.server_url }}
+          VERSION_CODE: ${{ github.run_number }}
+        run: gradle -p android assembleDebug --stacktrace "-Pkp.serverUrl=${SERVER_URL}" "-Pkp.versionCode=${VERSION_CODE}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kp-android-debug-${{ github.run_number }}
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
