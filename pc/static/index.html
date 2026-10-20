@@ -12,7 +12,7 @@
   <nav class="main-nav">
     <button data-tab="conf" class="on">Конфігуратор</button>
     <button data-tab="hist">Історія КП</button>
-    <button data-tab="admin">Адмінка</button>
+    <button data-tab="admin">Налаштування</button>
   </nav>
   <span class="saved" id="savedMark"></span>
 </header>
@@ -53,7 +53,7 @@
       <div class="col side">
         <div class="card">
           <div class="card-head"><h2><span class="step">3</span>Вартість</h2></div>
-          <table class="rows"><thead><tr><th>Позиція</th><th class="num">З адмінки</th><th class="num">Фінальна, ₴</th></tr></thead><tbody id="rows"></tbody></table>
+          <table class="rows"><thead><tr><th>Позиція</th><th class="num">З налаштувань</th><th class="num">Фінальна, ₴</th></tr></thead><tbody id="rows"></tbody></table>
           <div id="kitPriceBox"></div>
           <label class="inline">Знижка, % <input type="number" id="discount" min="0" step="0.5" value="0" style="width:90px"></label>
           <div class="total">Разом <b id="total">—</b></div>
@@ -95,14 +95,16 @@
         <button data-sub="a-bg"><i>▦</i>Підкладки сторінок</button>
         <button data-sub="a-texts"><i>¶</i>Тексти сторінок</button>
         <button data-sub="a-layout"><i>⌖</i>Написи й елементи</button>
-        <div class="grp">Каталог</div>
-        <button data-sub="a-kits"><i>☰</i>Позиції комплектів</button>
-        <button data-sub="a-choices"><i>⇄</i>Варіанти вибору</button>
+        <div class="grp">Каталог і комплекти</div>
+        <button data-sub="a-kits"><i>☰</i>Комплекти і гілки</button>
+        <button data-sub="a-choices"><i>⇄</i>Варіанти вибору і зв’язки</button>
         <button data-sub="a-accs"><i>＋</i>Додаткові опції</button>
-        <button data-sub="a-items"><i>▣</i>Вироби і фото</button>
+        <button data-sub="a-items"><i>▣</i>Позиції і фото</button>
         <div class="grp">Ціни</div>
-        <button data-sub="a-prices"><i>₴</i>Ціни і націнки</button>
-        <div class="grp">Сервіс</div>
+        <button data-sub="a-prices"><i>₴</i>Ціни позицій і курс €</button>
+        <button data-sub="a-own"><i>⚒</i>Власне виробництво</button>
+        <button data-sub="a-fix"><i>✓</i>Фіксація цін і КП <b class="cnt" id="fixCount" hidden></b></button>
+        <div class="grp">Службове</div>
         <button data-sub="a-versions"><i>↺</i>Версії і відкат</button>
       </aside>
       <div class="admin-body">
@@ -135,32 +137,34 @@
         </div>
 
         <div id="a-kits" class="subtab">
-          <div class="page-head"><h1>Позиції комплектів</h1><div class="seg" id="kitSeg"></div></div>
-          <p class="hint">Порядок позицій = порядок рядків у КП. «Базова» — позиція одразу є в комплекті; без позначки менеджер додає її сам. Фото й опис виробу змінюються у «Вироби і фото».</p>
+          <div class="page-head"><h1>Комплекти і гілки</h1></div>
+          <div class="seg wrap" id="kitSeg"></div>
+          <p class="hint">Комплект можна вимкнути або скопіювати в нову гілку і змінювати окремо. Порядок позицій = порядок рядків у КП. «Базова» — позиція одразу є в комплекті; без позначки менеджер додає її сам. Вибори (дишло, насос, коники…) вмикаються й вимикаються для кожного комплекту окремо.</p>
           <div id="kitEditor"></div>
         </div>
 
         <div id="a-choices" class="subtab">
-          <div class="page-head"><h1>Варіанти вибору</h1></div>
-          <p class="hint">Захват, розподільник, місце оператора, гальма тощо. «Базовий» — варіант, що стоїть у комплекті без доплати (для кожного крана свій). Доплата порожня — «за запитом». Зміни діють в усіх комплектах, де є цей вибір.</p>
+          <div class="page-head"><h1>Варіанти вибору і зв’язки</h1></div>
+          <p class="hint">Захват, розподільник, дишло, насос, коники, гальма тощо. «Базовий» — варіант, що стоїть у комплекті без доплати (для крана — свій для кожного крана). Доплата порожня — «за запитом». «Зв’язки» задають, з чим варіант доступний або недоступний. Зміни діють в усіх комплектах, де є цей вибір.</p>
           <div id="choiceEditor"></div>
         </div>
 
         <div id="a-accs" class="subtab">
           <div class="page-head"><h1>Додаткові опції</h1><button class="primary sm" id="addAcc">＋ Додати опцію</button></div>
-          <p class="hint">Порядок = порядок карток на сторінці «Додаткові опції». «Базова для» — опцію одразу позначено в конфігураторі для цього комплекту. Ціни — у «Ціни і націнки».</p>
+          <p class="hint">Порядок = порядок карток на сторінці «Додаткові опції» в КП. Вимкнена опція лишається в налаштуваннях, але не пропонується і не друкується. «Базова для» — опцію одразу позначено в конфігураторі для цього комплекту. Ціни — у «Ціни позицій».</p>
           <div id="accEditor"></div>
         </div>
 
         <div id="a-items" class="subtab">
-          <div class="page-head"><h1>Вироби і фото</h1><div class="seg" id="itemStyleSeg"></div></div>
-          <p class="hint">Велике фото — як виріб виглядатиме на плитці сторінки «Конфігурація» в обраному стилі; мале — оригінал. PNG з прозорим фоном виглядає найкраще. У описі слова в фігурних дужках підставляються з вибору: {grapple} — захват, {seat_pos} — місце оператора, {brakes} — гальма, {stakes} — коники.</p>
+          <div class="page-head"><h1>Позиції, фото, характеристики</h1><div class="seg" id="itemStyleSeg"></div></div>
+          <p class="hint">Велике фото — як позиція виглядатиме на плитці сторінки «Конфігурація» в обраному стилі. Фото в конфігураторі і фото в КП можна задати окремо; «Положення в КП» збільшує й зсуває фото на плитці. Фото категорії ставиться позиціям цієї категорії, що не мають свого. PNG з прозорим фоном виглядає найкраще. У описі слова в фігурних дужках підставляються з вибору: {grapple} — захват, {seat_pos} — місце оператора, {brakes} — гальма, {stakes} — коники.</p>
           <div id="itemEditor"></div>
         </div>
 
         <div id="a-prices" class="subtab">
-          <div class="page-head"><h1>Ціни і націнки</h1></div>
-          <p class="hint">Розрахункова ціна = базова × (1 + націнка %), округлення до <span id="roundStep"></span> ₴. Фінальна ціна, якщо вписана, замінює розрахункову. Додана вартість = ціна в КП − базова. Типово базова ціна = ціна з останньої КП, націнка 0 %.</p>
+          <div class="page-head"><h1>Ціни позицій і курс €</h1></div>
+          <div id="pendBanner"></div>
+          <p class="hint">Спосіб для кожної позиції: вручну (базова в ₴; порожньо — ціна з останньої КП), € × коефіцієнт × курс, з матеріалів (розкладка у «Власне виробництво»), для комплектів з однією ціною — сума позицій. Розрахункова = базова × (1 + націнка %), округлення до <span id="roundStep"></span> ₴. Фінальна вручну замінює розрахункову. Нова ціна потрапляє в КП після «Зафіксувати» на сторінці «Фіксація цін і КП».</p>
           <div class="card eur-card">
             <div class="inline" style="margin:0"><b>Курс € для кранів BMF</b>
               <input type="number" id="eurRate" step="0.01" min="1" style="width:110px" placeholder="напр. 48,50"> ₴ за €
@@ -175,10 +179,22 @@
           <div id="priceTables"></div>
         </div>
 
+        <div id="a-own" class="subtab">
+          <div class="page-head"><h1>Власне виробництво</h1><div class="seg" id="ownSeg"></div></div>
+          <p class="hint">Довідник матеріалів і комплектуючих з цінами (₴ або €), склад кожного виробу (НПЛ-10, платформи, бак, місце оператора…), імпорт номенклатури й цін з Excel і журнал змін з відкатом. Ціна виробу = Σ кількість × ціна матеріалу × коефіцієнт + інші витрати, далі націнка у «Ціни позицій».</p>
+          <div id="ownBox"></div>
+        </div>
+
+        <div id="a-fix" class="subtab">
+          <div class="page-head"><h1>Фіксація цін і КП</h1></div>
+          <p class="hint">КП рахуються лише за зафіксованими цінами. Тут видно, що зміниться, якщо зафіксувати нові ціни, і як зміняться суми вже створених КП; оновлені КП замінюють старі в історії.</p>
+          <div id="fixBox"></div>
+        </div>
+
         <div id="a-versions" class="subtab">
           <div class="page-head"><h1>Версії і відкат</h1>
             <div class="inline"><input id="verNote" placeholder="Назва версії, напр. «перед зміною цін»" style="width:280px"><button id="verSave" class="primary sm">Зберегти версію</button></div></div>
-          <p class="hint">Кожна зміна в адмінці зберігається автоматично; часті зміни об’єднуються в одну версію (до 3 хв). «Відновити» повертає всі налаштування адмінки на той момент, а поточні зберігаються окремою версією, тож відкат теж можна скасувати.</p>
+          <p class="hint">Кожна зміна в налаштуваннях зберігається автоматично; часті зміни об’єднуються в одну версію (до 3 хв). «Відновити» повертає всі налаштування на той момент, а поточні зберігаються окремою версією, тож відкат теж можна скасувати.</p>
           <div id="verList" class="card"></div>
         </div>
       </div>

@@ -87,6 +87,7 @@ export interface KitType {
   choices: Choice[];
   accessory_groups: string[];
   generator: "kp_v3";
+  extends?: string;                     // a kit copied in the settings: the kit type it was copied from (generator layout)
   title_slots?: string[];               // slots whose item models form the KP title, joined by " + "
   terms?: string[];                     // Term ids printed on the KP by default
   maker_line?: string;                  // "Виробник: {maker}"
@@ -112,7 +113,16 @@ export interface ChoiceOption {
   compatible?: string[];                // item ids this option fits (like AccessoryVariant.compatible)
   default_for?: string[];               // the option is the standard one (no surcharge, no note) with these items
   photo?: string;                       // picture for the configurator tree and the admin (generator/assets path)
+  note?: string;                        // KP: appended to the row of the choice's slot item (first row without a slot)
+  requires?: string[];                  // relations (see Relation): every one must hold for the option to be offered
+  excludes?: string[];                  // relations: none may hold
 }
+
+/**
+ * Relation reference between kit parts: "choiceId=value" (that option is chosen), "slot:slotId" (the slot has an item),
+ * "item:itemId" (the item is in the kit), "acc:accessoryId" (the option is added).
+ */
+export type Relation = string;
 export interface Choice {
   id: string;
   title: string;
@@ -164,6 +174,9 @@ export interface Accessory {
   needs_confirmation?: string[];
   source: string;
   kp_uses?: number;                     // how many of the user's KPs mention it: default order on the options page
+  disabled?: boolean;                   // switched off: not offered in the configurator nor on the KP options page
+  requires?: Relation[];
+  excludes?: Relation[];
 }
 
 export interface Term { id: string; title: string; text: string }

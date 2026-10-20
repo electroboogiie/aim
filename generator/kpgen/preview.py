@@ -48,7 +48,7 @@ def page(style, key, path, fx=0.5, fy=0.45, opacity=0.18, width=480):
         R.set_theme('dark')
 
 
-def item(style, path, kind='tile', width=360):
+def item(style, path, kind='tile', width=360, pos=None):
     """JPEG of a position tile (configuration page) or an option card with the photo, in the style's colours."""
     S = STYLES[style]
     R.set_theme(S['theme'])
@@ -56,6 +56,14 @@ def item(style, path, kind='tile', width=360):
         w, h = (2.3, 1.3) if kind == 'card' else (2.2, 1.6)
         if kind == 'card':
             im = R.card_photo(path, w, h)
+        elif pos:   # admin framing: the KP crops the tile picture, then fits it whole into the tile
+            from kpgen.build import frame_photo
+            src = Image.open(R.asset(path))
+            if src.mode in ('RGBA', 'LA', 'P') and src.convert('RGBA').getchannel('A').getextrema()[0] < 250:
+                im = frame_photo(R.cutout_glow(R.alpha_crop(src.convert('RGBA'))), pos)
+            else:
+                im = frame_photo(R.grade(src.convert('RGB'), sat=0.8, bright=0.92, warm=0.0), pos).convert('RGBA')
+            im = R.on_card(im.convert('RGBA'), w, h, 0.9)
         else:
             src = Image.open(R.asset(path))
             if src.mode in ('RGBA', 'LA', 'P') and src.convert('RGBA').getchannel('A').getextrema()[0] < 250:

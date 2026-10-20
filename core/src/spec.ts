@@ -67,7 +67,7 @@ function kpCards(c: Catalog, kt: KitType, q: Quote, offer: boolean): KpSpec["acc
   const rank = (a: Catalog["accessories"][number]) => (a.origin === "bmf.ee" ? 1 : 0);
   const extra = c.accessories
     .map((a, i) => ({ a, i }))
-    .filter(({ a }) => kt.accessory_groups.includes(a.group) && !chosen.has(a.id) && !!a.photo && accessoryStatus(c, a, items) === "ok")
+    .filter(({ a }) => !a.disabled && kt.accessory_groups.includes(a.group) && !chosen.has(a.id) && !!a.photo && accessoryStatus(c, a, items) === "ok")
     .sort((x, y) => rank(x.a) - rank(y.a) || x.i - y.i)
     .slice(0, Math.max(0, MAX_KP_CARDS - cards.length))
     .map(({ a }) => ({ group: a.group, title: a.title, desc: accessoryDesc(c, a, items), photo: a.photo ?? "", price_text: TEXT_ON_REQUEST }));
@@ -163,14 +163,20 @@ export function buildKpSpec(c: Catalog, settings: Settings, q: Quote, meta: KpMe
   }
 
   const rows = kpRows(q);
+  const kitItems = q.rows.map((r) => itemById(c, r.item_id)).filter((x): x is Item => !!x);
+  const addNote = (row: KpSpecRow | undefined, note: string) => { if (row && !row.desc.includes(note)) row.desc = row.desc ? `${row.desc}; ${note}` : note; };
   for (const ch of q.choices) {
     const def = kt.choices.find((x) => x.id === ch.id);
     const opt = def?.options.find((o) => o.value === ch.value);
-    if (!opt || choiceIsStandard(opt, [crane])) continue;
-    if (def?.slot && !q.rows.some((r) => r.slot === def.slot)) continue;   // its position is not in the kit
+    if (!def || !opt || choiceIsStandard(opt, kitItems)) continue;
+    if (def.slot && !q.rows.some((r) => r.slot === def.slot)) continue;   // its position is not in the kit
     Object.assign(specs, opt.crane_specs ?? {});
-    const row = opt.crane_note ? rows.find((r) => r.item_id === crane.id) : undefined;
-    if (row) row.desc = row.desc ? `${row.desc}; ${opt.crane_note}` : opt.crane_note!;
+    if (opt.crane_note) addNote(rows.find((r) => r.item_id === crane.id), opt.crane_note);
+    // other options print their KP text on the row of their slot (the first row when the choice has no slot)
+    if (opt.note) {
+      const slotItem = def.slot ? q.rows.find((r) => r.slot === def.slot)?.item_id : undefined;
+      addNote(slotItem ? rows.find((r) => r.item_id === slotItem) : rows[0], opt.note);
+    }
   }
   const unpriced = q.price_display === "bundle" ? q.kit_price_uah === null || q.kit_price_uah === undefined
     : rows.every((r) => r.price_text === TEXT_ON_REQUEST);

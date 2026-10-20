@@ -66,6 +66,22 @@ def plural(n, one_, few, many):
     return many
 
 
+def frame_photo(im, pos):
+    """Crop an image to the admin framing {zoom, fx, fy}: zoom 2 keeps half the width and height around the focus."""
+    if not pos or im is None: return im
+    z = pos.get('zoom', 1); W, H = im.size
+    w, h = max(1, round(W / z)), max(1, round(H / z))
+    x = round((W - w) * pos.get('fx', 0.5)); y = round((H - h) * pos.get('fy', 0.5))
+    return im.crop((x, y, x + w, y + h))
+
+
+def frame_tile(row, img):
+    """tile_image() result with the row's photo_pos applied (the picture is then always re-encoded)."""
+    pos = row.get('photo_pos'); keep, im, data = img
+    if not pos or im is None: return img
+    return None, frame_photo(im, pos), None
+
+
 class Engine:
     def __init__(self, spec, build_dir):
         self.spec = spec
@@ -469,7 +485,7 @@ class Engine:
         slots = {'TL': (13, 14, 15, 18, 19, 20, 21), 'TR': (36, 37, 38, 39, 40, 41, 42),
                  'BL': (22, 23, 24, 25, 26, 27, 28), 'BR': (29, 30, 31, 32, 33, 34, 35)}
         sh = lambda sid: by_id(s, sid)
-        imgs = [self.tile_image(r, crane_blob) for r in rows]
+        imgs = [frame_tile(r, self.tile_image(r, crane_blob)) for r in rows]
         for slot in slots.values():   # "МОДУЛЬ 01" labels: admin prefix, number kept
             lab = sh(slot[2]); lab.name = 'module_label'; put(lab, f"{self.L['module']} {lab.text_frame.text[-2:]}")
 

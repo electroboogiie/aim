@@ -1281,6 +1281,26 @@
        "photo": "prod/tile_seat.png"
       }
      ]
+    },
+    {
+     "id": "pump_type",
+     "title": "Насос",
+     "default": "axial",
+     "options": [
+      {
+       "value": "axial",
+       "title": "аксіально-поршневий",
+       "short": "аксіально-поршневий насос"
+      },
+      {
+       "value": "gear",
+       "title": "шестеренний",
+       "short": "шестеренний насос",
+       "on_request": true,
+       "note": "шестеренний насос замість аксіально-поршневого"
+      }
+     ],
+     "slot": "pump"
     }
    ],
    "accessory_groups": [
@@ -1611,6 +1631,44 @@
      ]
     },
     {
+     "id": "drawbar",
+     "title": "Дишло",
+     "default": "swivel",
+     "options": [
+      {
+       "value": "swivel",
+       "title": "поворотне",
+       "short": "поворотне дишло"
+      },
+      {
+       "value": "fixed",
+       "title": "неповоротне",
+       "short": "неповоротне дишло",
+       "on_request": true,
+       "note": "неповоротне дишло"
+      }
+     ]
+    },
+    {
+     "id": "pump_type",
+     "title": "Насос",
+     "default": "axial",
+     "options": [
+      {
+       "value": "axial",
+       "title": "аксіально-поршневий",
+       "short": "аксіально-поршневий насос"
+      },
+      {
+       "value": "gear",
+       "title": "шестеренний",
+       "short": "шестеренний насос",
+       "on_request": true,
+       "note": "шестеренний насос замість аксіально-поршневого"
+      }
+     ]
+    },
+    {
      "id": "stakes",
      "title": "Кількість коників",
      "default": "4",
@@ -1627,6 +1685,32 @@
        "short": "5 коників",
        "on_request": true,
        "photo": "acc_rv/07_poles.png"
+      },
+      {
+       "value": "6",
+       "title": "6 коників",
+       "short": "6 коників",
+       "on_request": true,
+       "photo": "acc_rv/07_poles.png"
+      }
+     ]
+    },
+    {
+     "id": "stakes_ext",
+     "title": "Нарощування висоти коників",
+     "default": "no",
+     "options": [
+      {
+       "value": "no",
+       "title": "без нарощування",
+       "short": ""
+      },
+      {
+       "value": "yes",
+       "title": "з нарощуванням",
+       "short": "нарощені коники",
+       "on_request": true,
+       "note": "нарощування висоти коників"
       }
      ]
     },
@@ -1926,6 +2010,44 @@
        },
        "crane_note": "електричний розподільник Parker L90",
        "photo": "acc/01_valves.jpg"
+      }
+     ]
+    },
+    {
+     "id": "drawbar",
+     "title": "Дишло",
+     "default": "swivel",
+     "options": [
+      {
+       "value": "swivel",
+       "title": "поворотне",
+       "short": "поворотне дишло"
+      },
+      {
+       "value": "fixed",
+       "title": "неповоротне",
+       "short": "неповоротне дишло",
+       "on_request": true,
+       "note": "неповоротне дишло"
+      }
+     ]
+    },
+    {
+     "id": "stakes_ext",
+     "title": "Нарощування висоти коників",
+     "default": "no",
+     "options": [
+      {
+       "value": "no",
+       "title": "без нарощування",
+       "short": ""
+      },
+      {
+       "value": "yes",
+       "title": "з нарощуванням",
+       "short": "нарощені коники",
+       "on_request": true,
+       "note": "нарощування висоти коників"
       }
      ]
     }
@@ -2240,6 +2362,26 @@
        "photo": "acc/01_valves.jpg"
       }
      ]
+    },
+    {
+     "id": "pump_type",
+     "title": "Насос",
+     "default": "axial",
+     "options": [
+      {
+       "value": "axial",
+       "title": "аксіально-поршневий",
+       "short": "аксіально-поршневий насос"
+      },
+      {
+       "value": "gear",
+       "title": "шестеренний",
+       "short": "шестеренний насос",
+       "on_request": true,
+       "note": "шестеренний насос замість аксіально-поршневого"
+      }
+     ],
+     "slot": "pump"
     }
    ],
    "accessory_groups": [
@@ -3578,7 +3720,8 @@
     "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
    ],
    "source": "https://bmf.rv.ua/production/2-abo-4-wd (перевірено 18.10.2026); опис і сумісність — https://www.bmf.ee/products/accessories/for-trailers/black-bruin-drive-system, https://www.bmf.ee/products/accessories/for-trailers/robson-drive-system",
-   "kp_uses": 0
+   "kp_uses": 0,
+   "disabled": true
   },
   {
    "id": "ee_xcrane",
@@ -3600,7 +3743,8 @@
    "notes": "Електронне керування краном: одночасні рухи з джойстиків, паралельний режим стріли, сенсорний екран 4,3″ (опц. 5″), до 24 гідрофункцій, налаштування швидкості й рамп, лічильник мотогодин. У KP_2_v3 серед опцій для апгрейду — «Системи керування».",
    "origin": "bmf.ee",
    "source": "https://www.bmf.ee/products/accessories/for-cranes/crane-control (перевірено 18.10.2026)",
-   "kp_uses": 0
+   "kp_uses": 0,
+   "disabled": true
   },
   {
    "id": "ee_damper",
@@ -3620,7 +3764,8 @@
    "notes": "Гасить розгойдування і вібрацію крана під час навантаження: точніші рухи і менше зношування вузлів. bmf.ee: сумісний з BMF750, BMF800, BMF850, BMF905, BMF1000; на HD-кранах — стандартне обладнання.",
    "origin": "bmf.ee",
    "source": "https://www.bmf.ee/products/accessories/for-cranes/dampers (перевірено 18.10.2026)",
-   "kp_uses": 0
+   "kp_uses": 0,
+   "disabled": true
   },
   {
    "id": "ee_valve_dpx",
@@ -3642,7 +3787,8 @@
    "notes": "Пілотне пропорційне керування, компенсовані золотники, 50–100 л/хв, до 200 бар (HP — 225 бар), код V09/pr.",
    "origin": "bmf.ee",
    "source": "https://www.bmf.ee/products/accessories/for-cranes/valves-and-joysticks (перевірено 18.10.2026)",
-   "kp_uses": 0
+   "kp_uses": 0,
+   "disabled": true
   },
   {
    "id": "ee_coupler",
@@ -3664,7 +3810,8 @@
    "notes": "Ставиться між ротатором і навісним обладнанням для швидкої заміни; комплект з болтами і гідравлічними з’єднаннями. Сумісне з усіма грейферами BMF, крім C15. BMF 430 і 540 у bmf.ee значаться сумісними, але їхній грейфер C15 з coupler не працює.",
    "origin": "bmf.ee",
    "source": "https://www.bmf.ee/products/accessories/for-grapples/quick-coupler (перевірено 18.10.2026)",
-   "kp_uses": 0
+   "kp_uses": 0,
+   "disabled": true
   },
   {
    "id": "ee_oil_cooler",
@@ -3691,7 +3838,8 @@
     "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
    ],
    "source": "https://www.bmf.ee/products/accessories/for-trailers/oil-coolers-and-tanks (перевірено 18.10.2026)",
-   "kp_uses": 0
+   "kp_uses": 0,
+   "disabled": true
   },
   {
    "id": "ee_toolbox",
@@ -3704,6 +3852,7 @@
     "mode": "on_request"
    },
    "compatible": [
+    "npl10",
     "bmf8t2",
     "bmf10t2",
     "bmf14t2_pro_l",
@@ -3745,7 +3894,8 @@
     "compatible_unconfirmed: сумісність з НПЛ-10 на сайтах не вказана"
    ],
    "source": "https://www.bmf.ee/products/accessories/for-trailers/chainsaw-holders (перевірено 18.10.2026)",
-   "kp_uses": 0
+   "kp_uses": 0,
+   "disabled": true
   }
  ],
  "bundles": [

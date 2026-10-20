@@ -45,6 +45,48 @@ export function choiceOptionFits(c: Catalog, o: ChoiceOption, items: Item[]): bo
   return rel.length === 0 || rel.every((x) => o.compatible!.includes(x.id));
 }
 
+/** Whether a relation reference holds for the selection (see Relation). */
+export function relationHolds(ref: string, selection: Selection, items: Item[]): boolean {
+  const eq = ref.indexOf("=");
+  if (eq > 0) return selection.choices?.[ref.slice(0, eq)] === ref.slice(eq + 1);
+  const [kind, id] = [ref.slice(0, ref.indexOf(":")), ref.slice(ref.indexOf(":") + 1)];
+  if (kind === "slot") return !!selection.slots?.[id];
+  if (kind === "item") return items.some((x) => x.id === id);
+  if (kind === "acc") return (selection.accessories ?? []).some((a) => a.id === id);
+  return false;
+}
+
+/** Relations of an option or accessory that do not hold: unmet requires and present excludes (empty = allowed). */
+export function relationProblems(x: { requires?: string[]; excludes?: string[] }, selection: Selection, items: Item[]): string[] {
+  return [...(x.requires ?? []).filter((r) => !relationHolds(r, selection, items)).map((r) => "+" + r),
+          ...(x.excludes ?? []).filter((r) => relationHolds(r, selection, items)).map((r) => "-" + r)];
+}
+
+/** Human text of a relation reference: "Гальма: пневматичні", "Насос", "BMF 750". */
+export function relationLabel(c: Catalog, kitType: KitType, ref: string): string {
+  const eq = ref.indexOf("=");
+  if (eq > 0) {
+    const ch = kitType.choices.find((x) => x.id === ref.slice(0, eq));
+    const o = ch?.options.find((x) => x.value === ref.slice(eq + 1));
+    return ch ? `${ch.title}: ${o?.title ?? ref.slice(eq + 1)}` : ref;
+  }
+  const id = ref.slice(ref.indexOf(":") + 1);
+  if (ref.startsWith("slot:")) return kitType.slots.find((x) => x.id === id)?.title ?? id;
+  if (ref.startsWith("item:")) { const it = itemById(c, id); return it ? modelName(it) : id; }
+  if (ref.startsWith("acc:")) return accessoryById(c, id)?.title ?? id;
+  return ref;
+}
+
+/** Why the option cannot be chosen with this selection ("" = it can): its items or its relations. */
+export function choiceOptionBlock(c: Catalog, kitType: KitType, o: ChoiceOption, selection: Selection, items: Item[]): string {
+  if (!choiceOptionFits(c, o, items)) return `не підходить до ${joinUk(items.map(modelName), "і")}`;
+  const p = relationProblems(o, selection, items);
+  if (!p.length) return "";
+  const req = p.filter((x) => x[0] === "+").map((x) => relationLabel(c, kitType, x.slice(1)));
+  const exc = p.filter((x) => x[0] === "-").map((x) => relationLabel(c, kitType, x.slice(1)));
+  return [req.length ? `потрібно: ${joinUk(req, "і")}` : "", exc.length ? `не разом з: ${joinUk(exc, "і")}` : ""].filter(Boolean).join("; ");
+}
+
 /** The option that is standard with the selected items (ChoiceOption.default_for), else Choice.default. */
 export function choiceDefault(c: Catalog, ch: Choice, items: Item[]): string {
   const std = ch.options.find((o) => o.default_for && items.some((i) => o.default_for!.includes(i.id)));
@@ -199,7 +241,7 @@ export function kitAccessories(c: Catalog, kitTypeId: string, selection: Selecti
   if (!kt) return [];
   const items = selectedItems(c, kt, selection).map((x) => x.item);
   return c.accessories
-    .filter((a) => kt.accessory_groups.includes(a.group))
+    .filter((a) => !a.disabled && kt.accessory_groups.includes(a.group))
     .map((a) => ({ accessory: a, status: accessoryStatus(c, a, items), variants: accessoryVariants(c, a, items),
                    desc: accessoryDesc(c, a, items) }));
 }
@@ -232,7 +274,8 @@ export function itemDesc(kitType: KitType, item: Item, selection: Selection): st
     const o = choiceOption(ch, selection.choices?.[ch.id] ?? ch.default);
     if (o) vars[ch.id] = o.short ?? o.title;
   }
-  return fillTemplate(item.desc_template, vars);
+  // a choice switched off in this kit (settings) leaves its placeholder: drop it with its separator
+  return fillTemplate(item.desc_template, vars).replace(/\s*·\s*\{\w+\}/g, "").replace(/\{\w+\}\s*·\s*/g, "").replace(/\{\w+\}/g, "").trim();
 }
 
 /**
@@ -263,10 +306,21 @@ export function reconcileSelection(c: Catalog, kitTypeId: string, selection: Sel
     const slotChanged = !!changedSlot && ch.slot === changedSlot && ch.options.some((x) => x.default_for);
     if (!o || !choiceOptionFits(c, o, items) || slotChanged) s.choices[ch.id] = choiceDefault(c, ch, items);
   }
+  // relations: an option whose requirements no longer hold falls back to the default, then to the first allowed one
+  for (let pass = 0; pass < 3; pass++) {
+    for (const ch of kt.choices) {
+      const o = choiceOption(ch, s.choices[ch.id]);
+      if (!o || !relationProblems(o, s, items).length) continue;
+      const d = choiceOption(ch, choiceDefault(c, ch, items));
+      const ok = [d, ...ch.options].find((x) => x && choiceOptionFits(c, x, items) && !relationProblems(x, s, items).length);
+      if (ok) s.choices[ch.id] = ok.value;
+    }
+  }
   s.accessories = s.accessories
     .filter((a) => {
       const acc = accessoryById(c, a.id);
-      return !!acc && kt.accessory_groups.includes(acc.group) && accessoryStatus(c, acc, items) !== "incompatible";
+      return !!acc && !acc.disabled && kt.accessory_groups.includes(acc.group) && accessoryStatus(c, acc, items) !== "incompatible"
+        && !relationProblems(acc, s, items).length;
     })
     .map((a) => {
       const acc = accessoryById(c, a.id)!;
@@ -329,6 +383,9 @@ export function validateSelection(c: Catalog, input: QuoteInput): string[] {
     if (!o) errors.push(`Невідоме значення «${String(v)}» для параметра «${ch.title}».`);
     else if (!choiceOptionFits(c, o, picked.map((x) => x.item))) {
       errors.push(`${ch.title}: «${o.title}» не підходить до ${joinUk(picked.map((x) => modelName(x.item)), "і")}.`);
+    } else {
+      const why = choiceOptionBlock(c, kt, o, sel as unknown as Selection, picked.map((x) => x.item));
+      if (why) errors.push(`${ch.title}: «${o.title}» — ${why}.`);
     }
   }
 
@@ -342,6 +399,14 @@ export function validateSelection(c: Catalog, input: QuoteInput): string[] {
     seen.add(acc.id);
     if (!kt.accessory_groups.includes(acc.group)) {
       errors.push(`Опція «${acc.title}» недоступна для комплекту «${kt.title}».`);
+      continue;
+    }
+    if (acc.disabled) { errors.push(`Опцію «${acc.title}» вимкнено в налаштуваннях.`); continue; }
+    const rel = relationProblems(acc, sel as unknown as Selection, items);
+    if (rel.length) {
+      const req = rel.filter((x) => x[0] === "+").map((x) => relationLabel(c, kt, x.slice(1)));
+      const exc = rel.filter((x) => x[0] === "-").map((x) => relationLabel(c, kt, x.slice(1)));
+      errors.push(`Опція «${acc.title}»: ${[req.length ? `потрібно: ${joinUk(req, "і")}` : "", exc.length ? `не разом з: ${joinUk(exc, "і")}` : ""].filter(Boolean).join("; ")}.`);
       continue;
     }
     if (accessoryStatus(c, acc, items) === "incompatible") {

@@ -1,7 +1,7 @@
 # Конфігуратор КП для ПК: локальний сервер (лише стандартна бібліотека Python) + генератор generator/kpgen.
 #   python pc/server.py [--port 8765] [--no-browser]
 # Інтерфейс: http://127.0.0.1:8765  (конфігуратор і адмінка). Дані адмінки: pc/data/admin.json,
-# згенеровані КП: pc/data/out/, завантажені фото: generator/assets/custom/.
+# згенеровані КП: pc/data/out/, завантажені фото: generator/assets/custom/ (копія в pc/data/uploads/).
 import argparse, glob, hashlib, json, mimetypes, os, re, shutil, subprocess, sys, threading, time, webbrowser
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -19,9 +19,20 @@ ADMIN = os.path.join(DATA, 'admin.json')
 HIST = os.path.join(DATA, 'history.json')
 VERSIONS = os.path.join(DATA, 'versions')
 PREVIEW = os.path.join(CACHE, 'preview')
-for d in (DATA, OUT, CACHE, VERSIONS, PREVIEW, os.path.join(ASSETS, 'custom')): os.makedirs(d, exist_ok=True)
+UPLOADS = os.path.join(DATA, 'uploads')   # a copy of uploaded photos: pc/data survives replacing the program folder
+CUSTOM = os.path.join(ASSETS, 'custom')   # where the generator reads them
+for d in (DATA, OUT, CACHE, VERSIONS, PREVIEW, UPLOADS, CUSTOM): os.makedirs(d, exist_ok=True)
+
+
+def sync_uploads():
+    """Uploaded photos live in pc/data/uploads and generator/assets/custom: copy whatever one of them lacks."""
+    for a, b in ((CUSTOM, UPLOADS), (UPLOADS, CUSTOM)):
+        for name in os.listdir(a):
+            src, dst = os.path.join(a, name), os.path.join(b, name)
+            if os.path.isfile(src) and not name.startswith('.') and not os.path.exists(dst): shutil.copy2(src, dst)
 
 sys.path.insert(0, GEN)
+sys.path.insert(0, HERE)
 from kpgen.styles import STYLES, DEFAULT, HERO_PAGES, pages   # noqa: E402
 from kpgen.profiles import PROFILES, NPL10, TRAILERS         # noqa: E402
 
@@ -86,9 +97,11 @@ def preview(kind, q):
         key = q.get('page', ['cover'])[0]
         args = (style, key, path, f('fx', 0.5), f('fy', 0.45), f('opacity', 0.18))
     else:
-        args = (style, path, q.get('kind', ['tile'])[0])
+        z = f('zoom', 1)
+        pos = dict(zoom=max(1.0, min(4.0, z)), fx=f('fx', 0.5), fy=f('fy', 0.5)) if 'zoom' in q else None
+        args = (style, path, q.get('kind', ['tile'])[0], 360, pos)
     st = os.stat(R.asset(path))
-    h = hashlib.sha1(repr((kind, args, st.st_size, st.st_mtime_ns, 'p2')).encode()).hexdigest()
+    h = hashlib.sha1(repr((kind, args, st.st_size, st.st_mtime_ns, 'p3')).encode()).hexdigest()
     cached = os.path.join(PREVIEW, h + '.jpg')
     if os.path.exists(cached):
         with open(cached, 'rb') as fh: return fh.read()
@@ -365,9 +378,18 @@ class H(BaseHTTPRequestHandler):
             if ext == '.webp':   # python-pptx / LibreOffice: keep to PNG
                 from PIL import Image; import io
                 b = io.BytesIO(); Image.open(io.BytesIO(data)).save(b, 'PNG'); data = b.getvalue(); ext = '.png'
-            rel = f"custom/{hashlib.sha1(data).hexdigest()[:16]}{ext}"
-            with open(os.path.join(ASSETS, rel), 'wb') as f: f.write(data)
+            name = f"{hashlib.sha1(data).hexdigest()[:16]}{ext}"
+            for d in (CUSTOM, UPLOADS):
+                with open(os.path.join(d, name), 'wb') as f: f.write(data)
+            rel = 'custom/' + name
             return self.send(200, {'path': rel})
+        if p == '/api/import':
+            name = unquote(self.headers.get('X-Filename') or 'table.xlsx')
+            data = self.body()
+            if not data: return self.send(400, {'error': 'Порожній файл'})
+            from tables import read_table
+            try: return self.send(200, {'name': name, 'sheets': read_table(name, data)})
+            except ValueError as e: return self.send(400, {'error': str(e)})
         if p == '/api/generate':
             try: body = json.loads(self.body())
             except ValueError: return self.send(400, {'error': 'Неправильний JSON'})
@@ -389,6 +411,7 @@ class H(BaseHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--port', type=int, default=8765); ap.add_argument('--no-browser', action='store_true')
     a = ap.parse_args()
+    sync_uploads()
     srv = ThreadingHTTPServer(('127.0.0.1', a.port), H)
     url = f'http://127.0.0.1:{a.port}/'
     print(f'Конфігуратор КП: {url}  (зупинити: Ctrl+C)')

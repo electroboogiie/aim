@@ -17,6 +17,16 @@ class ProfileError(SpecError):
     code = 2
 
 
+def _pos(p):
+    """Admin framing of a tile photo: {zoom >= 1, fx, fy in 0..1} or None."""
+    if not isinstance(p, dict): return None
+    try:
+        z = max(1.0, min(4.0, float(p.get('zoom', 1)))); fx = min(1.0, max(0.0, float(p.get('fx', 0.5)))); fy = min(1.0, max(0.0, float(p.get('fy', 0.5))))
+    except (TypeError, ValueError):
+        return None
+    return None if z == 1.0 and fx == 0.5 and fy == 0.5 else dict(zoom=z, fx=fx, fy=fy)
+
+
 def _s(v): return '' if v is None else str(v)
 
 
@@ -83,7 +93,8 @@ def validate(spec):
     if len(rows) > MAX_ROWS: raise SpecError(f'Забагато позицій для сторінки «Вартість»: {len(rows)} (максимум {MAX_ROWS}).')
     rows = [dict(no=r.get('no', i), title=_s(r.get('title')), desc=_s(r.get('desc')), qty=r.get('qty', 1),
                  price_text=_s(r.get('price_text')), item_id=r.get('item_id'), kind=r.get('kind'),
-                 photo=_photo(r.get('photo'), f'позиції {i}'), photo_force=bool(r.get('photo_force')))
+                 photo=_photo(r.get('photo'), f'позиції {i}'), photo_force=bool(r.get('photo_force')),
+                 photo_pos=_pos(r.get('photo_pos')))
             for i, r in enumerate(rows, 1)]
     terms = [dict(title=_s(t.get('title')), text=_s(t.get('text'))) for t in (spec.get('terms') or [])]
     if len(terms) > MAX_TERMS: raise SpecError(f'Забагато умов співпраці: {len(terms)} (максимум {MAX_TERMS}).')
