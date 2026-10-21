@@ -49,7 +49,7 @@ TRUCK_TILES_PTO = [('Лісовозна платформа', 'надрамник
                    ('Гідробак у зборі', 'з оливою гідравлічною {oil} л', None), ('Насос аксіально-поршневий', '{pump}', 'pump'),
                    ('Коробка відбору потужності', 'КВП з карданним приводом і кнопкою керування', 'pto'),
                    ('Кран {model}', 'з ротатором {rotator} т і захватом {grapple} м²', None),
-                   ('Гідролінії і світло', 'РВТ, задні ліхтарі, підсвітка номера', None), ('Монтаж', 'без нарощування рами автомобіля', None)]
+                   ('Гідролінії і світло', 'РВТ, задні ліхтарі, підсвітка номера', None), ('{last}', '{last_sub}', None)]
 TILES = {'crane': None, 'base_outriggers': 'prod/tile_base.png', 'tank': 'prod/tile_tank.png', 'seat': 'prod/tile_seat.png'}
 
 
@@ -407,6 +407,9 @@ class Ultra:
         oil = next((m.group(1) for r in rows for m in [re.search(r'олива.*?(\d+)\s*л', r.get('title') or '', re.I)] if m), '90')
         pump = next((r for r in rows if re.search(r'насос', r.get('title') or '', re.I)), None)
         pm = re.search(r'PBF\S+', (pump or {}).get('title') or cd)
+        frame_in = any(re.search(r'подовження рами', r.get('title') or '', re.I) for r in rows) or 'подовження рами автомобіля' in cd
+        last = (('Подовження рами', 'лонжерони шасі з підсилювальними накладками') if frame_in else
+                ('Монтаж', 'без подовження рами автомобіля') if 'без подовження' in cd else ('Монтаж', 'встановлення крана на платформу'))
         has = dict(pump=pump is not None or 'насос' in cd.lower(), pto=any('КВП' in (r.get('title') or '') for r in rows) or 'коробка відбору' in cd.lower())
         lead = (f"Переобладнуємо вантажівку {t} у лісовоз для перевезення колод і брусів: бортова платформа зі стійками, "
                 f"піраміда з аутригерами під кран-маніпулятор {self.m}, гідросистема і монтаж." if frame else
@@ -415,9 +418,9 @@ class Ultra:
         D.text(s, 0.5, 6.87, 7.27, 0.9, [lead, cd[:1].upper() + cd[1:]], 10.5 if frame else 9.5, (210, 213, 218), spacing=1.2)
         fm = dict(stakes=self.truck_spec('stakes', '4'), wall=self.truck_spec('wall', '6'), length=self.truck_spec('length', '5'),
                   model=self.m, rotator=cs['rotator_t'], grapple=cs['grapple_m2'], oil=oil,
-                  pump=f'{pm.group(0).rstrip(",;")}, привід гідросистеми крана' if pm else 'привід гідросистеми крана')
+                  pump=f'{pm.group(0).rstrip(",;")}, привід гідросистеми крана' if pm else 'привід гідросистеми крана', last=last[0], last_sub=last[1])
         tiles = [(a, b.replace('90 л', '{oil} л')) for a, b in TRUCK_TILES] if frame else \
-                [(a, b) for a, b, k in TRUCK_TILES_PTO if not k or has[k]]
+                [(a.format(**fm), b) for a, b, k in TRUCK_TILES_PTO if not k or has[k]]
         tw, gap = (7.27 - 0.15) / 2, 0.12; rh = min(0.68, (10.85 - 7.85 - gap * 3) / 4)
         for i, (a, b) in enumerate(tiles[:8]):
             x, y = 0.5 + (i % 2) * (tw + 0.15), 7.85 + (i // 2) * (rh + gap)
