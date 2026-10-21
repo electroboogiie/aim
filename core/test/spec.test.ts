@@ -143,3 +143,15 @@ test("BMF trailer kit: trailer block for the generator, Parker option adds the v
   assert.equal(spec.crane?.specs.valve, "Parker P70 Wireless");
   assert.match(spec.rows.find((r) => r.item_id === spec.crane?.id)!.desc, /Parker P70/);
 });
+
+test("toolbox: 1 or 2 pieces, price × pieces, the card says how many", () => {
+  const sel = (qty?: number) => ({ kit_type: "npl_crane", date: "2026-10-18",
+    selection: { slots: { trailer: "npl10", crane: "bmf750" }, choices: {}, accessories: [{ id: "ee_toolbox", price_uah: 10000, ...(qty ? { qty } : {}) }] } });
+  const one = quote(c, s, noRate, sel()), two = quote(c, s, noRate, sel(2)), many = quote(c, s, noRate, sel(5));
+  assert.equal(one.accessories[0].price_uah, 10000);
+  assert.equal(two.accessories[0].price_uah, 20000);
+  assert.equal(two.accessories[0].qty, 2);
+  assert.equal(many.accessories[0].qty, 2, "no more than max_qty");
+  assert.equal(two.total_uah - one.total_uah, 10000);
+  assert.match(buildKpSpec(c, s, two, meta).accessories[0].title, /— 2 шт$/);
+});

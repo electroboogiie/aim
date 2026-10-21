@@ -1,6 +1,6 @@
 // Pricing (docs/CONTRACTS.md §4): every result is UAH incl. VAT.
 import type {
-  Catalog, Item, ItemUnit, KitType, PriceRef, PriceRule, Quote, QuoteChoice, QuoteInput, QuoteRow, RateInfo, RefPoint, Settings,
+  Accessory, Catalog, Item, ItemUnit, KitType, PriceRef, PriceRule, Quote, QuoteChoice, QuoteInput, QuoteRow, RateInfo, RefPoint, Settings,
 } from "./types.js";
 import {
   accessoryById, accessoryDesc, accessoryStatus, choiceIsStandard, choiceOption, companyById, findBundle, itemById, itemDesc, kitTitle, kitTypeById,
@@ -173,6 +173,12 @@ export function priceRule(rule: PriceRule, ctx: PriceContext, label: string): Pr
   }
 }
 
+/** Pieces of an accessory: 1 unless it allows several (max_qty). */
+export function accessoryQty(def: Accessory, v: number | null | undefined): number {
+  const max = def.max_qty ?? 1;
+  return typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(1, Math.round(v))) : 1;
+}
+
 /** Quantity of a unit item: the manager's value within [min, max], else the default. */
 export function unitQty(unit: ItemUnit, v: number | undefined): number {
   if (typeof v !== "number" || !Number.isFinite(v) || v <= 0) return unit.default;
@@ -321,9 +327,14 @@ export function quote(c: Catalog, settings: Settings, rate: RateInfo | null | un
     const def = accessoryById(c, a.id)!;
     const variant = a.variant ? (def.variants ?? []).find((v) => v.id === a.variant) : undefined;
     const title = variant ? `${def.title}: ${variant.title}` : def.title;
+    const qty = accessoryQty(def, a.qty);
     let p: Priced;
     if (typeof a.price_uah === "number") p = { price: a.price_uah, text: formatUah(a.price_uah), breakdown: "ціна вказана вручну", warnings: [] };
     else p = priceRule(def.price, ctx, title);
+    if (qty > 1 && p.price !== null) {
+      const v = p.price * qty;
+      p = { ...p, price: v, text: formatUah(v), breakdown: `${p.breakdown} × ${qty} шт` };
+    }
     absorb(acc, p, title);
     if (p.price === null) onRequestAcc.push(title);
     if (accessoryStatus(c, def, items) === "unconfirmed") {
@@ -331,7 +342,7 @@ export function quote(c: Catalog, settings: Settings, rate: RateInfo | null | un
       acc.warnings.push(`Сумісність опції «${def.title}» з ${joinUk(with_, "і")} не підтверджена виробником — уточніть під замовлення.`);
     }
     const row: QuoteRow = {
-      no: i + 1, item_id: def.id, title, desc: accessoryDesc(c, def, items, a.variant), qty: 1, price_uah: p.price,
+      no: i + 1, item_id: def.id, title, desc: accessoryDesc(c, def, items, a.variant), qty, price_uah: p.price,
       price_text: p.text, breakdown: p.breakdown, group: def.group,
     };
     const photo = variant?.photo || def.photo;

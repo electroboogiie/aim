@@ -61,7 +61,7 @@ function confirmBox(text, okText, onOk) {
 function origUah(rule) { return rule && rule.mode === "ref" && typeof rule.uah === "number" ? rule.uah : null; }
 const eurRate = () => num(admin.eur?.rate);
 const fmtN = (n, d = 2) => (n == null ? "—" : Number(n).toLocaleString("uk-UA", { maximumFractionDigits: d }));
-const PRICE_MODES = { manual: "вручну, ₴", eur: "€ × коеф. × курс", bom: "з матеріалів", sum: "сума позицій" };
+const PRICE_MODES = { manual: "вручну, ₴", eur: "€ × коеф. × курс", bom: "з калькуляції", sum: "сума позицій" };
 const PKINDS = ["items", "bundles", "accessories"];
 /** Price mode of a position: set in the settings, else € for positions with a price in €, else manual. */
 function priceMode(rec, it) { return rec?.mode || (num(rec?.eur) != null || it?.price_eur != null ? "eur" : "manual"); }
@@ -72,27 +72,47 @@ function matUah(m) {
   return p;
 }
 const matMap = () => new Map((admin.materials?.list || []).map((m) => [m.id, m]));
-/** Cost of an own-production position from its materials list: Σ qty × price, × coefficient, + other costs. */
-function bomCost(id) {
-  const b = admin.bom?.[id]; if (!b?.rows?.length) return null;
-  const mats = matMap(); let cost = 0; const miss = [];
+const labMap = () => new Map((admin.labour || []).map((w) => [w.id, w]));
+/** Calculations by the product name from 1C («Готовий виріб "Місце оператора в зборі"…»): such a row in another calculation is a sub-assembly. */
+const specByName = () => new Map(Object.entries(admin.bom || {}).filter(([, b]) => b.title && b.rows?.length).map(([id, b]) => [normName(b.title), id]));
+/**
+ * Cost of an own-production position from its calculation: materials Σ qty × price (a sub-assembly row takes the cost of its own
+ * calculation) + works Σ hours × rate, × coefficient, + other costs. ref = the calculation of another position is used.
+ */
+function bomCost(id, depth = 0) {
+  let b = admin.bom?.[id], via = null;
+  if (b?.ref && depth < 3) { via = b.ref; b = admin.bom?.[b.ref]; }
+  if (!b?.rows?.length) return null;
+  const mats = matMap(), works = labMap(), subs = depth < 3 ? specByName() : new Map();
+  let mat = 0, work = 0, hours = 0; const miss = [], subUsed = [];
   for (const r of b.rows) {
-    const m = mats.get(r.mat), p = matUah(m);
+    const q = num(r.qty) ?? 0;
+    if (r.work) {
+      const w = works.get(r.work), rate = num(w?.rate);
+      if (rate == null) { miss.push(w?.name || "роботу видалено"); continue; }
+      work += rate * q; hours += q; continue;
+    }
+    const m = mats.get(r.mat), sid = m ? subs.get(normName(m.name)) : null;
+    if (sid && sid !== id && sid !== via) {
+      const sc = bomCost(sid, depth + 1);
+      if (sc) { mat += sc.total * q; subUsed.push({ id: sid, name: m.name, cost: sc.total, qty: q }); continue; }
+    }
+    const p = matUah(m);
     if (p == null) { miss.push(m?.name || "матеріал видалено"); continue; }
-    cost += p * (num(r.qty) ?? 0);
+    mat += p * q;
   }
-  const coef = num(b.coef) ?? 1, extra = num(b.extra) ?? 0;
-  return { cost, coef, extra, total: cost * coef + extra, miss, n: b.rows.length };
+  const coef = num(b.coef) ?? 1, extra = num(b.extra) ?? 0, cost = mat + work;
+  return { cost, mat, work, hours, coef, extra, total: cost * coef + extra, miss, subs: subUsed, via, n: b.rows.length };
 }
 const rawBundle = (id) => cat0.bundles.find((b) => b.id === id);
 /**
  * Draft price of a position from the settings: base by mode (₴ by hand, € × coef × rate, materials, sum of the bundle's positions),
  * then markup, a final price by hand wins. lines = how it was calculated (shown under the row in the configurator).
  */
-function priceOf(kind, id, rule, it, depth = 0) {
+function priceOf(kind, id, rule, it, depth = 0, force = null) {
   const rec = admin.prices[kind]?.[id] || {};
   const step = settings.rounding_uah || 1, rate = eurRate();
-  const mode = kind === "bundles" ? (rec.mode === "sum" ? "sum" : "manual") : priceMode(rec, it);
+  const mode = force || (kind === "bundles" ? (rec.mode === "sum" ? "sum" : "manual") : priceMode(rec, it));
   const lines = []; let base = null, eur = null, coef = null, fromEur = null;
   if (mode === "eur") {
     eur = num(rec.eur) ?? it?.price_eur ?? null; coef = num(rec.coef) ?? 1;
@@ -101,9 +121,11 @@ function priceOf(kind, id, rule, it, depth = 0) {
   } else if (mode === "bom") {
     const b = bomCost(id);
     if (b) { base = core.roundTo(b.total, step);
-      lines.push(`матеріали ${uah(Math.round(b.cost))} (${b.n} поз.)` + (b.coef !== 1 ? ` × коеф. ${fmtN(b.coef, 3)}` : "") + (b.extra ? ` + інші витрати ${uah(b.extra)}` : "") + ` = ${uah(base)}`);
+      lines.push(`матеріали ${uah(Math.round(b.mat))}` + (b.work ? ` + роботи ${uah(Math.round(b.work))} (${fmtN(b.hours, 1)} год)` : "") + (b.coef !== 1 ? ` × коеф. ${fmtN(b.coef, 3)}` : "") + (b.extra ? ` + інші витрати ${uah(b.extra)}` : "") + ` = ${uah(base)}`);
+      if (b.via) lines.push(`калькуляція виробу «${productTitle(ownProducts().find((x) => x.id === b.via))}»`);
+      if (b.subs.length) lines.push(`вузли: ${b.subs.map((x) => `${x.name.replace(/^Готовий виріб\s*/i, "")} ${uah(Math.round(x.cost))}`).join(", ")}`);
       if (b.miss.length) lines.push(`без ціни: ${b.miss.slice(0, 4).join(", ")}${b.miss.length > 4 ? "…" : ""}`); }
-    else lines.push("розкладку матеріалів не задано");
+    else lines.push("калькуляцію виробу не задано");
   } else if (mode === "sum" && depth < 2) {
     const b = rawBundle(id); let sum = 0, ok = !!b;
     for (const iid of Object.values(b?.slots || {})) {
@@ -255,7 +277,7 @@ function normAdmin() {
   for (const k of ["styles", "photos", "prices", "texts", "catalog", "photo_history"]) admin[k] ??= {};
   for (const k of ["items", "accessories", "kits", "kinds", "kp_items", "pos"]) admin.photos[k] ??= {};
   admin.materials ??= { list: [], log: [] }; admin.materials.list ??= []; admin.materials.log ??= [];
-  admin.bom ??= {};
+  admin.bom ??= {}; admin.labour ??= [];
   for (const k of ["items", "bundles", "accessories"]) admin.prices[k] ??= {};
   admin.texts.terms ??= {}; admin.texts.cranes ??= {}; admin.texts.npl ??= {};
 }
@@ -576,18 +598,21 @@ function renderAccs() {
       const upd = (patch) => {
         const list2 = S.sel.accessories.filter((x) => x.id !== a.id);
         const cur = { id: a.id, ...(on || {}), ...patch };
-        if (cur.on !== false) list2.push({ id: cur.id, variant: cur.variant ?? null, price_uah: cur.price_uah ?? null });
+        if (cur.on !== false) list2.push({ id: cur.id, variant: cur.variant ?? null, price_uah: cur.price_uah ?? null, ...(cur.qty > 1 ? { qty: cur.qty } : {}) });
         S.sel = { ...S.sel, accessories: list2 }; renderAccs(); renderQuote();
       };
       const vs = ka.variants.length ? h("select", { onchange: (e) => upd({ variant: e.target.value || null }) },
         h("option", { value: "" }, "варіант…"), ka.variants.map((v) => h("option", { value: v.id }, v.title))) : null;
       if (vs && on) vs.value = on.variant || "";
+      const qs = a.max_qty > 1 ? h("label", { class: "inline", style: "margin:4px 0 0" }, "Кількість",
+        h("select", { class: "sm", onchange: (e) => upd({ qty: Number(e.target.value) }) }, Array.from({ length: a.max_qty }, (_, i) => h("option", { value: i + 1 }, `${i + 1} шт`)))) : null;
+      if (qs) qs.querySelector("select").value = String(on?.qty || 1);
       const pin = h("input", { type: "number", placeholder: p ? String(p) : "ціна, ₴", value: on?.price_uah ?? "", onchange: (e) => upd({ price_uah: num(e.target.value) }) });
       box.append(h("div", { class: "acc" + (bad ? " bad" : "") }, h("input", { type: "checkbox", disabled: bad, checked: !!on, onchange: (e) => upd({ on: e.target.checked }) }),
         a.photo ? lbImg(asset(a.photo), null, { alt: a.title }) : h("span"),
-        h("div", {}, h("b", {}, a.title), (a.base_for || []).includes(S.kt.id) ? h("span", { class: "badge" }, "базова") : null, a.kp_uses ? h("span", { class: "badge gray", title: "скільки ваших КП згадують цю опцію" }, `у ${a.kp_uses} КП`) : null, h("small", {}, ka.desc), on && vs ? vs : null,
+        h("div", {}, h("b", {}, a.title), (a.base_for || []).includes(S.kt.id) ? h("span", { class: "badge" }, "базова") : null, a.kp_uses ? h("span", { class: "badge gray", title: "скільки ваших КП згадують цю опцію" }, `у ${a.kp_uses} КП`) : null, h("small", {}, ka.desc), on && vs ? vs : null, on && qs ? qs : null,
           ka.status === "unconfirmed" ? h("small", {}, "сумісність не підтверджена") : null),
-        h("div", { class: "num" }, on ? pin : h("small", {}, p ? uah(p) : "за запитом"))));
+        h("div", { class: "num" }, on ? pin : h("small", {}, p ? uah(p) + (a.max_qty > 1 ? " / шт" : "") : "за запитом"))));
     }
   }
 }
@@ -1379,7 +1404,9 @@ function renderAccEditor() {
             h("button", { class: "sm", onclick: () => relDialog(a.title, a, kitsOfG, null, (r) => set({ requires: r.requires.length ? r.requires : undefined, excludes: r.excludes.length ? r.excludes : undefined })) }, "✎ Зв’язки"))),
         h("div", { class: "ed-side" },
           h("label", { class: "toggle" }, h("input", { type: "checkbox", checked: !a.disabled, onchange: (e) => set({ disabled: !e.target.checked }) }), a.disabled ? "вимкнено" : "увімкнено"),
-          h("b", {}, price), h("button", { class: "sm", onclick: () => sub("a-prices") }, "Ціна"),
+          h("b", {}, price + (a.max_qty > 1 ? " / шт" : "")), h("button", { class: "sm", onclick: () => sub("a-prices") }, "Ціна"),
+          h("label", { class: "inline", style: "margin:0", title: "скільки штук можна вибрати в конфігураторі" }, "до", h("input", { type: "number", min: 1, max: 9, value: a.max_qty || 1, style: "width:52px",
+            onchange: (e) => set({ max_qty: Math.max(1, Math.min(9, Math.round(num(e.target.value) || 1))) }) }), "шт"),
           h("select", { class: "sm", value: a.group, onchange: (e) => set({ group: e.target.value }) }, Object.entries(GROUPS).map(([k, t]) => h("option", { value: k }, t))),
           custom ? h("button", { class: "sm danger", onclick: () => confirmBox(`Видалити опцію «${a.title}»?`, "Видалити", () => {
             A.custom = A.custom.filter((x) => x.id !== a.id); saveAdmin(); renderAccEditor(); }) }, "Видалити") : null));
@@ -1502,7 +1529,6 @@ function fixBadge() {
   const n = pendingFix().length, b = $("#fixCount");
   if (b) { b.textContent = n ? String(n) : ""; b.hidden = !n; }
 }
-let ownProduct = null;
 function renderPrices() {
   cat = effCatalog();
   $("#roundStep").textContent = settings.rounding_uah || 1;
@@ -1562,14 +1588,14 @@ function priceRow(kind, x) {
     const r = rec(), p = priceOf(kind, x.id, x.price, it), fx = fixedOf(kind, x.id);
     const set = (k, isNum = true) => (e) => { const R = (admin.prices[kind][x.id] ??= {}); const v = isNum ? num(e.target.value) : e.target.value;
       if (v == null || v === "") delete R[k]; else R[k] = v; if (!Object.keys(R).length) delete admin.prices[kind][x.id]; saveAdmin(); draw(); fixBadge(); };
-    const modes = kind === "bundles" ? ["manual", "sum"] : kind === "items" ? ["manual", "eur", "bom"] : ["manual", "eur"];
+    const modes = kind === "bundles" ? ["manual", "sum"] : ["manual", "eur", "bom"];
     const modeSel = h("select", { class: "sm", value: p.mode, onchange: set("mode", false) }, modes.map((m) => h("option", { value: m }, PRICE_MODES[m])));
     let data;
     if (p.mode === "eur") data = h("div", { class: "inline", style: "margin:0;flex-wrap:nowrap" }, "€", h("input", { type: "number", value: r.eur ?? "", placeholder: x.price_eur ?? "—", style: "width:90px", onchange: set("eur") }),
       "× коеф.", h("input", { type: "number", step: 0.01, value: r.coef ?? "", placeholder: "1", style: "width:64px", onchange: set("coef") }));
     else if (p.mode === "bom") { const b = bomCost(x.id);
-      data = h("div", { class: "inline", style: "margin:0" }, h("small", {}, b ? `матеріали ${uah(Math.round(b.cost))}, ${b.n} поз.` + (b.miss.length ? `, без ціни: ${b.miss.length}` : "") : "розкладки ще немає"),
-        h("button", { class: "sm", onclick: () => { ownProduct = x.id; ownTab = "bom"; sub("a-own"); } }, "Розкладка")); }
+      data = h("div", { class: "inline", style: "margin:0" }, h("small", {}, b ? `собівартість ${uah(Math.round(b.total))}` + (b.work ? ` (роботи ${fmtN(b.hours, 1)} год)` : "") + (b.miss.length ? `, без ціни: ${b.miss.length}` : "") : "калькуляції ще немає"),
+        h("button", { class: "sm", onclick: () => { ownProduct = x.id; ownTab = "bom"; sub("a-own"); } }, "Калькуляція")); }
     else if (p.mode === "sum") data = h("div", {}, h("small", {}, p.lines.filter((l) => !l.startsWith("доплата")).join(" + ")),
       h("div", { class: "inline", style: "margin:0" }, "доплата, ₴", h("input", { type: "number", value: r.extra ?? "", placeholder: "0", style: "width:90px", onchange: set("extra") })));
     else data = h("input", { type: "number", value: r.base ?? "", placeholder: origUah(x.price) ?? "—", style: "width:110px", title: "порожньо — ціна з останньої КП", onchange: set("base") });
@@ -1620,7 +1646,7 @@ async function renderFix() {
       await fixPrices(list, `зафіксовано цін: ${list.length}`); toast(`Зафіксовано: ${list.length}. Перевірте КП з історії нижче.`); renderFix(); fixBadge();
     } }, "Зафіксувати вибрані") : null),
     pend.length ? h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["", "Позиція", "Зараз у КП", "Стане", "Різниця", "Як рахується"].map((t, i) => h("th", { class: i > 1 && i < 5 ? "num" : "" }, t)))), tb))
-      : h("p", { class: "hint" }, "Тут з’являються ціни, що змінилися в «Ціни позицій» чи «Власне виробництво» (курс €, коефіцієнти, матеріали, націнка, фінальна ціна). До фіксації КП рахуються за попередніми цінами.")));
+      : h("p", { class: "hint" }, "Тут з’являються ціни, що змінилися в «Ціни позицій» чи «Розрахунок ціни» (курс €, коефіцієнти, калькуляції, націнка, фінальна ціна). До фіксації КП рахуються за попередніми цінами.")));
   // 2. fixed prices with a previous value: undo
   const withPrev = [];
   for (const kind of PKINDS) for (const [id, f] of Object.entries(admin.fixed?.[kind] || {})) if (f.prev) withPrev.push({ kind, id, f, title: pricedPositions().find((p) => p.kind === kind && p.id === id)?.title || id });
@@ -1689,57 +1715,214 @@ async function regenerateEntry(e, q, sel) {
   return r;
 }
 
-// ------------------------------------------------------------------ settings: own production — materials, product lists, import, log
-let ownTab = "mats", matQuery = "", matGroup = "", importState = null;
+// ------------------------------------------------------------------ settings: price calculation — products, works, materials, import, result, log
+let ownProduct = null, ownTab = "specs", matQuery = "", matGroup = "", importState = null;
 const M = () => admin.materials;
 const newMatId = () => "m_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-const normName = (s) => String(s ?? "").toLowerCase().replace(/[«»"'`’]/g, "").replace(/[\s ]+/g, " ").trim();
-const normCode = (s) => String(s ?? "").replace(/[\s ]+/g, "").toLowerCase();
+const newWorkId = () => "w_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+const normName = (s) => String(s ?? "").toLowerCase().replace(/[«»"'`’]/g, "").replace(/[\s ]+/g, " ").trim();
+const normCode = (s) => String(s ?? "").replace(/[\s ]+/g, "").toLowerCase();
+/** Work name without the 1C suffix «(операція)». */
+const workName = (s) => String(s ?? "").replace(/\s*\(операція\)\s*$/i, "").trim();
 function parsePrice(v) {
   if (typeof v === "number") return v;
-  const s = String(v ?? "").replace(/[\s ₴€грнuahUAHEUR]/g, "").replace(",", ".");
+  const s = String(v ?? "").replace(/[\s ₴€грнuahUAHEUR]/g, "").replace(",", ".");
   return s && !isNaN(Number(s)) ? Number(s) : null;
 }
 const curOf = (v) => (/eur|€|євро/i.test(String(v ?? "")) ? "EUR" : "UAH");
 const curSign = (c) => (c === "EUR" ? "€" : "₴");
-/** Change log entry: changes = [{id, name, old: {price, cur} | null (created), new: {price, cur} | null (deleted)}], bom = [{product, old, new}]. */
-function logChange(note, changes, bom = []) {
-  if (!changes.length && !bom.length) return;
-  M().log.unshift({ id: "l_" + Date.now().toString(36), at: nowStr(), note, changes, bom });
+/**
+ * Change log entry: changes = [{id, name, kind?: "work", old: {price, cur} | null (created), new: {price, cur} | null (deleted)}]
+ * (for works price = rate), bom = [{product, old, new}], prices = [{kind, id, old, new}] (settings price records).
+ */
+function logChange(note, changes, bom = [], prices = []) {
+  if (!changes.length && !bom.length && !prices.length) return;
+  M().log.unshift({ id: "l_" + Date.now().toString(36), at: nowStr(), note, changes, bom, prices });
   if (M().log.length > 200) M().log.length = 200;
 }
 const usedIn = (id) => Object.entries(admin.bom).filter(([, b]) => (b.rows || []).some((r) => r.mat === id)).map(([p]) => p);
+const workUsedIn = (id) => Object.entries(admin.bom).filter(([, b]) => (b.rows || []).some((r) => r.work === id)).map(([p]) => p);
+const ACC_IDS = () => new Set([...cat0.accessories, ...(CA().accs?.custom || [])].map((a) => a.id));
+/** kind in admin.prices / admin.fixed of a product: options (accessories) or positions (items). */
+const prodKind = (id) => (ACC_IDS().has(id) ? "accessories" : "items");
 function ownProducts() {
   const own = new Set(["own_component", "npl", "truck_conversion", "custom"]);
   const all = [...cat0.items, ...(CA().items?.custom || []).map((x) => ({ family: "custom", kind: "component", ...x }))];
-  return [...all.filter((i) => own.has(i.family)), ...all.filter((i) => !own.has(i.family) && i.kind !== "crane")];
+  const accs = [...cat0.accessories, ...(CA().accs?.custom || [])].map((a) => ({ ...a, family: "acc", kind: "accessory" }));
+  return [...all.filter((i) => own.has(i.family)), ...accs.filter((a) => !a.disabled || admin.bom[a.id]?.rows?.length),
+    ...all.filter((i) => !own.has(i.family) && i.kind !== "crane")];
 }
-const productTitle = (p) => p ? (p.title + (p.specs?.crane ? ` — для ${p.specs.crane}` : p.model && !p.title.includes(p.model) ? ` ${p.model}` : "")) : "";
+const productTitle = (p) => p ? (p.title + (p.specs?.crane ? ` — для ${p.specs.crane}` : p.model && !p.title.includes(p.model) ? ` ${p.model}` : "") + (p.family === "acc" ? " (опція)" : "")) : "";
+const prodById = (id) => ownProducts().find((x) => x.id === id);
+const prodPrice = (id, force = null) => { const p = prodById(id); return priceOf(prodKind(id), id, p?.price, p, 0, force); };
+const kpPrice = (kind, id, rule) => { const fx = fixedOf(kind, id); return fx ? fx.price : origUah(rule); };
+const hasCalc = (id) => !!(admin.bom[id]?.rows?.length || admin.bom[id]?.ref);
+function prodOptions(sel, filter = () => true) {
+  const prods = ownProducts().filter(filter);
+  const grp = (t, list) => list.length ? h("optgroup", { label: t }, list.map((x) => h("option", { value: x.id, selected: x.id === sel }, productTitle(x) + (hasCalc(x.id) ? " ✓" : "")))) : null;
+  return [grp("Власне виробництво", prods.filter((x) => x.family !== "acc" && ["own_component", "npl", "truck_conversion", "custom"].includes(x.family))),
+    grp("Опції", prods.filter((x) => x.family === "acc")), grp("Інші позиції", prods.filter((x) => x.family !== "acc" && !["own_component", "npl", "truck_conversion", "custom"].includes(x.family)))];
+}
 function renderOwn() {
   const seg = $("#ownSeg"); seg.innerHTML = "";
-  for (const [k, t] of [["mats", "Матеріали і ціни"], ["bom", "Розкладка виробів"], ["import", "Імпорт з Excel"], ["log", "Журнал і відкат"]])
-    seg.append(h("button", { class: ownTab === k ? "on" : "", onclick: () => { ownTab = k; renderOwn(); } }, t));
+  const tabs = [["specs", "Вироби"], ["bom", "Калькуляція виробу"], ["labour", "Розцінки робіт"], ["mats", "Матеріали і ціни"], ["import", "Імпорт з Excel"], ["result", "Результат оновлення"], ["log", "Журнал і відкат"]];
+  for (const [k, t] of tabs) seg.append(h("button", { class: ownTab === k ? "on" : "", onclick: () => { ownTab = k; renderOwn(); } }, t, k === "result" && admin.calc_result?.rows?.length ? h("b", { class: "cnt" }, String(admin.calc_result.rows.length)) : null));
   const box = $("#ownBox"); box.innerHTML = "";
-  ({ mats: ownMaterials, bom: ownBom, import: ownImport, log: ownLog })[ownTab](box);
+  ({ specs: ownSpecs, bom: ownBom, labour: ownLabour, mats: ownMaterials, import: ownImport, result: ownResult, log: ownLog })[ownTab](box);
 }
+const openCalc = (id) => { ownProduct = id; ownTab = "bom"; renderOwn(); };
+
+// ---- products overview
+function ownSpecs(box) {
+  const prods = ownProducts().filter((p) => hasCalc(p.id));
+  box.append(h("div", { class: "card" }, h("div", { class: "inline", style: "margin:0" }, h("b", {}, "Завантажити калькуляцію виробу з 1С"),
+    importFileInput("spec"), h("span", { class: "hint", style: "margin:0" }, "Файл «Специфікація» (.xlsx або .xls): матеріали з кількістю і тех. операції з годинами. Виріб визначиться за назвою, його можна змінити перед застосуванням.")),
+    h("div", { class: "inline" }, h("b", {}, "Оновити ціни матеріалів"), importFileInput("prices"), h("span", { class: "hint", style: "margin:0" }, "Файл складу «Найменування — ціна»: після імпорту видно, як змінилась собівартість і ціна кожного виробу.")),
+    h("div", { class: "inline" }, h("b", {}, "Готові ціни позицій КП"), importFileInput("ready"), h("span", { class: "hint", style: "margin:0" }, "Файл «Найменування — ціна» з фінальними цінами (крани, осі, гальма…): позиції КП знаходяться за назвою, кожну можна змінити."))));
+  if (!prods.length) { box.append(h("p", { class: "hint" }, "Калькуляцій ще немає. Завантажте файл калькуляції з 1С або відкрийте «Калькуляція виробу» і додайте матеріали й роботи вручну.")); return; }
+  const tb = h("tbody");
+  for (const p of prods) {
+    const kind = prodKind(p.id), b = bomCost(p.id), pr = prodPrice(p.id), calc = prodPrice(p.id, "bom"), inKp = kpPrice(kind, p.id, p.price);
+    const B = admin.bom[p.id];
+    tb.append(h("tr", { class: pr.mode === "bom" && inKp !== pr.price ? "pending" : "" },
+      h("td", {}, h("b", {}, productTitle(p)), h("small", { style: "display:block" }, B.ref ? `калькуляція виробу «${productTitle(prodById(B.ref))}»` : (B.title || "") + (B.at ? ` · ${B.at}` : ""))),
+      h("td", { class: "num" }, b ? uah(Math.round(b.mat)) : "—"),
+      h("td", { class: "num" }, b?.work ? `${uah(Math.round(b.work))}` : "—", b?.hours ? h("small", { style: "display:block" }, `${fmtN(b.hours, 1)} год`) : null),
+      h("td", { class: "num" }, h("b", {}, b ? uah(Math.round(b.total)) : "—"), b?.miss.length ? h("small", { class: "minus", style: "display:block" }, `без ціни: ${b.miss.length}`) : null),
+      h("td", { class: "num" }, calc.price == null ? "—" : uah(calc.price), calc.mk ? h("small", { style: "display:block" }, `націнка ${fmtN(calc.mk)} %`) : null),
+      h("td", { class: "num" }, inKp == null ? "за запитом" : uah(inKp), h("small", { style: "display:block" }, pr.mode === "bom" ? (pr.fin != null ? "фінальна вручну" : "з калькуляції") : "ціна вручну")),
+      h("td", {}, h("button", { class: "sm", onclick: () => openCalc(p.id) }, "Відкрити"))));
+  }
+  box.append(h("div", { class: "sec-card" }, h("div", { class: "tbl-wrap" }, h("table", { class: "prices" },
+    h("thead", {}, h("tr", {}, ["Виріб", "Матеріали", "Роботи", "Собівартість", "Ціна з калькуляції", "У КП зараз", ""].map((t, i) => h("th", { class: i && i < 6 ? "num" : "" }, t)))), tb))));
+}
+
+// ---- one product: materials, works, totals, price
+function ownBom(box) {
+  const prods = ownProducts();
+  if (!prods.some((p) => p.id === ownProduct)) ownProduct = prods.find((p) => hasCalc(p.id))?.id || prods[0]?.id;
+  const p = prodById(ownProduct), kind = prodKind(ownProduct);
+  const B0 = (admin.bom[ownProduct] ??= { rows: [], coef: 1, extra: 0 });
+  const mats = matMap(), list = M().list, works = admin.labour, subs = specByName();
+  const R = () => (admin.prices[kind][ownProduct] ??= {});
+  const pr = prodPrice(ownProduct), calc = prodPrice(ownProduct, "bom"), bc = bomCost(ownProduct), fx = fixedOf(kind, ownProduct);
+  const label = (m) => (m.code ? m.code + " · " : "") + m.name;
+  const byLabel = new Map(list.map((m) => [label(m), m]));
+  const save = (rerender = true) => { saveAdmin(); if (rerender) renderOwn(); fixBadge(); };
+  const logBom = (note, old) => { M().log.unshift({ id: "l_" + Date.now().toString(36), at: nowStr(), note, changes: [], bom: [{ product: ownProduct, old, new: structuredClone(admin.bom[ownProduct]) }] }); };
+  const refSel = h("select", { class: "sm", onchange: (e) => { const old = structuredClone(B0); if (e.target.value) B0.ref = e.target.value; else delete B0.ref; logBom(`калькуляція «${productTitle(p)}»: ${B0.ref ? "як у " + productTitle(prodById(B0.ref)) : "своя"}`, old); save(); } },
+    h("option", { value: "" }, "своя калькуляція"), prods.filter((x) => x.id !== ownProduct && admin.bom[x.id]?.rows?.length && !admin.bom[x.id].ref).map((x) => h("option", { value: x.id, selected: B0.ref === x.id }, "як у: " + productTitle(x))));
+  box.append(h("div", { class: "card" }, h("div", { class: "inline", style: "margin:0" }, h("b", {}, "Виріб"),
+    h("select", { onchange: (e) => openCalc(e.target.value) }, prodOptions(ownProduct)), refSel,
+    h("span", {}, "Завантажити з 1С:"), importFileInput("spec", ownProduct)),
+    B0.title || B0.file ? h("p", { class: "hint", style: "margin:6px 0 0" }, `У 1С: ${B0.title || "—"}` + (B0.file ? ` · файл «${B0.file}»` : "") + (B0.at ? `, ${B0.at}` : "")) : null));
+  if (B0.ref) {
+    box.append(h("p", { class: "hint" }, `Ціна рахується за калькуляцією виробу «${productTitle(prodById(B0.ref))}». Щоб мати окрему, оберіть «своя калькуляція».`),
+      h("button", { class: "sm", onclick: () => openCalc(B0.ref) }, "Відкрити ту калькуляцію"));
+  } else {
+    // materials
+    const tb = h("tbody");
+    B0.rows.forEach((r, i) => {
+      if (r.work) return;
+      const m = mats.get(r.mat), sid = m ? subs.get(normName(m.name)) : null, sc = sid && sid !== ownProduct ? bomCost(sid) : null;
+      const pu = sc ? sc.total : matUah(m), q = num(r.qty) ?? 0;
+      const inp = h("input", { list: "matList", value: m ? label(m) : "", placeholder: "почніть вводити назву чи код", style: "min-width:280px;width:100%", onchange: (e) => {
+        const mm = byLabel.get(e.target.value) || list.find((x) => normName(x.name) === normName(e.target.value));
+        if (!mm) return toast("Такого матеріалу немає в довіднику — додайте його у «Матеріали і ціни»");
+        r.mat = mm.id; save(); } });
+      tb.append(h("tr", { class: pu != null ? "" : "pending" }, h("td", {}, inp, sc ? h("small", { style: "display:block" }, "вузол: ціна з калькуляції ", h("a", { href: "#", onclick: (e) => { e.preventDefault(); openCalc(sid); } }, productTitle(prodById(sid)))) : null),
+        h("td", { class: "num" }, h("input", { type: "text", inputmode: "decimal", value: r.qty ?? "", style: "width:72px", onchange: (e) => { r.qty = parsePrice(e.target.value); save(); } })),
+        h("td", {}, m?.unit || ""), h("td", { class: "num" }, sc ? uah(Math.round(sc.total)) : m ? (m.price == null ? "без ціни" : `${fmtN(m.price)} ${curSign(m.cur)}`) : "—"),
+        h("td", { class: "num" }, pu == null ? "—" : uah(Math.round(pu * q))),
+        h("td", {}, h("button", { class: "sm danger", onclick: () => { B0.rows.splice(i, 1); save(); } }, "×"))));
+    });
+    const nMat = B0.rows.filter((r) => !r.work).length, nWork = B0.rows.length - nMat;
+    box.append(h("datalist", { id: "matList" }, list.map((m) => h("option", { value: label(m) }))),
+      h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Матеріали і комплектуючі", h("small", {}, `${nMat} рядків · ${bc ? uah(Math.round(bc.mat)) : "—"}`)),
+        h("button", { class: "sm primary", disabled: !list.length, title: list.length ? "" : "спершу додайте матеріали", onclick: () => { B0.rows.push({ mat: list[0].id, qty: 1 }); save(); } }, "＋ Матеріал")),
+        nMat ? h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Матеріал чи комплектуючий", "К-сть", "Од.", "Ціна", "Сума", ""].map((t, i) => h("th", { class: i === 1 || i === 3 || i === 4 ? "num" : "" }, t)))), tb))
+          : h("p", { class: "hint" }, "Немає матеріалів. Завантажте калькуляцію з 1С або додайте рядки.")));
+    // works
+    const tw = h("tbody");
+    B0.rows.forEach((r, i) => {
+      if (!r.work) return;
+      const w = works.find((x) => x.id === r.work), q = num(r.qty) ?? 0, rate = num(w?.rate);
+      tw.append(h("tr", { class: rate != null ? "" : "pending" },
+        h("td", {}, h("select", { onchange: (e) => { r.work = e.target.value; save(); } }, works.map((x) => h("option", { value: x.id, selected: x.id === r.work }, x.name)))),
+        h("td", { class: "num" }, h("input", { type: "text", inputmode: "decimal", value: r.qty ?? "", style: "width:72px", onchange: (e) => { r.qty = parsePrice(e.target.value); save(); } })),
+        h("td", { class: "num" }, rate == null ? "—" : uah(rate)), h("td", { class: "num" }, rate == null ? "—" : uah(Math.round(rate * q))),
+        h("td", {}, h("button", { class: "sm danger", onclick: () => { B0.rows.splice(i, 1); save(); } }, "×"))));
+    });
+    box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Роботи (години)", h("small", {}, `${nWork} рядків · ${bc ? `${fmtN(bc.hours, 1)} год · ${uah(Math.round(bc.work))}` : "—"}`)),
+      h("button", { class: "sm primary", disabled: !works.length, title: works.length ? "" : "спершу додайте розцінки робіт", onclick: () => { B0.rows.push({ work: works[0].id, qty: 1 }); save(); } }, "＋ Робота")),
+      nWork ? h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Робота", "Години", "Розцінка, ₴/год", "Сума", ""].map((t, i) => h("th", { class: i && i < 4 ? "num" : "" }, t)))), tw))
+        : h("p", { class: "hint" }, works.length ? "Робіт немає." : "Розцінок робіт ще немає: вони з’являться після імпорту калькуляції або їх можна додати у «Розцінки робіт».")));
+  }
+  // totals and price
+  const auto = pr.mode === "bom" && pr.fin == null;
+  const fin = h("input", { type: "number", value: R().final ?? "", placeholder: calc.calc ?? "", style: "width:120px" });
+  box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Собівартість і ціна")),
+    h("div", { class: "bom-sum" },
+      h("div", {}, "Матеріали: ", h("b", {}, bc ? uah(Math.round(bc.mat)) : "—"), " · роботи: ", h("b", {}, bc ? uah(Math.round(bc.work)) : "—"), bc?.miss.length ? h("small", { class: "minus" }, ` без ціни: ${bc.miss.slice(0, 3).join(", ")}${bc.miss.length > 3 ? "…" : ""}`) : null),
+      B0.ref ? null : h("label", { class: "inline", style: "margin:0" }, "× коефіцієнт", h("input", { type: "number", step: 0.01, value: B0.coef ?? 1, style: "width:80px", onchange: (e) => { B0.coef = num(e.target.value) ?? 1; save(); } })),
+      B0.ref ? null : h("label", { class: "inline", style: "margin:0" }, "+ інші витрати, ₴", h("input", { type: "number", value: B0.extra ?? 0, style: "width:110px", onchange: (e) => { B0.extra = num(e.target.value) ?? 0; save(); } })),
+      h("div", {}, "Собівартість: ", h("b", {}, bc ? uah(core.roundTo(bc.total, settings.rounding_uah || 1)) : "—")),
+      h("label", { class: "inline", style: "margin:0" }, "Націнка, %", h("input", { type: "number", step: 0.5, value: R().markup ?? "", placeholder: "0", style: "width:72px", onchange: (e) => { const v = num(e.target.value); if (v == null) delete R().markup; else R().markup = v; save(); } })),
+      h("div", {}, "Ціна з калькуляції: ", h("b", {}, calc.calc == null ? "—" : uah(calc.calc)))),
+    h("div", { class: "price-pick" },
+      h("label", { class: "chk" }, h("input", { type: "radio", name: "pp", checked: auto, onchange: () => { R().mode = "bom"; delete R().final; save(); } }), h("span", {}, h("b", {}, "Автоматично"), " — ціна в КП = ціна з калькуляції, змінюється разом з цінами матеріалів і робіт")),
+      h("label", { class: "chk" }, h("input", { type: "radio", name: "pp", checked: pr.mode === "bom" && pr.fin != null, onchange: () => { R().mode = "bom"; R().final = num(fin.value) ?? calc.calc; save(); } }), h("span", {}, h("b", {}, "Вручну"), " — фінальна ціна, ₴ "), fin),
+      h("label", { class: "chk" }, h("input", { type: "radio", name: "pp", checked: pr.mode !== "bom", onchange: () => { delete R().mode; delete R().final; save(); } }), h("span", {}, h("b", {}, "Як була"), ` — ціна вручну з «Ціни позицій» (${uah(priceOf(kind, ownProduct, p?.price, p, 0, "manual").price)}), калькуляція лише для довідки`))),
+    h("div", { class: "inline" }, h("span", {}, "У КП зараз: ", h("b", {}, kpPrice(kind, ownProduct, p?.price) == null ? "за запитом" : uah(kpPrice(kind, ownProduct, p?.price)))), h("span", {}, " → нова: ", h("b", {}, pr.price == null ? "за запитом" : uah(pr.price))),
+      h("button", { class: "primary sm", disabled: pr.price == null || pr.price === kpPrice(kind, ownProduct, p?.price), onclick: async () => {
+        await fixPrices([{ kind, id: ownProduct, now: pr.price, lines: pr.lines }], `ціна «${productTitle(p)}» ${pr.price}`); toast("Ціну зафіксовано — нові КП рахуються з нею"); renderOwn(); fixBadge(); } }, "Зафіксувати для КП"),
+      h("button", { class: "sm", onclick: () => sub("a-fix") }, "Усі зміни цін і перерахунок КП →"))));
+  fin.onchange = () => { R().mode = "bom"; const v = num(fin.value); if (v == null) delete R().final; else R().final = v; save(); };
+}
+
+// ---- labour rates
+function ownLabour(box) {
+  const L = admin.labour;
+  const coef = h("input", { type: "number", step: 0.01, placeholder: "1,1", style: "width:80px" });
+  box.append(h("div", { class: "card" }, h("p", { class: "hint", style: "margin:0 0 8px" }, "Розцінка — гривень за годину роботи. Калькуляції беруть години з файлу 1С, а розцінку звідси: змінили розцінку — змінилась собівартість усіх виробів з цією роботою."),
+    h("div", { class: "inline", style: "margin:0" }, h("button", { class: "sm primary", onclick: () => { L.push({ id: newWorkId(), name: "Нова робота", rate: null }); logChange("додано роботу", [{ id: L.at(-1).id, kind: "work", name: "Нова робота", old: null, new: { price: null } }]); saveAdmin(); renderOwn(); } }, "＋ Робота"),
+      h("b", {}, "Усі розцінки ×"), coef, h("button", { class: "sm", onclick: () => { const k = num(String(coef.value).replace(",", ".")); if (!k) return toast("Вкажіть коефіцієнт");
+        const ch = []; for (const w of L) { if (num(w.rate) == null) continue; const old = w.rate; w.rate = Math.round(w.rate * k * 100) / 100; ch.push({ id: w.id, kind: "work", name: w.name, old: { price: old }, new: { price: w.rate } }); }
+        snapResult(`розцінки робіт × ${k}`, () => logChange(`розцінки робіт × ${k}`, ch)); } }, "Застосувати"))));
+  const tb = h("tbody");
+  for (const w of L) {
+    const u = workUsedIn(w.id);
+    tb.append(h("tr", {}, h("td", {}, h("input", { value: w.name, style: "min-width:420px;width:100%", onchange: (e) => { w.name = e.target.value.trim(); saveAdmin(); } })),
+      h("td", { class: "num" }, h("input", { type: "text", inputmode: "decimal", value: w.rate ?? "", style: "width:100px", onchange: (e) => { const old = w.rate; const v = parsePrice(e.target.value);
+        snapResult(`розцінка «${w.name}»`, () => { w.rate = v; logChange(`розцінка: ${w.name}`, [{ id: w.id, kind: "work", name: w.name, old: { price: old }, new: { price: v } }]); }); } })),
+      h("td", {}, u.length ? h("small", { title: u.map((x) => productTitle(prodById(x))).join(", ") }, `у ${u.length} вир.`) : h("small", { class: "hint", style: "margin:0" }, "—")),
+      h("td", {}, h("button", { class: "sm danger", onclick: () => confirmBox(`Видалити роботу «${w.name}»?` + (u.length ? ` Вона є в ${u.length} калькуляціях — там рядок лишиться без розцінки.` : ""), "Видалити", () => {
+        admin.labour = admin.labour.filter((x) => x !== w); logChange("видалено роботу", [{ id: w.id, kind: "work", name: w.name, old: { price: w.rate, row: structuredClone(w) }, new: null }]); saveAdmin(); renderOwn(); }) }, "×"))));
+  }
+  box.append(h("div", { class: "sec-card" }, L.length ? h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Робота", "₴ за годину", "Де", ""].map((t, i) => h("th", { class: i === 1 ? "num" : "" }, t)))), tb))
+    : h("p", { class: "hint" }, "Розцінок ще немає: вони додадуться з першої калькуляції 1С (тех. операції) або кнопкою «＋ Робота».")));
+}
+
+// ---- materials directory
 function ownMaterials(box) {
   const list = M().list, rate = eurRate();
   const groups = [...new Set(list.map((m) => m.group || "").filter(Boolean))].sort();
   const q = normName(matQuery);
   const shown = list.filter((m) => (!matGroup || (m.group || "") === matGroup) && (!q || normName(m.name + " " + (m.code || "")).includes(q)));
-  const gsel = (v, on) => h("select", { class: "sm", value: v, onchange: on }, h("option", { value: "" }, "усі групи"), groups.map((g) => h("option", { value: g }, g)));
+  const gsel = (v, on) => h("select", { class: "sm", value: v, onchange: on }, h("option", { value: "" }, "усі групи"), groups.map((g) => h("option", { value: g, selected: g === v }, g)));
   const coef = h("input", { type: "number", step: 0.01, placeholder: "1,05", style: "width:80px" });
   const bulkScope = () => list.filter((m) => !matGroup || (m.group || "") === matGroup);
-  const bulk = (note, fn) => {
+  const bulk = (note, fn) => snapResult(note, () => {
     const ch = [];
     for (const m of bulkScope()) { const old = { price: m.price, cur: m.cur }; if (fn(m) === false) continue; if (old.price !== m.price || old.cur !== m.cur) ch.push({ id: m.id, name: m.name, old, new: { price: m.price, cur: m.cur } }); }
-    logChange(note + (matGroup ? ` (група «${matGroup}»)` : " (усі)"), ch); saveAdmin(true, note); renderOwn(); fixBadge(); toast(`Змінено: ${ch.length}. Нові ціни виробів — у «Фіксація цін і КП».`);
-  };
+    logChange(note + (matGroup ? ` (група «${matGroup}»)` : " (усі)"), ch); toast(`Змінено: ${ch.length}`);
+  });
   box.append(h("div", { class: "card" },
     h("div", { class: "inline", style: "margin:0" }, h("input", { type: "search", placeholder: "Пошук: назва чи код", value: matQuery, oninput: (e) => { matQuery = e.target.value; renderOwnSoon(); } }),
       gsel(matGroup, (e) => { matGroup = e.target.value; renderOwn(); }), h("span", { class: "hint", style: "margin:0" }, `${shown.length} з ${list.length}`),
       h("button", { class: "sm primary", onclick: () => { list.push({ id: newMatId(), code: "", name: "Новий матеріал", unit: "шт", group: matGroup || "", price: null, cur: "UAH" });
-        logChange("додано матеріал", [{ id: list.at(-1).id, name: "Новий матеріал", old: null, new: { price: null, cur: "UAH" } }]); saveAdmin(); renderOwn(); } }, "＋ Матеріал")),
+        logChange("додано матеріал", [{ id: list.at(-1).id, name: "Новий матеріал", old: null, new: { price: null, cur: "UAH" } }]); saveAdmin(); renderOwn(); } }, "＋ Матеріал"),
+      h("span", {}, "Оновити ціни з файлу складу:"), importFileInput("prices")),
     h("div", { class: "inline" }, h("b", {}, "Для " + (matGroup ? `групи «${matGroup}»` : "усіх матеріалів") + ":"),
       "ціни ×", coef, h("button", { class: "sm", onclick: () => { const k = num(String(coef.value).replace(",", ".")); if (!k) return toast("Вкажіть коефіцієнт");
         bulk(`ціни × ${k}`, (m) => { if (num(m.price) == null) return false; m.price = Math.round(m.price * k * 100) / 100; }); } }, "Застосувати"),
@@ -1753,83 +1936,131 @@ function ownMaterials(box) {
     const set = (k) => (e) => {
       const v = k === "price" ? parsePrice(e.target.value) : e.target.value.trim();
       const old = { price: m.price, cur: m.cur };
-      m[k] = v;
-      if (k === "price" || k === "cur") logChange("вручну: " + m.name, [{ id: m.id, name: m.name, old, new: { price: m.price, cur: m.cur } }]);
-      saveAdmin(); if (k !== "name" && k !== "code") { renderOwn(); fixBadge(); }
+      if (k === "price" || k === "cur") return snapResult("вручну: " + m.name, () => { m[k] = v; logChange("вручну: " + m.name, [{ id: m.id, name: m.name, old, new: { price: m.price, cur: m.cur } }]); });
+      m[k] = v; saveAdmin(); if (k === "group" || k === "unit") renderOwn();
     };
     const u = usedIn(m.id);
     tb.append(h("tr", {}, h("td", {}, h("input", { value: m.code || "", style: "width:90px", onchange: set("code") })),
-      h("td", {}, h("input", { value: m.name, style: "min-width:220px", onchange: set("name") })),
+      h("td", {}, h("input", { value: m.name, style: "min-width:260px", onchange: set("name") })),
       h("td", {}, h("input", { value: m.unit || "", style: "width:56px", onchange: set("unit") })),
       h("td", {}, h("input", { value: m.group || "", style: "width:120px", list: "matGroups", onchange: set("group") })),
       h("td", { class: "num" }, h("input", { type: "text", inputmode: "decimal", value: m.price ?? "", style: "width:100px", onchange: set("price") })),
-      h("td", {}, h("select", { class: "sm", value: m.cur || "UAH", onchange: set("cur") }, h("option", { value: "UAH" }, "₴"), h("option", { value: "EUR" }, "€"))),
+      h("td", {}, h("select", { class: "sm", onchange: set("cur") }, h("option", { value: "UAH", selected: m.cur !== "EUR" }, "₴"), h("option", { value: "EUR", selected: m.cur === "EUR" }, "€"))),
       h("td", { class: "num" }, m.cur === "EUR" ? uah(matUah(m) == null ? null : Math.round(matUah(m))) : ""),
-      h("td", {}, u.length ? h("small", { title: u.map((p) => productTitle(ownProducts().find((x) => x.id === p))).join(", ") }, `у ${u.length} вир.`) : h("small", { class: "hint", style: "margin:0" }, "—")),
-      h("td", {}, h("button", { class: "sm danger", onclick: () => confirmBox(`Видалити «${m.name}»?` + (u.length ? ` Він є в розкладці ${u.length} виробів — там рядок лишиться без ціни.` : ""), "Видалити", () => {
+      h("td", {}, u.length ? h("small", { title: u.map((p) => productTitle(prodById(p))).join(", ") }, `у ${u.length} вир.`) : h("small", { class: "hint", style: "margin:0" }, "—")),
+      h("td", {}, h("button", { class: "sm danger", onclick: () => confirmBox(`Видалити «${m.name}»?` + (u.length ? ` Він є в калькуляції ${u.length} виробів — там рядок лишиться без ціни.` : ""), "Видалити", () => {
         M().list = M().list.filter((x) => x !== m); logChange("видалено матеріал", [{ id: m.id, name: m.name, old: { price: m.price, cur: m.cur, row: structuredClone(m) }, new: null }]);
         saveAdmin(); renderOwn(); }) }, "×"))));
   }
   box.append(h("datalist", { id: "matGroups" }, groups.map((g) => h("option", { value: g }))),
     h("div", { class: "sec-card" }, list.length ? h("div", { class: "tbl-wrap" }, h("table", { class: "prices mats" }, h("thead", {}, h("tr", {}, ["Код", "Назва", "Од.", "Група", "Ціна", "Вал.", "у ₴", "Де", ""].map((t, i) => h("th", { class: i === 4 || i === 6 ? "num" : "" }, t)))), tb))
-      : h("p", { class: "hint" }, "Матеріалів ще немає. Імпортуйте їх з Excel (вкладка «Імпорт з Excel») або додайте кнопкою «＋ Матеріал»."),
+      : h("p", { class: "hint" }, "Матеріалів ще немає. Вони додаються з калькуляцій 1С, з файлу складу (вкладка «Імпорт з Excel») або кнопкою «＋ Матеріал»."),
       shown.length > 400 ? h("p", { class: "hint" }, "Показано перші 400 — уточніть пошук.") : null));
 }
 let ownT;
 function renderOwnSoon() { clearTimeout(ownT); ownT = setTimeout(() => { const a = document.activeElement, pos = a?.selectionStart; renderOwn(); const s = $("#ownBox input[type=search]"); if (s) { s.focus(); try { s.setSelectionRange(pos, pos); } catch {} } }, 250); }
-function ownBom(box) {
-  const prods = ownProducts();
-  if (!prods.some((p) => p.id === ownProduct)) ownProduct = prods[0]?.id;
-  const p = prods.find((x) => x.id === ownProduct);
-  const B0 = (admin.bom[ownProduct] ??= { rows: [], coef: 1, extra: 0 });
-  const mats = matMap(), list = M().list;
-  const rec = admin.prices.items[ownProduct] || {};
-  const pr = priceOf("items", ownProduct, p?.price, p);
-  const label = (m) => (m.code ? m.code + " · " : "") + m.name;
-  const byLabel = new Map(list.map((m) => [label(m), m]));
-  const bc = bomCost(ownProduct);
-  const save = (rerender = true) => { saveAdmin(); if (rerender) renderOwn(); fixBadge(); };
-  const copyFrom = h("select", { class: "sm" }, h("option", { value: "" }, "скопіювати розкладку з…"), prods.filter((x) => x.id !== ownProduct && admin.bom[x.id]?.rows?.length).map((x) => h("option", { value: x.id }, productTitle(x))));
-  box.append(h("div", { class: "card" }, h("div", { class: "inline", style: "margin:0" }, h("b", {}, "Виріб"),
-    h("select", { value: ownProduct, onchange: (e) => { ownProduct = e.target.value; renderOwn(); } }, prods.map((x) => h("option", { value: x.id }, productTitle(x) + (admin.bom[x.id]?.rows?.length ? ` (${admin.bom[x.id].rows.length})` : "")))),
-    copyFrom, h("button", { class: "sm", onclick: () => { const src = admin.bom[copyFrom.value]; if (!src) return toast("Оберіть виріб");
-      const old = structuredClone(B0); admin.bom[ownProduct] = structuredClone(src); M().log.unshift({ id: "l_" + Date.now().toString(36), at: nowStr(), note: `розкладку скопійовано: ${productTitle(p)}`, changes: [], bom: [{ product: ownProduct, old, new: structuredClone(src) }] }); save(); } }, "Копіювати")),
-    h("p", { class: "hint", style: "margin:6px 0 0" }, `Спосіб ціни виробу зараз: ${PRICE_MODES[pr.mode]}.`, pr.mode !== "bom" ? " Розкладка рахується, але ціна виробу береться з неї лише в способі «з матеріалів»." : "")));
+
+// ---- result of a price update: cost before → after for every product with a calculation, the new KP price automatically or by hand
+/** Prices of everything a calculation feeds: products (own price records) and the bundles they are part of. */
+function calcSnapshot() {
+  const out = new Map();
+  for (const p of ownProducts().filter((x) => hasCalc(x.id))) {
+    const b = bomCost(p.id);
+    out.set("p:" + p.id, { cost: b ? b.total : null, calc: prodPrice(p.id, "bom").calc });
+  }
+  return out;
+}
+/** Runs a change of materials / works prices, then shows what it did to the products («Результат оновлення»). */
+function snapResult(note, fn) {
+  const before = calcSnapshot();
+  fn();
+  const after = calcSnapshot(), rows = [];
+  for (const [k, a] of after) {
+    const b = before.get(k);
+    if (!b || (b.cost === a.cost && b.calc === a.calc)) continue;
+    const id = k.slice(2), p = prodById(id), kind = prodKind(id);
+    rows.push({ kind, id, title: productTitle(p), oldCost: b.cost, newCost: a.cost, calc: a.calc, inKp: kpPrice(kind, id, p?.price), pick: "auto", manual: null });
+  }
+  if (rows.length) { admin.calc_result = { at: nowStr(), note, rows, bundles: [] }; ownTab = "result"; }
+  saveAdmin(true, note);
+  renderOwn(); fixBadge();
+  if (rows.length) toast(`Змінилась собівартість ${rows.length} виробів — оберіть нові ціни`);
+}
+function bundlesWith(itemIds) {
+  return cat0.bundles.filter((b) => Object.values(b.slots || {}).some((x) => itemIds.has(x)));
+}
+function ownResult(box) {
+  const R = admin.calc_result;
+  if (!R?.rows.length) { box.append(h("p", { class: "hint" }, "Тут з’являється результат після оновлення цін матеріалів чи розцінок: як змінилась собівартість кожного виробу і яку ціну поставити в КП.")); return; }
   const tb = h("tbody");
-  B0.rows.forEach((r, i) => {
-    const m = mats.get(r.mat), pu = matUah(m), q = num(r.qty) ?? 0;
-    const inp = h("input", { list: "matList", value: m ? label(m) : "", placeholder: "почніть вводити назву чи код", style: "min-width:260px", onchange: (e) => {
-      const mm = byLabel.get(e.target.value) || list.find((x) => normName(x.name) === normName(e.target.value));
-      if (!mm) return toast("Такого матеріалу немає в довіднику — додайте його у «Матеріали і ціни»");
-      r.mat = mm.id; save(); } });
-    tb.append(h("tr", { class: m && pu != null ? "" : "pending" }, h("td", {}, inp),
-      h("td", { class: "num" }, h("input", { type: "text", inputmode: "decimal", value: r.qty ?? "", style: "width:80px", onchange: (e) => { r.qty = parsePrice(e.target.value); save(); } })),
-      h("td", {}, m?.unit || ""), h("td", { class: "num" }, m ? (m.price == null ? "без ціни" : `${fmtN(m.price)} ${curSign(m.cur)}`) : "—"),
-      h("td", { class: "num" }, pu == null ? "—" : uah(Math.round(pu * q))),
-      h("td", {}, h("button", { class: "sm danger", onclick: () => { B0.rows.splice(i, 1); save(); } }, "×"))));
+  const newOf = (r) => r.pick === "auto" ? r.calc : r.pick === "manual" ? r.manual : r.inKp;
+  for (const r of R.rows) {
+    const man = h("input", { type: "number", value: r.manual ?? "", placeholder: r.calc ?? "", style: "width:110px", onchange: (e) => { r.manual = num(e.target.value); r.pick = "manual"; renderOwn(); } });
+    const radio = (v, t) => h("label", { class: "chk", style: "margin:0" }, h("input", { type: "radio", name: "pk_" + r.id, checked: r.pick === v, onchange: () => { r.pick = v; if (v === "manual" && r.manual == null) r.manual = r.calc; renderOwn(); } }), t);
+    tb.append(h("tr", { class: newOf(r) !== r.inKp ? "pending" : "" },
+      h("td", {}, h("a", { href: "#", onclick: (e) => { e.preventDefault(); openCalc(r.id); } }, r.title)),
+      h("td", { class: "num" }, uah(r.oldCost == null ? null : Math.round(r.oldCost))), h("td", { class: "num" }, uah(r.newCost == null ? null : Math.round(r.newCost))), diffCell(r.oldCost, r.newCost),
+      h("td", { class: "num" }, r.inKp == null ? "за запитом" : uah(r.inKp)),
+      h("td", {}, h("div", { class: "pick" }, radio("auto", `${r.ready ? "з файлу" : "автоматично"} ${uah(r.calc)}`), h("span", { class: "inline", style: "margin:0" }, radio("manual", "вручну"), man), radio("keep", "не міняти"))),
+      h("td", { class: "num" }, h("b", {}, newOf(r) == null ? "за запитом" : uah(newOf(r))))));
+  }
+  // bundles with a changed product: their price as the sum of positions
+  const ids = new Set(R.rows.filter((r) => r.kind === "items").map((r) => r.id));
+  const bl = bundlesWith(ids).map((b) => {
+    let sum = 0, ok = true;
+    for (const iid of Object.values(b.slots)) {
+      const rr = R.rows.find((r) => r.id === iid), i0 = cat0.items.find((x) => x.id === iid);
+      const p = rr ? newOf(rr) : kpPrice("items", iid, i0?.price);
+      if (p == null) ok = false; else sum += p;
+    }
+    const rec = admin.prices.bundles[b.id] || {};
+    const total = ok ? core.roundTo(sum + (num(rec.extra) ?? 0), settings.rounding_uah || 1) : null;
+    const st = (R.bundles.find((x) => x.id === b.id) || (R.bundles.push({ id: b.id, pick: "keep" }), R.bundles.at(-1)));
+    return { b, total, inKp: kpPrice("bundles", b.id, b.price), st };
   });
-  box.append(h("datalist", { id: "matList" }, list.map((m) => h("option", { value: label(m) }))),
-    h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Склад: " + productTitle(p), h("small", {}, `${B0.rows.length} рядків`)),
-      h("button", { class: "sm primary", disabled: !list.length, title: list.length ? "" : "спершу додайте матеріали", onclick: () => { B0.rows.push({ mat: list[0].id, qty: 1 }); save(); } }, "＋ Рядок")),
-      B0.rows.length ? h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Матеріал чи комплектуючий", "К-сть", "Од.", "Ціна", "Сума", ""].map((t, i) => h("th", { class: i === 1 || i === 3 || i === 4 ? "num" : "" }, t)))), tb))
-        : h("p", { class: "hint" }, list.length ? "Додайте рядки або імпортуйте склад виробу з Excel (вкладка «Імпорт з Excel», режим «Склад виробу»)." : "Спершу додайте або імпортуйте матеріали."),
-      h("div", { class: "bom-sum" },
-        h("div", {}, "Матеріали: ", h("b", {}, bc ? uah(Math.round(bc.cost)) : "—"), bc?.miss.length ? h("small", { class: "minus" }, ` без ціни: ${bc.miss.length}`) : null),
-        h("label", { class: "inline", style: "margin:0" }, "× коефіцієнт виробу", h("input", { type: "number", step: 0.01, value: B0.coef ?? 1, style: "width:80px", onchange: (e) => { B0.coef = num(e.target.value) ?? 1; save(); } })),
-        h("label", { class: "inline", style: "margin:0" }, "+ інші витрати (робота, фарба…), ₴", h("input", { type: "number", value: B0.extra ?? 0, style: "width:110px", onchange: (e) => { B0.extra = num(e.target.value) ?? 0; save(); } })),
-        h("div", {}, "Собівартість (база ціни): ", h("b", {}, bc ? uah(core.roundTo(bc.total, settings.rounding_uah || 1)) : "—")),
-        h("div", {}, "Ціна виробу: ", h("b", {}, pr.price == null ? "за запитом" : uah(pr.price)), rec.markup ? h("small", {}, ` (націнка ${fmtN(rec.markup)} %)`) : null,
-          " · у КП: ", h("b", {}, fixedOf("items", ownProduct)?.price != null ? uah(fixedOf("items", ownProduct).price) : origUah(p?.price) != null ? uah(origUah(p.price)) : "за запитом"))),
-      h("div", { class: "inline" },
-        pr.mode !== "bom" ? h("button", { class: "primary sm", disabled: !B0.rows.length, onclick: () => { (admin.prices.items[ownProduct] ??= {}).mode = "bom"; save(); toast("Ціна виробу тепер рахується з матеріалів — зафіксуйте її"); } }, "Рахувати ціну виробу з матеріалів")
-          : h("button", { class: "sm", onclick: () => { delete admin.prices.items[ownProduct].mode; save(); } }, "Повернути ціну вручну"),
-        h("button", { class: "sm", onclick: () => sub("a-prices") }, "Націнка і фінальна ціна →"), h("button", { class: "sm", onclick: () => sub("a-fix") }, "Зафіксувати для КП →"))));
+  box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Результат: " + R.note, h("small", {}, R.at)),
+    h("div", { class: "inline", style: "margin:0" }, h("button", { class: "sm", onclick: () => { R.rows.forEach((r) => (r.pick = "auto")); renderOwn(); } }, "Усім автоматично"),
+      h("button", { class: "sm", onclick: () => { R.rows.forEach((r) => (r.pick = "keep")); renderOwn(); } }, "Усім не міняти"))),
+    h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Виріб", "Собівартість була", "Стала", "Різниця", "У КП зараз", "Нова ціна в КП", ""].map((t, i) => h("th", { class: i && i !== 5 ? "num" : "" }, t)))), tb)),
+    h("p", { class: "hint" }, "«Автоматично» — ціна з калькуляції (собівартість × коефіцієнт + інші витрати, з націнкою виробу) і далі рухатиметься разом з цінами; «вручну» — ваша фінальна ціна; «не міняти» — у КП лишається поточна.")));
+  if (bl.length) {
+    const tb2 = h("tbody");
+    for (const x of bl) {
+      const radio = (v, t) => h("label", { class: "chk", style: "margin:0" }, h("input", { type: "radio", name: "pb_" + x.b.id, checked: x.st.pick === v, onchange: () => { x.st.pick = v; renderOwn(); } }), t);
+      tb2.append(h("tr", {}, h("td", {}, bundleTitle(x.b)), h("td", { class: "num" }, x.inKp == null ? "за запитом" : uah(x.inKp)),
+        h("td", { class: "num" }, x.total == null ? "не всі позиції мають ціну" : uah(x.total)), diffCell(x.inKp, x.total),
+        h("td", {}, h("div", { class: "pick" }, radio("sum", "сума позицій"), radio("keep", "не міняти")))));
+    }
+    box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Комплекти з однією ціною, де є ці вироби")),
+      h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Комплект", "У КП зараз", "Сума позицій з новими цінами", "Різниця", ""].map((t, i) => h("th", { class: i && i < 4 ? "num" : "" }, t)))), tb2))));
+  }
+  box.append(h("div", { class: "inline" }, h("button", { class: "primary", onclick: () => applyResult(R, bl) }, "Застосувати і зафіксувати для КП"),
+    h("button", { onclick: () => { admin.calc_result = null; saveAdmin(); renderOwn(); } }, "Закрити без змін цін")));
+}
+async function applyResult(R, bl) {
+  const fix = [], recs = [];
+  const recOf = (kind, id) => { const old = structuredClone(admin.prices[kind][id] ?? null); recs.push({ kind, id, old }); return (admin.prices[kind][id] ??= {}); };
+  for (const r of R.rows) {
+    if (r.pick === "keep") continue;
+    const rec = recOf(r.kind, r.id);
+    if (!r.ready) rec.mode = "bom";   // ready prices (гот) stay a price by hand
+    if (r.pick === "manual" && r.manual != null) rec.final = r.manual; else delete rec.final;
+  }
+  for (const x of bl) if (x.st.pick === "sum") { const rec = recOf("bundles", x.b.id); rec.mode = "sum"; delete rec.final; }
+  for (const q of recs) q.new = structuredClone(admin.prices[q.kind][q.id]);
+  for (const r of R.rows) if (r.pick !== "keep") { const p = prodById(r.id), d = priceOf(r.kind, r.id, p?.price, p); fix.push({ kind: r.kind, id: r.id, now: d.price, lines: d.lines }); }
+  for (const x of bl) if (x.st.pick === "sum") { const d = priceOf("bundles", x.b.id, x.b.price); fix.push({ kind: "bundles", id: x.b.id, now: d.price, lines: d.lines }); }
+  if (!fix.length) return toast("Нічого не обрано");
+  logChange("нові ціни виробів: " + R.note, [], [], recs);
+  await fixPrices(fix, "нові ціни виробів: " + R.note);
+  admin.calc_result = null; await saveAdmin(true); ownTab = "specs"; renderOwn(); fixBadge();
+  toast(`Зафіксовано цін: ${fix.length}. Перерахувати вже створені КП — у «Фіксація цін і КП».`);
 }
 
-// import: file -> sheet -> columns -> preview with statuses -> apply (logged, rollback in the log)
-const COLS = { code: ["код", "артикул", "code", "sku", "номенклатурний"], name: ["назва", "найменування", "номенклатура", "товар", "матеріал", "name"],
-  price: ["ціна", "вартість", "price", "грн", "сума за од"], cur: ["валюта", "currency"], unit: ["од", "одиниц", "unit", "виміру"], group: ["група", "категор", "розділ", "group"],
-  qty: ["кількість", "к-сть", "кол", "qty", "норма"] };
+// ---- import: file -> sheet -> columns -> preview with statuses -> apply (logged, rollback in the log)
+const COLS = { code: ["код", "артикул", "code", "sku"], name: ["назва", "найменування", "номенклатура", "товар", "матеріал", "name"],
+  price: ["облікова ціна", "ціна", "вартість", "price", "грн", "сума за од"], cur: ["валюта", "currency"], unit: ["од.", "одиниц", "unit", "виміру"], group: ["група", "категор", "розділ", "group"],
+  qty: ["кількість", "к-сть", "кол", "qty"] };
 const COL_T = { code: "Код", name: "Назва", price: "Ціна", cur: "Валюта", unit: "Од. виміру", group: "Група", qty: "Кількість (для складу виробу)" };
 function guessHeader(rows) {
   let best = 0, bi = 0;
@@ -1837,129 +2068,320 @@ function guessHeader(rows) {
   const head = rows[bi] || [];
   const map = {};
   for (const [k, words] of Object.entries(COLS)) {
-    const i = head.findIndex((c, j) => typeof c === "string" && words.some((w) => c.toLowerCase().includes(w)) && !Object.values(map).includes(j));
+    let i = -1;
+    for (const w of words) { i = head.findIndex((c, j) => typeof c === "string" && c.toLowerCase().includes(w) && !Object.values(map).includes(j)); if (i >= 0) break; }
     if (i >= 0) map[k] = i;
   }
   return { headerRow: bi, map };
 }
-function ownImport(box) {
-  const S2 = importState;
-  const file = h("input", { type: "file", accept: ".xlsx,.csv,.txt", onchange: async () => {
+/** 1C «Специфікація»: sections «Матеріали» and «Тех. операції», the first row of «Матеріали» with no price is the product itself. */
+function parseSpec(rows) {
+  const hi = rows.findIndex((r) => r.some((c) => /^номенклатура$/i.test(String(c).trim())) && r.some((c) => /кількість/i.test(String(c))));
+  if (hi < 0 || !rows.some((r) => /^(матеріали|тех\. ?операції)$/i.test(String(r[0]).trim()))) return null;
+  const head = rows[hi], col = (re) => head.findIndex((c) => re.test(String(c)));
+  const cName = Math.max(0, col(/^номенклатура$/i)), cUnit = col(/од\./i), cQty = col(/кількість/i), cPrice = col(/ціна/i);
+  let sec = null, title = "";
+  const mats = [], works = [];
+  for (const r of rows.slice(hi + 1)) {
+    const name = String(r[cName] ?? "").trim();
+    if (!name) continue;
+    if (/^матеріали$/i.test(name)) { sec = "mat"; continue; }
+    if (/^тех\. ?операції$/i.test(name)) { sec = "work"; continue; }
+    if (/^разом$/i.test(name)) { sec = null; continue; }
+    const qty = parsePrice(r[cQty]), price = parsePrice(r[cPrice]);
+    if (sec === "mat") {
+      if (!title && price == null) { title = name; continue; }
+      mats.push({ name, unit: String(r[cUnit] ?? "").trim(), qty, price });
+    } else if (sec === "work") works.push({ name: workName(name), qty, price });
+  }
+  return { title, mats, works };
+}
+const tokens = (s) => normName(s).replace(/[^a-zа-яіїєґ0-9]+/gi, " ").split(" ").filter((w) => w.length > 1 || /\d/.test(w)).map((w) => (/\d/.test(w) ? w : w.slice(0, 5)));
+function nameScore(a, b) {
+  const A = new Set(tokens(a)), B = new Set(tokens(b)); if (!A.size || !B.size) return 0;
+  let n = 0; for (const w of A) if (B.has(w)) n++;
+  const nums = [...A].filter((w) => /\d/.test(w)); if (nums.some((w) => !B.has(w))) return 0;   // «BMF 720» never matches «BMF 750»
+  return n / Math.max(A.size, B.size);
+}
+/** Product of a 1C calculation by its name: the share of the product title's words found in it («Місце оператора» in «Місце оператора в зборі BMF650/720»). */
+function guessProduct(title) {
+  const A = new Set(tokens(title));
+  let best = null, bs = 0;
+  for (const p of ownProducts()) {
+    const B = tokens(p.title); if (!B.length) continue;
+    const s = B.filter((w) => A.has(w)).length / B.length;
+    if (s > bs || (s === bs && best && hasCalc(best) && !hasCalc(p.id))) { bs = s; best = p.id; }
+  }
+  return bs >= 0.5 ? best : null;
+}
+/** File picker that reads the table and opens the import with the right mode (spec / prices / ready). */
+function importFileInput(want, product = null) {
+  const file = h("input", { type: "file", accept: ".xlsx,.xls,.csv,.txt", onchange: async () => {
     const f = file.files[0]; if (!f) return;
     try { toast("Читаю файл…"); const r = await api("/api/import", { method: "POST", headers: { "X-Filename": encodeURIComponent(f.name) }, body: f });
-      const sh = r.sheets.findIndex((s) => s.rows.length > 1); const g = guessHeader(r.sheets[Math.max(0, sh)]?.rows || []);
-      importState = { name: r.name, sheets: r.sheets, sheet: Math.max(0, sh), ...g, mode: "prices", product: ownProduct || ownProducts()[0]?.id, cur: "UAH", addNew: false, preview: null };
-      renderOwn(); } catch (e) { toast(e.message); } } });
-  box.append(h("div", { class: "card" }, h("h2", {}, "Імпорт номенклатури і цін"),
-    h("p", { class: "hint" }, "Excel (.xlsx) або CSV. Позиції шукаються в довіднику матеріалів за кодом, а без коду — за назвою. Перед застосуванням видно, які ціни змінилися, які ні, і які позиції не розпізнано. Кожен імпорт можна відкотити в «Журнал і відкат»."),
-    h("div", { class: "inline" }, file, S2 ? h("span", {}, "Файл: ", h("b", {}, S2.name)) : null)));
+      startImport(r, want, product); } catch (e) { toast(e.message); } } });
+  return file;
+}
+function startImport(r, want, product) {
+  const sh = Math.max(0, r.sheets.findIndex((s) => s.rows.length > 1));
+  const rows = r.sheets[sh]?.rows || [], spec = parseSpec(rows), g = guessHeader(rows);
+  const mode = spec ? "spec" : want === "spec" ? "bom" : want || "prices";
+  const guess = product || (spec ? guessProduct(spec.title) : null);
+  importState = { name: r.name, sheets: r.sheets, sheet: sh, ...g, mode, spec, cur: "UAH", addNew: mode !== "prices", updPrices: false, updRates: false, preview: null,
+    product: guess || ownProduct || ownProducts()[0]?.id, guessed: !!guess };
+  if (mode === "spec" || mode === "prices" || mode === "ready") importState.preview = importPreview(importState);
+  ownTab = "import"; renderOwn();
+}
+function ownImport(box) {
+  const S2 = importState;
+  box.append(h("div", { class: "card" }, h("h2", {}, "Імпорт з Excel"),
+    h("p", { class: "hint" }, "Калькуляція виробу з 1С (матеріали й години), файл складу з цінами матеріалів або готові ціни позицій КП. .xlsx, .xls (через LibreOffice) або .csv. Перед застосуванням видно, що зміниться, які ціни без змін і що не розпізнано; кожен імпорт можна відкотити в «Журнал і відкат»."),
+    h("div", { class: "inline" }, importFileInput(S2?.mode || "prices"), S2 ? h("span", {}, "Файл: ", h("b", {}, S2.name)) : null)));
   if (!S2) return;
   const sheet = S2.sheets[S2.sheet] || { rows: [] };
   const head = sheet.rows[S2.headerRow] || [];
-  const colSel = (k) => h("label", {}, COL_T[k], h("select", { value: S2.map[k] ?? "", onchange: (e) => { if (e.target.value === "") delete S2.map[k]; else S2.map[k] = Number(e.target.value); S2.preview = null; renderOwn(); } },
-    h("option", { value: "" }, "—"), head.map((c, i) => h("option", { value: i }, `${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) : ""}: ${String(c).slice(0, 30)}`))));
+  const reprev = () => { S2.preview = S2.mode === "bom" ? null : importPreview(S2); renderOwn(); };
+  const colSel = (k) => h("label", {}, COL_T[k], h("select", { onchange: (e) => { if (e.target.value === "") delete S2.map[k]; else S2.map[k] = Number(e.target.value); reprev(); } },
+    h("option", { value: "" }, "—"), head.map((c, i) => h("option", { value: i, selected: S2.map[k] === i }, `${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) : ""}: ${String(c).slice(0, 30)}`))));
+  const modeSel = h("label", {}, "Що це за файл", h("select", { onchange: (e) => { S2.mode = e.target.value; if (S2.mode === "spec" && !S2.spec) S2.spec = parseSpec(sheet.rows); reprev(); } },
+    [["spec", "Калькуляція виробу з 1С (матеріали + години)"], ["prices", "Ціни матеріалів (склад)"], ["ready", "Готові ціни позицій КП"], ["bom", "Склад виробу: матеріали + кількість"]]
+      .filter(([v]) => v !== "spec" || parseSpec(sheet.rows)).map(([v, t]) => h("option", { value: v, selected: S2.mode === v }, t))));
+  const prodSel = h("label", {}, "Виріб", h("select", { onchange: (e) => { S2.product = e.target.value; S2.guessed = true; reprev(); } }, prodOptions(S2.product)));
   box.append(h("div", { class: "sec-card" }, h("div", { class: "lay-cols" },
-    h("label", {}, "Аркуш", h("select", { value: S2.sheet, onchange: (e) => { S2.sheet = Number(e.target.value); Object.assign(S2, guessHeader(S2.sheets[S2.sheet].rows)); S2.preview = null; renderOwn(); } },
-      S2.sheets.map((s, i) => h("option", { value: i }, `${s.name} (${s.rows.length} рядків)`)))),
-    h("label", {}, "Рядок заголовків", h("input", { type: "number", min: 1, value: S2.headerRow + 1, onchange: (e) => { S2.headerRow = Math.max(0, (num(e.target.value) || 1) - 1); S2.preview = null; renderOwn(); } })),
-    ...Object.keys(COLS).map(colSel),
-    h("label", {}, "Валюта, якщо немає колонки", h("select", { value: S2.cur, onchange: (e) => { S2.cur = e.target.value; S2.preview = null; } }, h("option", { value: "UAH" }, "₴ гривня"), h("option", { value: "EUR" }, "€ євро"))),
-    h("label", {}, "Що зробити", h("select", { value: S2.mode, onchange: (e) => { S2.mode = e.target.value; S2.preview = null; renderOwn(); } },
-      h("option", { value: "prices" }, "Оновити ціни в довіднику матеріалів"), h("option", { value: "bom" }, "Склад виробу (матеріали + кількість)"))),
-    S2.mode === "bom" ? h("label", {}, "Виріб", h("select", { value: S2.product, onchange: (e) => { S2.product = e.target.value; S2.preview = null; } }, ownProducts().map((x) => h("option", { value: x.id }, productTitle(x))))) : null),
-    h("label", { class: "chk" }, h("input", { type: "checkbox", checked: S2.addNew, onchange: (e) => { S2.addNew = e.target.checked; if (S2.preview) renderOwn(); } }), "Нерозпізнані позиції додати в довідник як нові"),
-    h("div", { class: "inline" }, h("button", { class: "primary", onclick: () => { if (S2.map.name == null && S2.map.code == null) return toast("Оберіть колонку з назвою або кодом");
-      if (S2.map.price == null && S2.mode === "prices") return toast("Оберіть колонку з ціною"); S2.preview = importPreview(S2); renderOwn(); } }, "Переглянути зміни"))));
+    h("label", {}, "Аркуш", h("select", { onchange: (e) => { S2.sheet = Number(e.target.value); Object.assign(S2, guessHeader(S2.sheets[S2.sheet].rows)); S2.spec = parseSpec(S2.sheets[S2.sheet].rows); reprev(); } },
+      S2.sheets.map((s, i) => h("option", { value: i, selected: S2.sheet === i }, `${s.name} (${s.rows.length} рядків)`)))),
+    modeSel, S2.mode === "spec" || S2.mode === "bom" ? prodSel : null,
+    ...(S2.mode === "spec" ? [] : [h("label", {}, "Рядок заголовків", h("input", { type: "number", min: 1, value: S2.headerRow + 1, onchange: (e) => { S2.headerRow = Math.max(0, (num(e.target.value) || 1) - 1); reprev(); } })),
+      ...Object.keys(COLS).filter((k) => S2.mode === "bom" || k !== "qty").map(colSel),
+      h("label", {}, "Валюта, якщо немає колонки", h("select", { onchange: (e) => { S2.cur = e.target.value; reprev(); } }, h("option", { value: "UAH", selected: S2.cur === "UAH" }, "₴ гривня"), h("option", { value: "EUR", selected: S2.cur === "EUR" }, "€ євро")))])),
+    S2.mode === "spec" ? h("div", {}, h("p", { class: "hint", style: "margin:6px 0" }, `У файлі: «${S2.spec.title || "без назви"}», матеріалів ${S2.spec.mats.length}, робіт ${S2.spec.works.length}.`,
+        S2.guessed ? "" : h("b", { class: "minus" }, " Виріб за назвою не визначено — оберіть його вище.")),
+      h("label", { class: "chk" }, h("input", { type: "checkbox", checked: S2.updPrices, onchange: (e) => { S2.updPrices = e.target.checked; renderOwn(); } }), "Ціни матеріалів, що вже є в довіднику, замінити цінами з цього файлу (інакше лишаються ціни довідника)"),
+      h("label", { class: "chk" }, h("input", { type: "checkbox", checked: S2.updRates, onchange: (e) => { S2.updRates = e.target.checked; renderOwn(); } }), "Розцінки робіт, що вже є, замінити розцінками з файлу (інакше лишаються розцінки з налаштувань)"))
+      : S2.mode === "prices" ? h("label", { class: "chk" }, h("input", { type: "checkbox", checked: S2.addNew, onchange: (e) => { S2.addNew = e.target.checked; renderOwn(); } }), "Нерозпізнані позиції додати в довідник як нові")
+      : null,
+    S2.mode === "bom" ? h("div", { class: "inline" }, h("button", { class: "primary", onclick: () => { if (S2.map.name == null && S2.map.code == null) return toast("Оберіть колонку з назвою або кодом"); S2.preview = importPreview(S2); renderOwn(); } }, "Переглянути зміни")) : null));
   if (S2.preview) importPreviewView(box, S2);
 }
 function importPreview(S2) {
-  const rows = S2.sheets[S2.sheet].rows.slice(S2.headerRow + 1);
   const list = M().list;
   const byCode = new Map(list.filter((m) => m.code).map((m) => [normCode(m.code), m]));
   const byName = new Map(list.map((m) => [normName(m.name), m]));
+  const find = (code, name) => (code && byCode.get(normCode(code))) || (name && byName.get(normName(name))) || null;
+  if (S2.mode === "spec") {
+    const subs = specByName(), byWork = new Map(admin.labour.map((w) => [normName(w.name), w]));
+    const rows = S2.spec.mats.map((r) => {
+      const m = find("", r.name), sid = subs.get(normName(r.name));
+      const st = sid && sid !== S2.product ? "sub" : !m ? "new" : r.price == null || num(m.price) === r.price ? "same" : "diff";
+      return { ...r, m, sid, st, t: "mat" };
+    });
+    const works = S2.spec.works.map((r) => { const w = byWork.get(normName(r.name)); return { ...r, w, t: "work", st: !w ? "new" : num(w.rate) === r.price || r.price == null ? "same" : "diff" }; });
+    return { rows: [...rows, ...works] };
+  }
+  const rows = S2.sheets[S2.sheet].rows.slice(S2.headerRow + 1);
   const out = [], seen = new Set();
+  const positions = S2.mode === "ready" ? pricedPositions().filter((p) => p.kind !== "bundles") : [];
   for (const r of rows) {
     const g = (k) => (S2.map[k] == null ? "" : r[S2.map[k]]);
     const code = String(g("code") ?? "").trim(), name = String(g("name") ?? "").trim();
     if (!code && !name) continue;
     const price = parsePrice(g("price")), cur = S2.map.cur != null ? curOf(g("cur")) : S2.cur;
-    const m = (code && byCode.get(normCode(code))) || (name && byName.get(normName(name))) || null;
+    const m = find(code, name);
+    if (S2.mode === "ready") {
+      let best = null, bs = 0;
+      for (const p of positions) { const sc = Math.max(nameScore(name, p.title), p.it ? nameScore(name, productTitle(p.it)) : 0); if (sc > bs) { bs = sc; best = p; } }
+      out.push({ name, price, cur, m, target: bs >= 0.6 ? best.kind + ":" + best.id : "", score: bs });
+      continue;
+    }
     if (m) seen.add(m.id);
     const st = !m ? "new" : price == null ? "noprice" : (num(m.price) === price && (m.cur || "UAH") === cur) ? "same" : "changed";
     out.push({ code, name: name || m?.name || code, unit: String(g("unit") ?? "").trim(), group: String(g("group") ?? "").trim(), price, cur, qty: parsePrice(g("qty")), m, st });
   }
-  return { rows: out, missing: list.filter((m) => !seen.has(m.id)) };
+  if (S2.mode === "ready") {   // a position takes only its best row: «BMF 750 (Wireles)» does not overwrite «BMF 750»
+    const best = new Map();
+    for (const r of out) if (r.target && (!best.has(r.target) || best.get(r.target).score < r.score)) best.set(r.target, r);
+    for (const r of out) if (r.target && best.get(r.target) !== r) r.target = "";
+  }
+  return { rows: out, missing: S2.mode === "prices" ? list.filter((m) => !seen.has(m.id)) : [] };
 }
 let impFilter = "";
+function readyStatus(r) {
+  if (!r.target) return !r.m ? "new" : num(r.m.price) === r.price ? "same" : "mat";
+  const [kind, id] = r.target.split(":"), p = pricedPositions().find((x) => x.kind === kind && x.id === id);
+  return kpPrice(kind, id, p?.rule) === r.price ? "same" : "changed";
+}
 function importPreviewView(box, S2) {
-  const P = S2.preview, cnt = (s) => P.rows.filter((r) => r.st === s).length;
-  const ST = { changed: ["змінилась", "chg"], same: ["без змін", "same"], new: ["не розпізнано", "new"], noprice: ["без ціни у файлі", "same"] };
+  const P = S2.preview;
+  if (S2.mode === "spec") return specPreviewView(box, S2);
+  if (S2.mode === "ready") P.rows.forEach((r) => (r.st = readyStatus(r)));
+  const cnt = (s) => P.rows.filter((r) => r.st === s).length;
+  const ST = { changed: ["змінилась", "chg"], same: ["без змін", "same"], new: [S2.mode === "prices" ? "немає в довіднику" : "не розпізнано", "new"], noprice: ["без ціни у файлі", "same"] };
+  if (S2.mode === "ready") { delete ST.noprice; ST.mat = ["ціна матеріалу", "chg"]; }
   const shown = P.rows.filter((r) => !impFilter || r.st === impFilter);
+  const posList = pricedPositions().filter((p) => p.kind !== "bundles");
+  const tbody = h("tbody");
+  for (const r of shown.slice(0, 500)) {
+    if (S2.mode === "ready") {
+      const [kind, id] = (r.target || ":").split(":"), pos = posList.find((x) => x.kind === kind && x.id === id);
+      tbody.append(h("tr", { class: "st-" + r.st }, h("td", {}, h("span", { class: "stl " + ST[r.st][1] }, ST[r.st][0])), h("td", {}, r.name),
+        h("td", {}, h("select", { class: "sm", style: "max-width:260px", onchange: (e) => { r.target = e.target.value; renderOwn(); } }, h("option", { value: "" }, "— не оновлювати позицію —"),
+          posList.map((x) => h("option", { value: x.kind + ":" + x.id, selected: r.target === x.kind + ":" + x.id }, (x.it ? productTitle(x.it) : x.title) + (x.kind === "accessories" ? " (опція)" : "")))),
+          r.m ? h("small", { style: "display:block" }, r.target ? "і ціна в довіднику матеріалів" : "оновиться ціна в довіднику матеріалів") : null),
+        h("td", { class: "num" }, pos ? uah(kpPrice(kind, id, pos.rule)) : "—"), h("td", { class: "num" }, h("b", {}, uah(r.price)))));
+      continue;
+    }
+    tbody.append(h("tr", { class: "st-" + r.st }, h("td", {}, h("span", { class: "stl " + ST[r.st][1] }, ST[r.st][0])), h("td", {}, r.code), h("td", {}, r.name),
+      h("td", {}, r.m ? r.m.name : S2.addNew || S2.mode === "bom" ? h("small", {}, "буде додано в довідник") : h("small", { class: "minus" }, "не додається")),
+      h("td", { class: "num" }, r.m && r.m.price != null ? `${fmtN(r.m.price)} ${curSign(r.m.cur)}` : "—"),
+      h("td", { class: "num" }, r.price != null ? h("b", {}, `${fmtN(r.price)} ${curSign(r.cur)}`) : "—"),
+      h("td", { class: "num" }, S2.mode === "bom" ? fmtN(r.qty) : "")));
+  }
+  const heads = S2.mode === "ready" ? ["Стан", "Назва у файлі", "Позиція КП", "У КП зараз", "Ціна з файлу"] : ["Стан", "Код", "Назва у файлі", "У довіднику", "Було", "Стане", S2.mode === "bom" ? "К-сть" : ""];
   box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Перегляд", h("small", {}, `${P.rows.length} рядків у файлі`)),
     h("div", { class: "seg" }, h("button", { class: impFilter ? "" : "on", onclick: () => { impFilter = ""; renderOwn(); } }, "усі"),
       Object.entries(ST).map(([k, [t]]) => h("button", { class: impFilter === k ? "on" : "", onclick: () => { impFilter = k; renderOwn(); } }, `${t}: ${cnt(k)}`)))),
-    h("div", { class: "tbl-wrap" }, h("table", { class: "prices imp" }, h("thead", {}, h("tr", {}, ["Стан", "Код", "Назва у файлі", "У довіднику", "Було", "Стане", S2.mode === "bom" ? "К-сть" : ""].map((t, i) => h("th", { class: i === 4 || i === 5 || i === 6 ? "num" : "" }, t)))),
-      h("tbody", {}, shown.slice(0, 500).map((r) => h("tr", { class: "st-" + r.st }, h("td", {}, h("span", { class: "stl " + ST[r.st][1] }, ST[r.st][0])), h("td", {}, r.code), h("td", {}, r.name),
-        h("td", {}, r.m ? r.m.name : S2.addNew || S2.mode === "bom" ? h("small", {}, "буде додано в довідник") : h("small", { class: "minus" }, "пропущено")),
-        h("td", { class: "num" }, r.m && r.m.price != null ? `${fmtN(r.m.price)} ${curSign(r.m.cur)}` : "—"),
-        h("td", { class: "num" }, r.price != null ? h("b", {}, `${fmtN(r.price)} ${curSign(r.cur)}`) : "—"),
-        h("td", { class: "num" }, S2.mode === "bom" ? fmtN(r.qty) : "")))))),
-    P.missing.length && S2.mode === "prices" ? h("p", { class: "hint" }, `У довіднику є ще ${P.missing.length} позицій, яких немає у файлі: їхні ціни не зміняться.`) : null,
-    h("div", { class: "inline" }, h("button", { class: "primary", onclick: () => applyImport(S2) }, S2.mode === "bom" ? "Застосувати: ціни і склад виробу" : `Застосувати зміни (${cnt("changed")}${S2.addNew ? ` + нових ${cnt("new")}` : ""})`),
+    h("div", { class: "tbl-wrap" }, h("table", { class: "prices imp" }, h("thead", {}, h("tr", {}, heads.map((t, i) => h("th", { class: (S2.mode === "ready" ? i >= 3 : i >= 4) ? "num" : "" }, t)))), tbody)),
+    P.missing.length ? h("p", { class: "hint" }, `У довіднику є ще ${P.missing.length} позицій, яких немає у файлі: їхні ціни не зміняться.`) : null,
+    S2.mode === "ready" ? h("p", { class: "hint" }, "Ціна з файлу стає ціною позиції вручну (без націнки); кран з ціною в € переходить на ціну в ₴. Далі на сторінці результату оберете для кожної: поставити в КП чи ні.") : null,
+    h("div", { class: "inline" }, h("button", { class: "primary", onclick: () => applyImport(S2) },
+      S2.mode === "bom" ? "Застосувати: склад виробу" : S2.mode === "ready" ? `Застосувати (позицій КП: ${cnt("changed")}, матеріалів: ${P.rows.filter((r) => r.m && num(r.m.price) !== r.price).length})` : `Застосувати зміни (${cnt("changed")}${S2.addNew ? ` + нових ${cnt("new")}` : ""})`),
       h("button", { onclick: () => { importState = null; renderOwn(); } }, "Скасувати"))));
 }
-function applyImport(S2) {
-  const P = S2.preview, list = M().list, changes = [];
-  const ids = new Map();
+function specPreviewView(box, S2) {
+  const P = S2.preview, p = prodById(S2.product);
+  const ST = { same: ["є в довіднику", "same"], diff: ["ціна інша", "chg"], new: ["новий", "new"], sub: ["вузол", "same"] };
+  const tb = h("tbody");
+  let sumFile = 0;
   for (const r of P.rows) {
-    if (r.m) {
-      ids.set(r, r.m.id);
-      if (r.st === "changed") { const old = { price: r.m.price, cur: r.m.cur }; r.m.price = r.price; r.m.cur = r.cur; changes.push({ id: r.m.id, name: r.m.name, old, new: { price: r.price, cur: r.cur } }); }
-      if (!r.m.code && r.code) r.m.code = r.code;
-    } else if (S2.addNew || S2.mode === "bom") {
-      const m = { id: newMatId(), code: r.code, name: r.name, unit: r.unit || "шт", group: r.group || "", price: r.price, cur: r.cur };
-      list.push(m); ids.set(r, m.id); changes.push({ id: m.id, name: m.name, old: null, new: { price: m.price, cur: m.cur } });
+    const now = r.t === "work" ? (r.w ? num(r.w.rate) : null) : r.sid ? bomCost(r.sid)?.total : r.m ? matUah(r.m) : null;
+    const used = r.st === "new" || (r.st === "diff" && (r.t === "work" ? S2.updRates : S2.updPrices)) ? r.price : now ?? r.price;
+    sumFile += (used ?? 0) * (r.qty ?? 0);
+    tb.append(h("tr", { class: "st-" + r.st }, h("td", {}, h("span", { class: "stl " + ST[r.st][1] }, r.t === "work" ? { same: "розцінка є", diff: "розцінка інша", new: "нова робота" }[r.st] : ST[r.st][0])),
+      h("td", {}, r.name, r.sid ? h("small", { style: "display:block" }, "ціна з калькуляції «" + productTitle(prodById(r.sid)) + "»") : null),
+      h("td", { class: "num" }, fmtN(r.qty), r.t === "work" ? " год" : r.unit ? " " + r.unit : ""), h("td", { class: "num" }, r.price == null ? "—" : fmtN(r.price)),
+      h("td", { class: "num" }, now == null ? "—" : fmtN(Math.round(now * 100) / 100)), h("td", { class: "num" }, uah(Math.round((used ?? 0) * (r.qty ?? 0))))));
+  }
+  const old = bomCost(S2.product);
+  box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, `Калькуляція → ${productTitle(p)}`, h("small", {}, `${P.rows.length} рядків`))),
+    h("div", { class: "tbl-wrap" }, h("table", { class: "prices imp" }, h("thead", {}, h("tr", {}, ["Стан", "Назва", "К-сть", "Ціна у файлі", "Зараз у налаштуваннях", "Сума"].map((t, i) => h("th", { class: i >= 2 ? "num" : "" }, t)))), tb)),
+    h("p", {}, "Собівартість з цією калькуляцією: ", h("b", {}, uah(Math.round(sumFile))), old ? ` (зараз ${uah(Math.round(old.total))})` : "",
+      admin.bom[S2.product]?.rows?.length ? h("small", { class: "minus" }, " — поточна калькуляція виробу буде замінена") : null),
+    h("div", { class: "inline" }, h("button", { class: "primary", onclick: () => applySpec(S2) }, "Застосувати калькуляцію"), h("button", { onclick: () => { importState = null; renderOwn(); } }, "Скасувати"))));
+}
+function applySpec(S2) {
+  snapResult(`калькуляція «${S2.spec.title || S2.name}» → ${productTitle(prodById(S2.product))}`, () => {
+    const list = M().list, changes = [], rows = [];
+    for (const r of S2.preview.rows) {
+      if (r.t === "work") {
+        let w = r.w;
+        if (!w) { w = { id: newWorkId(), name: r.name, rate: r.price }; admin.labour.push(w); changes.push({ id: w.id, kind: "work", name: w.name, old: null, new: { price: w.rate } }); }
+        else if (S2.updRates && r.st === "diff") { changes.push({ id: w.id, kind: "work", name: w.name, old: { price: w.rate }, new: { price: r.price } }); w.rate = r.price; }
+        rows.push({ work: w.id, qty: r.qty ?? 0 });
+        continue;
+      }
+      let m = r.m;
+      if (!m) { m = { id: newMatId(), code: "", name: r.name, unit: r.unit || "шт", group: /^готовий виріб/i.test(r.name) ? "Вузли" : "", price: r.price, cur: "UAH" }; list.push(m); changes.push({ id: m.id, name: m.name, old: null, new: { price: m.price, cur: "UAH" } }); }
+      else if (S2.updPrices && r.st === "diff") { changes.push({ id: m.id, name: m.name, old: { price: m.price, cur: m.cur }, new: { price: r.price, cur: "UAH" } }); m.price = r.price; m.cur = "UAH"; }
+      rows.push({ mat: m.id, qty: r.qty ?? 0 });
     }
-  }
-  const bom = [];
-  if (S2.mode === "bom") {
     const old = structuredClone(admin.bom[S2.product] || { rows: [], coef: 1, extra: 0 });
-    const rows = P.rows.filter((r) => ids.get(r)).map((r) => ({ mat: ids.get(r), qty: r.qty ?? 1 }));
-    admin.bom[S2.product] = { ...old, rows };
-    bom.push({ product: S2.product, old, new: structuredClone(admin.bom[S2.product]) });
-  }
-  logChange(`імпорт «${S2.name}»` + (S2.mode === "bom" ? ` → склад: ${productTitle(ownProducts().find((x) => x.id === S2.product))}` : ""), changes, bom);
-  saveAdmin(true, "імпорт " + S2.name);
-  if (S2.mode === "bom") { ownProduct = S2.product; ownTab = "bom"; }
-  else ownTab = "log";
-  importState = null; renderOwn(); fixBadge();
-  toast(`Імпорт застосовано: змін цін ${changes.filter((c) => c.old).length}, нових ${changes.filter((c) => !c.old).length}`);
+    admin.bom[S2.product] = { coef: old.coef ?? 1, extra: old.extra ?? 0, rows, title: S2.spec.title, file: S2.name, at: nowStr() };
+    logChange(`калькуляція «${S2.name}» → ${productTitle(prodById(S2.product))}`, changes, [{ product: S2.product, old, new: structuredClone(admin.bom[S2.product]) }]);
+  });
+  ownProduct = S2.product; importState = null;
+  if (ownTab !== "result") { ownTab = "bom"; renderOwn(); }
+  toast("Калькуляцію застосовано");
+}
+function applyImport(S2) {
+  const P = S2.preview;
+  if (S2.mode === "ready") return applyReady(S2);
+  const note = `імпорт «${S2.name}»` + (S2.mode === "bom" ? ` → склад: ${productTitle(prodById(S2.product))}` : "");
+  let nCh = 0, nNew = 0;
+  snapResult(note, () => {
+    const list = M().list, changes = [], ids = new Map();
+    for (const r of P.rows) {
+      if (r.m) {
+        ids.set(r, r.m.id);
+        if (r.st === "changed") { const old = { price: r.m.price, cur: r.m.cur }; r.m.price = r.price; r.m.cur = r.cur; changes.push({ id: r.m.id, name: r.m.name, old, new: { price: r.price, cur: r.cur } }); }
+        if (!r.m.code && r.code) r.m.code = r.code;
+      } else if (S2.addNew || S2.mode === "bom") {
+        const m = { id: newMatId(), code: r.code, name: r.name, unit: r.unit || "шт", group: r.group || "", price: r.price, cur: r.cur };
+        list.push(m); ids.set(r, m.id); changes.push({ id: m.id, name: m.name, old: null, new: { price: m.price, cur: m.cur } });
+      }
+    }
+    const bom = [];
+    if (S2.mode === "bom") {
+      const old = structuredClone(admin.bom[S2.product] || { rows: [], coef: 1, extra: 0 });
+      admin.bom[S2.product] = { ...old, rows: P.rows.filter((r) => ids.get(r)).map((r) => ({ mat: ids.get(r), qty: r.qty ?? 1 })), file: S2.name, at: nowStr() };
+      delete admin.bom[S2.product].ref;
+      bom.push({ product: S2.product, old, new: structuredClone(admin.bom[S2.product]) });
+    }
+    nCh = changes.filter((c) => c.old).length; nNew = changes.length - nCh;
+    logChange(note, changes, bom);
+  });
+  if (S2.mode === "bom") { ownProduct = S2.product; if (ownTab !== "result") ownTab = "bom"; }
+  else if (ownTab !== "result") ownTab = "log";
+  importState = null; renderOwn();
+  toast(`Імпорт застосовано: змін цін ${nCh}, нових ${nNew}`);
+}
+/** Ready final prices (гот): the position's price by hand = the file price, then the result page decides what goes into the KP. */
+function applyReady(S2) {
+  const rows = S2.preview.rows.filter((r) => r.target && r.price != null), res = [], note = `готові ціни «${S2.name}»`;
+  snapResult(note, () => {
+    const recs = [], changes = [];
+    for (const r of S2.preview.rows.filter((x) => x.m && x.price != null && num(x.m.price) !== x.price)) {
+      changes.push({ id: r.m.id, name: r.m.name, old: { price: r.m.price, cur: r.m.cur }, new: { price: r.price, cur: "UAH" } }); r.m.price = r.price; r.m.cur = "UAH";
+    }
+    for (const r of rows) {
+      const [kind, id] = r.target.split(":"), pos = pricedPositions().find((x) => x.kind === kind && x.id === id);
+      const inKp = kpPrice(kind, id, pos?.rule);
+      const old = structuredClone(admin.prices[kind][id] ?? null);
+      const R = (admin.prices[kind][id] = { ...(old || {}), base: r.price });
+      delete R.mode; delete R.markup; delete R.final; delete R.eur;
+      recs.push({ kind, id, old, new: structuredClone(R) });
+      if (inKp !== r.price) res.push({ kind, id, title: pos?.it ? productTitle(pos.it) : pos?.title || id, oldCost: null, newCost: null, calc: r.price, inKp, pick: "auto", manual: null, ready: true });
+    }
+    logChange(note, changes, [], recs);
+  });
+  if (res.length) { const R0 = admin.calc_result; admin.calc_result = { at: nowStr(), note, rows: [...res, ...(R0?.note === note ? R0.rows.filter((x) => !res.some((y) => y.id === x.id)) : [])], bundles: [] }; ownTab = "result"; saveAdmin(true, note); }
+  importState = null; renderOwn();
+  toast(`Оновлено позицій: ${rows.length}; нових цін для КП: ${res.length}`);
 }
 function ownLog(box) {
   const log = M().log;
   if (!log.length) { box.append(h("p", { class: "hint" }, "Змін ще не було.")); return; }
   for (const e of log) {
-    const n = e.changes.length + (e.bom || []).length;
+    const n = e.changes.length + (e.bom || []).length + (e.prices || []).length;
     box.append(h("div", { class: "ver" + (e.undone ? " off" : "") }, h("b", {}, e.at), h("span", { class: "n" }, e.note, h("small", {}, ` · змін: ${n}`)),
-      h("details", { class: "pinfo" }, h("summary", {}, "деталі"), h("ul", {}, e.changes.slice(0, 200).map((c) => h("li", {}, c.name + ": ",
-        c.old ? `${c.old.price ?? "—"} ${curSign(c.old.cur)}` : "новий", " → ", c.new ? `${c.new.price ?? "—"} ${curSign(c.new.cur)}` : "видалено")),
-        (e.bom || []).map((b) => h("li", {}, `склад виробу: ${b.old.rows.length} → ${b.new.rows.length} рядків`)))),
+      h("details", { class: "pinfo" }, h("summary", {}, "деталі"), h("ul", {}, e.changes.slice(0, 200).map((c) => h("li", {}, (c.kind === "work" ? "робота " : "") + c.name + ": ",
+        c.old ? `${c.old.price ?? "—"} ${c.kind === "work" ? "₴/год" : curSign(c.old.cur)}` : "новий", " → ", c.new ? `${c.new.price ?? "—"} ${c.kind === "work" ? "₴/год" : curSign(c.new.cur)}` : "видалено")),
+        (e.bom || []).map((b) => h("li", {}, `калькуляція «${productTitle(prodById(b.product))}»: ${b.old.rows?.length ?? 0} → ${b.new.rows?.length ?? 0} рядків`)),
+        (e.prices || []).map((p) => h("li", {}, `спосіб ціни: ${p.kind === "bundles" ? bundleTitle(rawBundle(p.id) || { id: p.id }) : productTitle(prodById(p.id)) || p.id}`)))),
       e.undone ? h("span", { class: "badge gray" }, "відкочено") : h("button", { class: "sm", onclick: () => confirmBox(`Відкотити «${e.note}»? Ціни повернуться до попередніх.`, "Відкотити", () => undoLog(e)) }, "↶ Відкотити")));
   }
 }
 function undoLog(e) {
-  const list = M().list, back = [];
-  for (const c of [...e.changes].reverse()) {
-    const m = list.find((x) => x.id === c.id);
-    if (!c.old) { if (m && !usedIn(m.id).length) { M().list = M().list.filter((x) => x !== m); back.push({ id: c.id, name: c.name, old: { price: m.price, cur: m.cur }, new: null }); } continue; }
-    if (!c.new) { if (!m && c.old.row) { M().list.push(c.old.row); back.push({ id: c.id, name: c.name, old: null, new: { price: c.old.price, cur: c.old.cur } }); } continue; }
-    if (m) { back.push({ id: m.id, name: m.name, old: { price: m.price, cur: m.cur }, new: { ...c.old } }); m.price = c.old.price; m.cur = c.old.cur; }
-  }
-  const bom = [];
-  for (const b of e.bom || []) { bom.push({ product: b.product, old: structuredClone(admin.bom[b.product] || { rows: [] }), new: structuredClone(b.old) }); admin.bom[b.product] = structuredClone(b.old); }
-  e.undone = true;
-  logChange("відкат: " + e.note, back, bom);
-  saveAdmin(true, "відкат: " + e.note); renderOwn(); fixBadge(); toast("Відкочено");
+  const back = [];
+  snapResult("відкат: " + e.note, () => {
+    for (const c of [...e.changes].reverse()) {
+      const L = c.kind === "work" ? admin.labour : M().list, m = L.find((x) => x.id === c.id);
+      const setL = (v) => { if (c.kind === "work") admin.labour = v; else M().list = v; };
+      if (!c.old) { if (m && !(c.kind === "work" ? workUsedIn(m.id) : usedIn(m.id)).length) { setL(L.filter((x) => x !== m)); back.push({ id: c.id, kind: c.kind, name: c.name, old: { price: c.kind === "work" ? m.rate : m.price, cur: m.cur }, new: null }); } continue; }
+      if (!c.new) { if (!m && c.old.row) { L.push(c.old.row); back.push({ id: c.id, kind: c.kind, name: c.name, old: null, new: { price: c.old.price, cur: c.old.cur } }); } continue; }
+      if (!m) continue;
+      if (c.kind === "work") { back.push({ id: m.id, kind: "work", name: m.name, old: { price: m.rate }, new: { price: c.old.price } }); m.rate = c.old.price; }
+      else { back.push({ id: m.id, name: m.name, old: { price: m.price, cur: m.cur }, new: { ...c.old } }); m.price = c.old.price; m.cur = c.old.cur; }
+    }
+    const bom = [], prices = [];
+    for (const b of e.bom || []) { bom.push({ product: b.product, old: structuredClone(admin.bom[b.product] || { rows: [] }), new: structuredClone(b.old) }); admin.bom[b.product] = structuredClone(b.old); }
+    for (const p of e.prices || []) {
+      prices.push({ kind: p.kind, id: p.id, old: structuredClone(admin.prices[p.kind][p.id] ?? null), new: structuredClone(p.old) });
+      if (p.old == null) delete admin.prices[p.kind][p.id]; else admin.prices[p.kind][p.id] = structuredClone(p.old);
+    }
+    e.undone = true;
+    logChange("відкат: " + e.note, back, bom, prices);
+  });
+  toast("Відкочено");
 }
 
 // ------------------------------------------------------------------ settings: versions

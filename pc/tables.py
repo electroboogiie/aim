@@ -91,7 +91,7 @@ def read_csv(data):
 
 def read_table(name, data):
     ext = name.lower().rsplit('.', 1)[-1] if '.' in name else ''
-    if ext in ('xlsx', 'xlsm'):
+    if ext in ('xlsx', 'xlsm') or data[:2] == b'PK':
         try:
             return read_xlsx(data)
         except (zipfile.BadZipFile, KeyError, ET.ParseError) as e:
@@ -99,5 +99,5 @@ def read_table(name, data):
     if ext in ('csv', 'txt'):
         return read_csv(data)
     if ext == 'xls':
-        raise ValueError('Старий формат .xls не читається: збережіть файл в Excel як .xlsx або .csv.')
-    raise ValueError('Підтримуються файли .xlsx і .csv')
+        raise ValueError('Не вдалося прочитати .xls: збережіть файл в Excel як .xlsx або .csv.')
+    raise ValueError('Підтримуються файли .xlsx, .xls і .csv')

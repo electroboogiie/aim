@@ -58,7 +58,7 @@ export function kpRows(q: Quote): KpSpecRow[] {
  */
 function kpCards(c: Catalog, kt: KitType, q: Quote, offer: boolean): KpSpec["accessories"] {
   const cards: KpSpec["accessories"] = q.accessories.map((a) => ({
-    group: a.group ?? "crane", title: a.title, desc: a.desc, photo: a.photo ?? "",
+    group: a.group ?? "crane", title: a.qty > 1 ? `${a.title} — ${a.qty} шт` : a.title, desc: a.desc, photo: a.photo ?? "",
     price_text: a.price_uah === null ? TEXT_ON_REQUEST : a.price_text,
   }));
   if (!offer) return cards;

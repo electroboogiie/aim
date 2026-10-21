@@ -273,6 +273,22 @@ def nbu_eur():
     return {'rate': float(rows[0]['rate']), 'date': f'{y}-{m}-{d}', 'source': 'nbu'}
 
 
+def xls_to_xlsx(name, data):
+    """Old Excel .xls (1C exports): converted to .xlsx by LibreOffice, which the app already uses for PDF."""
+    if not name.lower().endswith('.xls') or data[:2] == b'PK': return data
+    import tempfile
+    from kpgen.pdf import convert, PdfError
+    d = tempfile.mkdtemp(prefix='kp_xls_')
+    try:
+        src = os.path.join(d, 'table.xls')
+        with open(src, 'wb') as f: f.write(data)
+        try: out = convert(src, d, 'xlsx', timeout=90)
+        except PdfError: raise ValueError('Файл .xls відкривається через LibreOffice, а його не знайдено: встановіть LibreOffice або збережіть файл в Excel як .xlsx.')
+        with open(out, 'rb') as f: return f.read()
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
 class H(BaseHTTPRequestHandler):
     server_version = 'KP-PC/1'
 
@@ -388,7 +404,7 @@ class H(BaseHTTPRequestHandler):
             data = self.body()
             if not data: return self.send(400, {'error': 'Порожній файл'})
             from tables import read_table
-            try: return self.send(200, {'name': name, 'sheets': read_table(name, data)})
+            try: return self.send(200, {'name': name, 'sheets': read_table(name, xls_to_xlsx(name, data))})
             except ValueError as e: return self.send(400, {'error': str(e)})
         if p == '/api/generate':
             try: body = json.loads(self.body())

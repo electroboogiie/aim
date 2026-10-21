@@ -175,6 +175,7 @@ export interface Accessory {
   source: string;
   kp_uses?: number;                     // how many of the user's KPs mention it: default order on the options page
   disabled?: boolean;                   // switched off: not offered in the configurator nor on the KP options page
+  max_qty?: number;                     // can be ordered in several pieces (1…max_qty), price × pieces
   requires?: Relation[];
   excludes?: Relation[];
 }
@@ -203,7 +204,7 @@ export interface Settings {
   kp_number_prefix: string;
 }
 
-export interface SelectionAccessory { id: string; variant?: string | null; price_uah?: number | null }
+export interface SelectionAccessory { id: string; variant?: string | null; price_uah?: number | null; qty?: number | null }
 export interface Selection {
   slots: Record<string, string | null>;
   choices: Record<string, string>;

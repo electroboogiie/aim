@@ -410,3 +410,8 @@ table.imp tr.st-changed td { background: #FFFBEB; } table.imp tr.st-new td { bac
 table.mats input { font-size: 12.5px; padding: 4px 6px; }
 .ver.off { opacity: .6; }
 table.prices td small { white-space: normal; } #fixBox table.prices td:last-child { min-width: 260px; }
+.seg button .cnt { margin-left: 6px; background: var(--or); color: #fff; border-radius: 99px; padding: 0 6px; font-size: 11px; }
+.price-pick { display: grid; gap: 6px; margin-top: 12px; }
+.price-pick .chk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pick { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.pick .chk { white-space: nowrap; }
