@@ -112,7 +112,7 @@ def preview(kind, q):
 
 
 def styles_info():
-    return [dict(id=k, title=v['title'], kits=list(v.get('kits') or []),
+    return [dict(id=k, title=v['title'], kits=list(v.get('kits') or []), engine=v['engine'],
                  pages=[dict(key=key, title=t, hero=v['engine'] == 'v3' and key in HERO_PAGES and not (key == 'cover' and v.get('cover') == 'panel'))
                         for key, t, _ in pages(k)]) for k, v in STYLES.items()]
 
@@ -168,7 +168,8 @@ def apply_admin(spec, admin):
     if style not in STYLES: style = DEFAULT
     kits = STYLES[style].get('kits')
     if kits and spec.get('kit_type') not in kits:
-        raise ValueError(f"Стиль «{STYLES[style]['title']}» є лише для комплектів НПЛ-10 з краном. Оберіть інший стиль.")
+        what = ', '.join({'npl_crane': 'НПЛ-10 + кран', 'crane_kit': 'кран у комплекті'}.get(k, k) for k in kits)
+        raise ValueError(f"Стиль «{STYLES[style]['title']}» є лише для комплектів: {what}. Оберіть інший стиль.")
     spec['style'] = style
     st = (admin.get('styles') or {}).get(style) or {}
     bg = {k: v for k, v in (st.get('bg') or {}).items() if v and v.get('path')}

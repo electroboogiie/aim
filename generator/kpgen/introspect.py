@@ -8,8 +8,10 @@ from .spec import validate
 from .styles import STYLES, pages, template_path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SAMPLES = {'v3': ['bmf720_komplekt', 'bmf750_radiator', 'npl10_bmf720'], 'd6': ['npl10_bmf750']}
-SKIP = re.compile(r'^([ST]-\d\d|\d\d|\d\d / \d\d|[\d\s,.]+|//.*|→|●.*|[A-Z]|L|W|H|▭)$')
+SAMPLES = {'v3': ['bmf720_komplekt', 'bmf750_radiator', 'npl10_bmf720'], 'npl_label': ['npl10_bmf750'],
+           'crane_label': ['bmf720_komplekt', 'bmf650_komplekt']}
+SKIP = re.compile(r'^([ST]-\d\d|\d\d|\d\d / \d\d|[\d\s,.]+|\d+ м|//.*|→|●.*|[A-Z]|L|W|H|▭)$')
+ENGINE_IDS = {'d6': {'price': set(range(30, 47))}}   # receipt rows: always written from the kit when shown
 
 
 def _texts(slide):
@@ -40,7 +42,7 @@ def static_texts(style):
     origin = {k: i for k, _, i in pages(style)}
     seen, changed = {}, set()
     with tempfile.TemporaryDirectory() as d:
-        for name in SAMPLES[STYLES[style]['engine']]:
+        for name in SAMPLES.get(style) or SAMPLES[STYLES[style]['engine']]:
             for key, slide in _build(style, name, d).items():
                 base = _texts(tpl[origin[key]]); now = _texts(slide)
                 seen.setdefault(key, base)
@@ -50,7 +52,8 @@ def static_texts(style):
     for key, title, _ in pages(style):
         if key not in seen: continue
         out[key] = dict(title=title, texts=[dict(id=sid, text=t) for sid, t in sorted(seen[key].items())
-                                          if (key, sid) not in changed and not SKIP.match(t.strip()) and t not in LAYOUT])
+                                          if (key, sid) not in changed and sid not in ENGINE_IDS.get(STYLES[style]['engine'], {}).get(key, ())
+                                          and not SKIP.match(t.strip()) and t not in LAYOUT])
     return out
 
 

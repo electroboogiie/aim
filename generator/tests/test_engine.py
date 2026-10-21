@@ -76,6 +76,27 @@ class EngineTest(unittest.TestCase):
             price = T[6]
             self.assertEqual(sum(1 for t in price if re.fullmatch(r'0\d', t)), n, f'{n} rows')
 
+    def test_heavy_label_crane_kit(self):
+        """«Heavy Label» for a crane in a kit: 8 pages renumbered, the model everywhere, its chip orange, no НПЛ-10 kit rows."""
+        for name, model in (('bmf650_komplekt', 'BMF 650'), ('bmf750_radiator', 'BMF 750'), ('bmf720_komplekt', 'BMF 720')):
+            spec = self.sample(name); spec['style'] = 'crane_label'
+            code, res, err = run(spec)
+            self.assertEqual(code, 0, f'{name}: {err}'); self.assertEqual(res['pages'], 8)
+            prs = Presentation(res['pptx']); T = texts(prs)
+            for i, page in enumerate(T[1:], 2):
+                self.assertIn(f'{i:02d} / 08', page, f'{name} page {i}')
+                self.assertIn(f'{model} · КРАН У КОМПЛЕКТІ', page)
+            self.assertFalse(any('BMF 720' in t for p in T for t in p if model != 'BMF 720' and not t.startswith('BMF 720\n')
+                                 and t != 'BMF 720'), name)
+            chips = {sh.text_frame.text: 'F2530A' in prs.slides[1].shapes._spTree.xpath(f'.//p:cNvPr[@id="{sh.shape_id - 1}"]/../..')[0].xml
+                     for sh in prs.slides[1].shapes if sh.shape_id in (46, 48, 50, 52)}
+            self.assertEqual([k for k, v in chips.items() if v], [model], name)
+            self.assertEqual(set(chips), {'BMF 650', 'BMF 720', 'BMF 750', 'BMF 905'})
+            self.assertFalse(any('Напівпричіп' in t for t in T[4]), name)   # price page
+        spec = self.sample('npl10_bmf720'); spec['style'] = 'crane_label'
+        code, _, err = run(spec)
+        self.assertNotEqual(code, 0); self.assertIn('кран у комплекті', err)
+
     def test_many_accessories_and_terms(self):
         spec = self.sample('npl10_bmf650')
         spec['accessories'] = spec['accessories'] + spec['accessories'][:3]
