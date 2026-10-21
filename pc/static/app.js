@@ -664,15 +664,12 @@ function priceInfo(kind, id, manual) {
   return h("details", { class: "pinfo" }, h("summary", {}, "як рахується ціна"), h("ul", {}, lines.map((l) => h("li", {}, l))));
 }
 function admRowPrice(itemId) { const it = core.itemById(cat, itemId); return it?.price?.mode === "ref" ? uah(it.price.uah) : "—"; }
-const STYLE_KITS = { npl_crane: "НПЛ-10 + кран", crane_kit: "кран у комплекті" };
-const styleKits = (s) => s.kits.map((k) => STYLE_KITS[k] || k).join(", ");
 function renderStyleChips() {
   const box = $("#styleChips"); const cur = box.dataset.v || admin.style || "dark"; box.innerHTML = "";
-  const base = S.kt?.extends || S.kt?.id;   // a kit copied in the settings takes its source kit's styles
-  const ok = (s) => !s.kits.length || s.kits.includes(base);
+  const ok = (s) => !s.kits.length || s.kits.includes(S.kt?.id);
   const pick = B.styles.find((s) => s.id === cur && ok(s)) ? cur : (ok(B.styles.find((s) => s.id === admin.style) || {}) ? admin.style : "dark");
   box.dataset.v = pick;
-  for (const s of B.styles) box.append(h("button", { class: "style-chip" + (s.id === pick ? " on" : ""), disabled: !ok(s), title: ok(s) ? s.title : `лише для: ${styleKits(s)}`,
+  for (const s of B.styles) box.append(h("button", { class: "style-chip" + (s.id === pick ? " on" : ""), disabled: !ok(s), title: ok(s) ? s.title : "лише для НПЛ-10 + кран",
     onclick: () => { box.dataset.v = s.id; renderStyleChips(); } }, h("img", { src: `previews/${s.id}.jpg` }), s.title));
 }
 
@@ -881,7 +878,7 @@ function styleSeg(onPick) {
 function renderStyleCards() {
   const box = $("#styleCards"); box.innerHTML = "";
   for (const s of B.styles) box.append(h("div", { class: "stylecard" + (admin.style === s.id ? " on" : "") },
-    lbImg(`previews/${s.id}.jpg`, null, { alt: s.title }), h("b", {}, s.title), h("small", {}, s.kits.length ? `лише ${styleKits(s)}` : "усі комплекти з краном"),
+    lbImg(`previews/${s.id}.jpg`, null, { alt: s.title }), h("b", {}, s.title), h("small", {}, s.kits.length ? "лише НПЛ-10 + кран" : "усі комплекти з краном"),
     h("button", { class: "use" + (admin.style === s.id ? " primary" : ""), onclick: () => { admin.style = s.id; $("#styleChips").dataset.v = ""; saveAdmin(); renderStyleCards(); renderStyleChips(); } },
       admin.style === s.id ? "✓ За замовчуванням" : "Зробити основним")));
 }
@@ -1473,7 +1470,7 @@ function renderItemEditor() {
   cat = effCatalog();
   itemStyle ??= admin.style || "dark";
   const seg = $("#itemStyleSeg"); seg.innerHTML = "";
-  for (const s of B.styles.filter((s) => s.engine !== "d6")) seg.append(h("button", { class: itemStyle === s.id ? "on" : "", onclick: () => { itemStyle = s.id; renderItemEditor(); } }, s.title));
+  for (const s of B.styles.filter((s) => s.id !== "npl_label")) seg.append(h("button", { class: itemStyle === s.id ? "on" : "", onclick: () => { itemStyle = s.id; renderItemEditor(); } }, s.title));
   const box = $("#itemEditor"); box.innerHTML = "";
   const customIds = new Set((CA().items?.custom || []).map((x) => x.id));
   const sections = [...Object.entries(KINDS).map(([k, t]) => [k, t, cat.items.filter((i) => i.kind === k && !customIds.has(i.id))]), ["custom", "Власні позиції (додані в налаштуваннях)", cat.items.filter((i) => customIds.has(i.id))]];
