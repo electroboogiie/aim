@@ -1344,6 +1344,16 @@
      ],
      "required": true,
      "default": "bmf720"
+    },
+    {
+     "id": "tank",
+     "title": "Гідравлічний бак",
+     "candidates": [
+      "tank"
+     ],
+     "required": false,
+     "default": null,
+     "priced": true
     }
    ],
    "choices": [
@@ -1650,21 +1660,23 @@
      ]
     },
     {
-     "id": "pump_type",
+     "id": "pump_flow",
      "title": "Насос",
-     "default": "axial",
+     "default": "p63",
+     "slot": "tank",
      "options": [
       {
-       "value": "axial",
-       "title": "аксіально-поршневий",
-       "short": "аксіально-поршневий насос"
+       "value": "p63",
+       "title": "63",
+       "short": "насос 63",
+       "note": "насос 63"
       },
       {
-       "value": "gear",
-       "title": "шестеренний",
-       "short": "шестеренний насос",
+       "value": "p80",
+       "title": "80",
+       "short": "насос 80",
        "on_request": true,
-       "note": "шестеренний насос замість аксіально-поршневого"
+       "note": "насос 80"
       }
      ]
     },

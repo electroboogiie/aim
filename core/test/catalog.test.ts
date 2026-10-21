@@ -86,7 +86,8 @@ test("business rules: cranes come with rotator and grapple, KP profiles for 650/
 test("business rules: НПЛ-10 kit has 2 positions priced as a bundle, no autonomous hydraulics in row texts", () => {
   const npl = kitTypeById(c, "npl_crane")!;
   assert.equal(npl.price_display, "bundle");
-  assert.deepEqual(npl.slots.map((s) => s.id), ["trailer", "crane"]);
+  assert.deepEqual(npl.slots.filter((s) => !s.priced).map((s) => s.id), ["trailer", "crane"]);   // the bundle: 2 rows «у комплекті»
+  assert.ok(npl.slots.filter((s) => s.priced).every((s) => !s.required && !s.default), "extras priced on their own are not in the base kit");
   for (const it of c.items) {
     for (const t of [it.title, it.short, it.desc_template ?? ""]) assert.doesNotMatch(t, /автономн\S*\s+гідравл/i, it.id);
   }

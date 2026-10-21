@@ -649,7 +649,7 @@ function renderStyleChips() {
 }
 
 const CHIP_TEXT = { brakes: "Гальма на вибір", wheels: "Колеса на вибір", drawbar: "Дишло на вибір", pump_type: "Насос на вибір", stakes: "Кількість коників",
-  stakes_ext: "Нарощування коників", seat_pos: "Місце оператора" };
+  stakes_ext: "Нарощування коників", seat_pos: "Місце оператора", pump_flow: "Гідробак, насос 63 / 80" };
 /** KpSpec of a quote with the settings: KP photos and their framing, texts, generator layout of copied kits. */
 function specFrom(q, meta, style) {
   const spec = core.buildKpSpec(cat, settings, q, meta);
@@ -668,7 +668,7 @@ function specFrom(q, meta, style) {
   const kt = core.kitTypeById(cat, q.kit_type);
   if (kt?.extends) spec.kit_type = kt.extends;   // a kit copied in the settings is laid out like its source
   if (spec.kit_type === "npl_crane" && kt) {     // «+ опції для апгрейду» on the configuration page: the kit's choices as set in the settings
-    const chips = kt.choices.filter((ch) => ch.slot !== "crane" && ch.options.length > 1).map((ch) => CHIP_TEXT[ch.id] || ch.title);
+    const chips = kt.choices.filter((ch) => ch.slot !== "crane" && ch.options.length > 1 && !(ch.slot && q.rows.some((r) => r.slot === ch.slot))).map((ch) => CHIP_TEXT[ch.id] || ch.title);
     chips.push("Колір на замовлення");
     if (spec.accessories?.length) chips.push("Опції для крана: с. {opt}", "Опції для причепа: с. {opt}");
     spec.upgrade_chips = chips.length > 8 ? [...chips.slice(0, 8 - (spec.accessories?.length ? 2 : 0)), ...(spec.accessories?.length ? chips.slice(-2) : [])] : chips;
