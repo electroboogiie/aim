@@ -1,6 +1,6 @@
 import { SUPPORTED_PROFILES, SUPPORTED_TRAILER_PROFILES, accessoryDesc, choiceIsStandard, accessoryStatus, companyById, itemById, kitTitle, kitTypeById, modelName, termById } from "./catalog.js";
 import { fillTemplate, formatDate, formatPct, formatRate, formatUah, joinUk } from "./format.js";
-import { TEXT_ON_REQUEST } from "./pricing.js";
+import { TEXT_ON_REQUEST, eurRate, priceRule } from "./pricing.js";
 /** Crane spec keys the generator prints (§2.1 plus telescope). */
 export const CRANE_SPEC_KEYS = ["reach_m", "torque_knm", "lift_4m_kg", "lift_full_kg", "grapple_m2", "rotator_t", "valve",
     "valve_flow_l", "slew_knm", "slew_cyl", "turn_deg", "pressure_bar", "pump_lpm", "legs", "weight_kg", "telescope"];
@@ -53,9 +53,9 @@ export function kpRows(q) {
 }
 /**
  * Options page cards: the chosen accessories, then (offer) the kit's other compatible accessories that have a photo,
- * priced on request, bmf.rv.ua first, up to MAX_KP_CARDS.
+ * with their catalog price (else on request), bmf.rv.ua first, up to MAX_KP_CARDS.
  */
-function kpCards(c, kt, q, offer) {
+function kpCards(c, settings, kt, q, offer) {
     const cards = q.accessories.map((a) => ({
         group: a.group ?? "crane", title: a.qty > 1 ? `${a.title} — ${a.qty} шт` : a.title, desc: a.desc, photo: a.photo ?? "",
         price_text: a.price_uah === null ? TEXT_ON_REQUEST : a.price_text,
@@ -65,12 +65,15 @@ function kpCards(c, kt, q, offer) {
     const items = q.rows.map((r) => itemById(c, r.item_id)).filter((x) => !!x);
     const chosen = new Set(q.accessories.map((a) => a.item_id));
     const rank = (a) => (a.origin === "bmf.ee" ? 1 : 0);
+    const ctx = { settings, eur: eurRate(settings, { eur: q.eur_rate, source: q.eur_rate_source }), rate: null, date: q.date };
+    const offerPrice = (a) => priceRule(a.price, ctx, a.title).price;
     const extra = c.accessories
         .map((a, i) => ({ a, i }))
         .filter(({ a }) => !a.disabled && kt.accessory_groups.includes(a.group) && !chosen.has(a.id) && !!a.photo && accessoryStatus(c, a, items) === "ok")
         .sort((x, y) => rank(x.a) - rank(y.a) || x.i - y.i)
         .slice(0, Math.max(0, MAX_KP_CARDS - cards.length))
-        .map(({ a }) => ({ group: a.group, title: a.title, desc: accessoryDesc(c, a, items), photo: a.photo ?? "", price_text: TEXT_ON_REQUEST }));
+        .map(({ a }) => ({ group: a.group, title: a.title, desc: accessoryDesc(c, a, items), photo: a.photo ?? "",
+        price_text: ((p) => (p === null ? TEXT_ON_REQUEST : formatUah(p)))(offerPrice(a)) }));
     const order = (g) => (g === "crane" ? 0 : 1);
     return [...cards, ...extra].sort((x, y) => order(x.group) - order(y.group));
 }
@@ -218,7 +221,7 @@ export function buildKpSpec(c, settings, q, meta) {
         npl: nplBlock(c, q),
         trailer: trailerBlock(c, q),
         rows,
-        accessories: kpCards(c, kt, q, meta.offer_accessories === true),
+        accessories: kpCards(c, settings, kt, q, meta.offer_accessories === true),
         total_text: unpriced ? TEXT_ON_REQUEST : formatUah(q.total_uah),
         price_note: notes.join(" "),
         price_date: formatDate(q.date),

@@ -4,7 +4,7 @@ export const SUPPORTED_PROFILES = ["bmf650", "bmf720", "bmf750", "bmf905"];
 /** BMF trailer profiles of the generator (drawings and photos for the trailer pages). */
 export const SUPPORTED_TRAILER_PROFILES = ["bmf8t2", "bmf10t2", "bmf14t2", "bmf17t2"];
 const ITEM_KINDS = ["crane", "trailer", "component", "service"];
-const ACCESSORY_GROUPS = ["crane", "trailer"];
+const ACCESSORY_GROUPS = ["crane", "trailer", "truck"];
 const ROLES = ["maker", "distributor", "both"];
 export function itemById(c, id) { return c.items.find((x) => x.id === id); }
 export function kitTypeById(c, id) { return c.kit_types.find((x) => x.id === id); }

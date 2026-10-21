@@ -12,7 +12,7 @@ export const SUPPORTED_PROFILES: readonly string[] = ["bmf650", "bmf720", "bmf75
 export const SUPPORTED_TRAILER_PROFILES: readonly string[] = ["bmf8t2", "bmf10t2", "bmf14t2", "bmf17t2"];
 
 const ITEM_KINDS = ["crane", "trailer", "component", "service"];
-const ACCESSORY_GROUPS = ["crane", "trailer"];
+const ACCESSORY_GROUPS = ["crane", "trailer", "truck"];
 const ROLES = ["maker", "distributor", "both"];
 
 export function itemById(c: Catalog, id: string): Item | undefined { return c.items.find((x) => x.id === id); }

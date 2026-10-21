@@ -160,7 +160,7 @@ export interface AccessoryVariant {
 
 export interface Accessory {
   id: string;
-  group: "crane" | "trailer";
+  group: "crane" | "trailer" | "truck";
   title: string;
   desc: string;
   photo: string;

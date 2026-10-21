@@ -27,8 +27,8 @@ const qs = (o) => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v
 let B, cat0, settings, admin, cat;
 const S = { kt: null, sel: null, manual: {}, kitPrice: null, discount: 0, qty: {}, historyId: null, preset: null };
 const KINDS = { crane: "Крани BMF", trailer: "Причепи", component: "Комплектуючі", service: "Послуги" };
-const KIT_SHORT = { crane_kit: "Кран у комплекті", npl_crane: "НПЛ-10 + кран", bmf_trailer_crane: "Причіп BMF + кран", truck_crane: "КРАЗ + кран" };
-const GROUPS = { crane: "Для крана", trailer: "Для причепа" };
+const KIT_SHORT = { crane_kit: "Кран у комплекті", npl_crane: "НПЛ-10 + кран", bmf_trailer_crane: "Причіп BMF + кран", truck_crane: "Вантажівка + кран" };
+const GROUPS = { crane: "Для крана", trailer: "Для причепа", truck: "Для вантажівки" };
 
 // ------------------------------------------------------------------ modal and lightbox
 function modal(...content) {
@@ -479,7 +479,7 @@ function renderTree() {
     const it = core.itemById(cat, cur || s.default || s.candidates[0]);
     const cands = core.slotCandidates(cat, kt.id, s.id, sel);
     const pick = (cands.find((c) => c.allowed && c.id === s.default) || cands.find((c) => c.allowed))?.id;
-    const node = tnode({ photo: it?.photo, title: s.title, mark: cur ? "✓ в комплекті" : "+ " + itemPriceText(it), markCls: cur ? "std" : "",
+    const node = tnode({ photo: it?.photo, title: s.title, mark: cur ? (s.priced ? "✓ " + itemPriceText(it) + " окремо" : "✓ в комплекті") : "+ " + itemPriceText(it), markCls: cur ? "std" : "",
       on: !!cur, dis: !pick && !cur, cls: "tog", onclick: () => setSlot(s.id, cur ? null : pick) });
     if (it?.unit) node.querySelector(".tt").append(h("label", { class: "tq", onclick: (e) => e.stopPropagation() }, h("input", { type: "number", min: it.unit.min || 1, max: it.unit.max || "", value: S.qty[it.id] ?? it.unit.default,
       onchange: (e) => { S.qty[it.id] = num(e.target.value); if (!cur) setSlot(s.id, it.id); else { renderConf(); } } }), it.unit.name));
@@ -588,7 +588,7 @@ function renderAccs() {
   const box = $("#accs"); box.innerHTML = "";
   const chosen = new Map(S.sel.accessories.map((a) => [a.id, a]));
   const all = core.kitAccessories(cat, S.kt.id, S.sel);
-  for (const g of ["crane", "trailer"]) {
+  for (const g of Object.keys(GROUPS)) {
     const list = all.filter((x) => x.accessory.group === g);
     if (!list.length) continue;
     box.append(h("div", { class: "acc-grp" }, GROUPS[g]));
@@ -1371,7 +1371,7 @@ function renderAccEditor() {
   const ids = cat.accessories.map((a) => a.id);
   const targets = cat.items.filter((i) => i.kind === "crane" || i.kind === "trailer");
   const offList = h("div", { class: "ed-list" });
-  for (const g of ["crane", "trailer"]) {
+  for (const g of Object.keys(GROUPS)) {
     const list = h("div", { class: "ed-list" });
     const inG = cat.accessories.filter((a) => a.group === g);
     for (const a of inG) {

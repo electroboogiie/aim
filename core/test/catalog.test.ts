@@ -98,7 +98,8 @@ test("business rules: НПЛ-10 kit has 2 positions priced as a bundle, no auton
 test("accessories: the ones the user's KPs mention most come first, on request", () => {
   const uses = c.accessories.map((a) => a.kp_uses ?? 0);
   assert.deepEqual(uses, [...uses].sort((a, b) => b - a));
-  for (const a of c.accessories) assert.equal(a.price.mode, "on_request", a.id);
+  // priced from the warehouse (21.10.2026): the truck options; the rest is on request
+  for (const a of c.accessories) assert.equal(a.price.mode, a.group === "truck" ? "ref" : "on_request", a.id);
 });
 
 test("companies: both legal entities selectable, default maker is the one KP_2_v3 prints", () => {
@@ -187,8 +188,9 @@ test("bundles match the exact slot set", () => {
   assert.equal(findBundle(c, "npl_crane", { trailer: "npl10", crane: "bmf750" })?.id, "npl10_bmf750");
   assert.equal(findBundle(c, "npl_crane", { trailer: "npl10", crane: "bmf850" }), undefined);
   assert.equal(findBundle(c, "truck_crane", { conversion: "kamaz_platform", crane: "bmf750" }), undefined);
-  const kamaz = defaultSelection(kitTypeById(c, "truck_crane")!);
-  assert.equal(findBundle(c, "truck_crane", kamaz.slots)?.id, "kamaz_bmf750");
+  // pump and PTO are priced slots: they sit on top of the bundle and are not part of its slot set
+  assert.equal(findBundle(c, "truck_crane", { conversion: "kamaz_platform", crane: "bmf750", base: "truck_pyramid_outriggers", tank: "tank", oil: "oil_90l" })?.id, "kamaz_bmf750");
+  assert.equal(findBundle(c, "truck_crane", { conversion: "zil_platform", crane: "bmf650", base: "truck_pyramid_outriggers", tank: "tank", oil: "oil_90l" })?.id, "zil_bmf650");
 });
 
 test("kit accessories: statuses and variant texts for the kit", () => {

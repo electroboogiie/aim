@@ -44,6 +44,12 @@ TRUCK_TILES = [('Бортова платформа', '{stakes} стійки пі
                ('Щит', 'передній щит платформи'), ('Піраміда з аутригерами', 'основа крана, стійкість під час роботи'),
                ('Гідробак у зборі', 'з оливою гідравлічною 90 л'), ('Насос аксіально-поршневий', 'привід гідросистеми крана'),
                ('Кран {model}', 'з ротатором {rotator} т і захватом {grapple} м²'), ('Монтаж', 'входить у вартість дообладнання')]
+# a conversion without a frame (ЗІЛ): pump and PTO show when they are rows or in the conversion text
+TRUCK_TILES_PTO = [('Лісовозна платформа', 'надрамник, стійки, рифлений настил', None), ('Піраміда з аутригерами', 'основа крана, стійкість під час роботи', None),
+                   ('Гідробак у зборі', 'з оливою гідравлічною {oil} л', None), ('Насос аксіально-поршневий', '{pump}', 'pump'),
+                   ('Коробка відбору потужності', 'КВП з карданним приводом і кнопкою керування', 'pto'),
+                   ('Кран {model}', 'з ротатором {rotator} т і захватом {grapple} м²', None),
+                   ('Гідролінії і світло', 'РВТ, задні ліхтарі, підсвітка номера', None), ('Монтаж', 'без нарощування рами автомобіля', None)]
 TILES = {'crane': None, 'base_outriggers': 'prod/tile_base.png', 'tank': 'prod/tile_tank.png', 'seat': 'prod/tile_seat.png'}
 
 
@@ -394,14 +400,26 @@ class Ultra:
         D.text(s, 0.75, 4.67, 2.3, 0.3, 'СХЕМА ДООБЛАДНАННЯ' if not d else 'ДООБЛАДНАННЯ', 8, WHITE, True, 'c', 'm', track=0.5)
         self.kicker(s, 0.5, 5.45, 'дообладнання · власне виробництво')
         D.rt(s, self.headline([[('Лісовоз на базі', WHITE)], [(t, OR)]]), 0.48, 5.8, 0.42)
-        conv = next((r for r in self.spec['rows'] if r.get('kind') == 'service'), {})
-        D.text(s, 0.5, 6.87, 7.27, 0.9, [f"Переобладнуємо вантажівку {t} у лісовоз для перевезення колод і брусів: бортова платформа зі стійками, "
-                                         f"піраміда з аутригерами під кран-маніпулятор {self.m}, гідросистема і монтаж.",
-                                         (conv.get('desc') or '').capitalize()], 10.5, (210, 213, 218), spacing=1.25)
+        rows = self.spec['rows']
+        conv = next((r for r in rows if r.get('kind') == 'service'), {})
+        cd = conv.get('desc') or ''
+        frame = bool(re.search(r'рама\s*\d', cd))
+        oil = next((m.group(1) for r in rows for m in [re.search(r'олива.*?(\d+)\s*л', r.get('title') or '', re.I)] if m), '90')
+        pump = next((r for r in rows if re.search(r'насос', r.get('title') or '', re.I)), None)
+        pm = re.search(r'PBF\S+', (pump or {}).get('title') or cd)
+        has = dict(pump=pump is not None or 'насос' in cd.lower(), pto=any('КВП' in (r.get('title') or '') for r in rows) or 'коробка відбору' in cd.lower())
+        lead = (f"Переобладнуємо вантажівку {t} у лісовоз для перевезення колод і брусів: бортова платформа зі стійками, "
+                f"піраміда з аутригерами під кран-маніпулятор {self.m}, гідросистема і монтаж." if frame else
+                f"Переобладнуємо вантажівку {t} у лісовоз для перевезення колод і брусів: лісовозна платформа, піраміда з аутригерами "
+                f"під кран-маніпулятор {self.m}, гідросистема з приводом від КВП і встановлення крана.")
+        D.text(s, 0.5, 6.87, 7.27, 0.9, [lead, cd[:1].upper() + cd[1:]], 10.5 if frame else 9.5, (210, 213, 218), spacing=1.2)
         fm = dict(stakes=self.truck_spec('stakes', '4'), wall=self.truck_spec('wall', '6'), length=self.truck_spec('length', '5'),
-                  model=self.m, rotator=cs['rotator_t'], grapple=cs['grapple_m2'])
+                  model=self.m, rotator=cs['rotator_t'], grapple=cs['grapple_m2'], oil=oil,
+                  pump=f'{pm.group(0).rstrip(",;")}, привід гідросистеми крана' if pm else 'привід гідросистеми крана')
+        tiles = [(a, b.replace('90 л', '{oil} л')) for a, b in TRUCK_TILES] if frame else \
+                [(a, b) for a, b, k in TRUCK_TILES_PTO if not k or has[k]]
         tw, gap = (7.27 - 0.15) / 2, 0.12; rh = min(0.68, (10.85 - 7.85 - gap * 3) / 4)
-        for i, (a, b) in enumerate(TRUCK_TILES):
+        for i, (a, b) in enumerate(tiles[:8]):
             x, y = 0.5 + (i % 2) * (tw + 0.15), 7.85 + (i // 2) * (rh + gap)
             D.box(s, x, y, tw, rh, CARD, LINE, r=0.14)
             D.text(s, x + 0.18, y, 0.35, rh, f'{i + 1:02d}', 8.5, OR, True, anchor='m')
@@ -609,11 +627,11 @@ class Ultra:
         D.rt(s, self.headline([[('Додайте', WHITE)], [('під свою роботу', OR)]]), 0.48, 1.3, 0.42)
         cols = 2 if len(accs) <= 4 else 3; gap = 0.15
         cw = (7.27 - gap * (cols - 1)) / cols; rn = math.ceil(len(accs) / cols)
-        ch = min(3.9 if cols == 2 else 2.75, (10.55 - 2.55 - gap * (rn - 1)) / rn)
+        ch = min(3.9 if cols == 2 else 3.35 if rn <= 2 else 2.75, (10.55 - 2.55 - gap * (rn - 1)) / rn)
         for i, a in enumerate(accs[:9]):
             x, y = 0.5 + (i % cols) * (cw + gap), 2.55 + (i // cols) * (ch + gap)
             D.box(s, x, y, cw, ch, CARD, LINE, r=0.18)
-            ph = ch * (0.52 if cols == 2 else 0.42)
+            ph = ch * 0.52 if cols == 2 else min(ch * 0.42, 1.2)
             if a.get('photo') and R.asset_ok(a['photo']):
                 tw = CARD_TWEAKS.get(a['photo'], {})
                 data = self.raster('tile', lambda p, w_, h_, t: jpg(R.card_photo(p, w_, h_, **dict(t))), a['photo'], cw - 0.3, ph, tuple(tw.items()), assets=(a['photo'],))
@@ -659,12 +677,16 @@ class Ultra:
         if terms and ty < 9.6:
             D.text(s, 0.5, ty, 4, 0.2, 'УМОВИ СПІВПРАЦІ', 7.5, OR, True, track=2.0)
             cols = 3 if len(terms) > 4 else 2; gap = 0.12; cw = (7.27 - gap * (cols - 1)) / cols
-            rn = math.ceil(len(terms) / cols); chh = min(1.25, (10.85 - ty - 0.3 - gap * (rn - 1)) / rn)
+            rn = math.ceil(len(terms) / cols); avail = (10.85 - ty - 0.3 - gap * (rn - 1)) / rn
+            # card height from the longest text (about 0.5 pt per char width), smaller font when it does not fit
+            need = lambda fs: 0.5 + max(math.ceil(len(t['text']) / ((cw - 0.36) * 72 / (fs * 0.5))) for t in terms) * fs * 1.15 * 1.22 / 72
+            tfs = next((fs for fs in (8.5, 8, 7.5, 7) if need(fs) <= avail), 7)
+            chh = min(avail, max(1.25, need(tfs)))
             for i, t in enumerate(terms):
                 x, yy = 0.5 + (i % cols) * (cw + gap), ty + 0.3 + (i // cols) * (chh + gap)
                 D.box(s, x, yy, cw, chh, CARD, LINE, r=0.14)
                 D.text(s, x + 0.18, yy + 0.14, cw - 0.36, 0.25, t['title'], 10.5, WHITE, True)
-                D.text(s, x + 0.18, yy + 0.42, cw - 0.36, chh - 0.5, t['text'], 8.5, MUTED, spacing=1.15)
+                D.text(s, x + 0.18, yy + 0.42, cw - 0.36, chh - 0.5, t['text'], tfs, MUTED, spacing=1.15)
 
     # 08 contacts on a full-bleed photo
     def p_end(self):
