@@ -34,6 +34,7 @@ def _build(style, name, build_dir):
 
 
 def static_texts(style):
+    if not template_path(style): return {}   # «Ultra»: no template texts, its texts come from the KP data
     from .build import LAYOUT_TEXTS
     LAYOUT = set(LAYOUT_TEXTS.values())   # edited on the admin's «Написи й елементи» tab
     tpl = list(Presentation(template_path(style)).slides)
@@ -56,6 +57,11 @@ def static_texts(style):
 
 def background(style, key, width=330):
     """JPEG thumbnail of the page's background picture in the style's template."""
+    if STYLES[style]['engine'] == 'ultra':
+        from .preview import page
+        from .ultra import NPL, PHOTOS
+        d = NPL['photo'] if key == 'npl' else PHOTOS['bmf720'].get(key) or PHOTOS['bmf720']['end']
+        return page(style, key, *d, width=width)
     origin = {k: i for k, _, i in pages(style)}
     s = list(Presentation(template_path(style)).slides)[origin[key]]
     for sh in s.shapes:

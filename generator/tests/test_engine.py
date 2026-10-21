@@ -99,6 +99,33 @@ class EngineTest(unittest.TestCase):
         spec['photos'] = dict(cover='bmf/650_a.jpg', cover_focus=[0.5, 2])
         code, _, err = run(spec); self.assertEqual(code, 1); self.assertIn('cover_focus', err)
 
+    def test_ultra_style(self):
+        """«Ultra»: crane kit (8 pages, 7 without options) and НПЛ-10 + crane (11 pages)."""
+        for name, pages, words in (('bmf720_komplekt', 8, ('BMF', 'Вантажопідйомність')), ('npl10_bmf750', 11, ('НПЛ-10', 'BMF 750'))):
+            spec = self.sample(name); spec['style'] = 'ultra'
+            spec['accessories'] = self.sample('npl10_bmf750')['accessories']
+            code, res, err = run(spec)
+            self.assertEqual(code, 0, err); self.assertEqual(res['pages'], pages, name)
+            T = texts(Presentation(res['pptx'])); flat = ' '.join(t for p in T for t in p)
+            for w in words: self.assertIn(w, flat)
+            self.assertNotIn('автономна гідравліка', ' '.join(t for t in T[-3]).lower())
+            self.assertIn(f'{pages:02d}', ' '.join(T[-1]))
+        spec = self.sample('bmf720_komplekt'); spec['style'] = 'ultra'; spec['accessories'] = []
+        code, res, err = run(spec)
+        self.assertEqual(code, 0, err); self.assertEqual(res['pages'], 7)
+
+    def test_npl_label_crane_pages(self):
+        """«НПЛ-10 Heavy Label» with BMF 750: crane texts and headlines for 750, chart without the template bars."""
+        spec = self.sample('npl10_bmf750'); spec['style'] = 'npl_label'
+        code, res, err = run(spec)
+        self.assertEqual(code, 0, err); self.assertEqual(res['pages'], 10)
+        prs = Presentation(res['pptx']); S = list(prs.slides)
+        self.assertFalse(any(sh.name == 'hdr_cover_10t' for sh in S[0].shapes))
+        self.assertFalse(any(sh.name == 'dwg_crane' for sh in S[4].shapes))
+        lead = [sh.text_frame.text for sh in S[4].shapes if sh.has_text_frame and sh.shape_id == 28][0]
+        self.assertIn('7,5', lead); self.assertNotIn('BMF720', lead)
+        self.assertFalse(any(sh.has_text_frame and sh.text_frame.text == '1100' for sh in S[5].shapes))
+
     def test_errors(self):
         spec = self.sample('bmf720_komplekt'); spec['crane']['profile'] = 'bmf850'
         code, _, err = run(spec); self.assertEqual(code, 2); self.assertIn('профілю', err)

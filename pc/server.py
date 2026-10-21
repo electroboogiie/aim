@@ -112,8 +112,8 @@ def preview(kind, q):
 
 
 def styles_info():
-    return [dict(id=k, title=v['title'], kits=list(v.get('kits') or []),
-                 pages=[dict(key=key, title=t, hero=v['engine'] == 'v3' and key in HERO_PAGES and not (key == 'cover' and v.get('cover') == 'panel'))
+    return [dict(id=k, title=v['title'], kits=list(v.get('kits') or []), kits_title=v.get('kits_title') or '',
+                 pages=[dict(key=key, title=t, hero=v['engine'] == 'ultra' or (v['engine'] == 'v3' and key in HERO_PAGES and not (key == 'cover' and v.get('cover') == 'panel')))
                         for key, t, _ in pages(k)]) for k, v in STYLES.items()]
 
 
@@ -146,6 +146,7 @@ def covers():
 
 def page_texts(style):
     path = os.path.join(CACHE, f'texts_{style}.json')
+    if not STYLES[style]['template']: return {}
     tpl = os.path.join(GEN, 'templates', STYLES[style]['template'])
     cached = read_json(path, None)
     if cached and cached.get('mtime') == os.path.getmtime(tpl) and cached.get('v') == 2: return cached['pages']
@@ -168,7 +169,7 @@ def apply_admin(spec, admin):
     if style not in STYLES: style = DEFAULT
     kits = STYLES[style].get('kits')
     if kits and spec.get('kit_type') not in kits:
-        raise ValueError(f"Стиль «{STYLES[style]['title']}» є лише для комплектів НПЛ-10 з краном. Оберіть інший стиль.")
+        raise ValueError(f"Стиль «{STYLES[style]['title']}» є лише для: {STYLES[style].get('kits_title') or ', '.join(kits)}. Оберіть інший стиль.")
     spec['style'] = style
     st = (admin.get('styles') or {}).get(style) or {}
     bg = {k: v for k, v in (st.get('bg') or {}).items() if v and v.get('path')}

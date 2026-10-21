@@ -9,7 +9,10 @@ STYLES = {
     'dark': dict(title='Темний (KP_2_v3)', template='KP_2_v3.pptx', theme='dark', engine='v3'),
     'light_v3': dict(title='Світлий (KP_2_v3, світла тема)', template='KP_light_v3.pptx', theme='light', engine='v3'),
     'light_panel': dict(title='Світлий з помаранчевою панеллю', template='KP_light.pptx', theme='light', engine='v3', cover='panel'),
-    'npl_label': dict(title='НПЛ-10 «Heavy Label»', template='KP_npl_label.pptx', theme='dark', engine='d6', kits=('npl_crane',)),
+    'npl_label': dict(title='НПЛ-10 «Heavy Label»', template='KP_npl_label.pptx', theme='dark', engine='d6', kits=('npl_crane',),
+                      kits_title='лише НПЛ-10 + кран'),
+    'ultra': dict(title='Ultra (сучасний темний)', template=None, theme='dark', engine='ultra', kits=('crane_kit', 'npl_crane'),
+                  kits_title='кран у комплекті та НПЛ-10 + кран'),
 }
 DEFAULT = 'dark'
 
@@ -25,9 +28,14 @@ D6_PAGES = [('cover', 'Обкладинка', 0), ('npl_info', 'НПЛ-10: ін�
 HERO_PAGES = {'cover', 'manifest', 'trailer', 'end'}
 
 
+# «Ultra» has no template: the settings can replace the photos of these pages (full-page photos)
+ULTRA_PAGES = [('npl', 'НПЛ-10: фото', None), ('crane', 'Кран: фото', None), ('end', 'Контакти: фото', None)]
+
+
 def template_path(style):
-    return os.path.join(TEMPLATES, STYLES[style]['template'])
+    t = STYLES[style]['template']
+    return os.path.join(TEMPLATES, t) if t else None
 
 
 def pages(style):
-    return D6_PAGES if STYLES[style]['engine'] == 'd6' else V3_PAGES
+    return {'d6': D6_PAGES, 'ultra': ULTRA_PAGES}.get(STYLES[style]['engine'], V3_PAGES)

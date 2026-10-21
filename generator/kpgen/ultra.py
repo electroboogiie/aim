@@ -1,5 +1,5 @@
-# «Ultra» style (proposal for the user's confirmation, 21.10.2026): KP for a crane in a kit (BMF 650 / 720 / 750), built
-# from scratch with python-pptx — dark graphite pages, rounded cards, large photos and type, BMF orange.
+# «Ultra» style (21.10.2026): KP for a crane in a kit (BMF 650 / 720 / 750) and for НПЛ-10 + crane, built from scratch
+# with python-pptx — dark graphite pages, rounded cards, large photos and type, BMF orange.
 # The manufacturer drawings and the load chart with the crane are the ones the KP_2_v3 engine draws for the model
 # (harvested from its build), so they stay as detailed as in the other KPs.
 #   python3 -m kpgen.ultra --spec spec.json --out DIR [--no-pdf]
@@ -16,7 +16,7 @@ from pptx.util import Pt
 from . import raster as R
 from .cache import Cache
 from .pptx_util import EMU, I, by_id, by_name
-from .profiles import PROFILES, DECAL_CONFIG, CARD_TWEAKS
+from .profiles import PROFILES, DECAL_CONFIG, CARD_TWEAKS, OWN_PRODUCTION
 from .spec import SpecError
 
 W, H = 8.27, 11.69
@@ -34,6 +34,11 @@ PHOTOS = {
     'bmf650': dict(crane=('bmf/650_b.jpg', 0.62, 0.5), end=('bmf/650_a.jpg', 0.32, 0.5)),
     'bmf750': dict(crane=('bmf/750_forest.webp', 0.5, 0.4), end=('bmf/750_forest_load.jpg', 0.5, 0.45)),
 }
+# НПЛ-10 kits: the user's photos and drawings (from their «НПЛ-10 Heavy Label» design and KPs)
+NPL = dict(photo=('prod/npl10_tractor.png', 0.5, 0.55), end=('npl/npl10_workshop_hd.jpg', 0.45, 0.3),
+           cutout='npl/npl10_crane_cutout.png', side='npl/npl10_dwg_side.png', rear='npl/npl10_dwg_rear.png')
+# pages whose photo the settings can replace: key -> (title, default photo or None)
+PHOTO_PAGES = [('npl', 'НПЛ-10: фото'), ('crane', 'Кран: фото'), ('end', 'Контакти: фото на всю сторінку')]
 TILES = {'crane': None, 'base_outriggers': 'prod/tile_base.png', 'tank': 'prod/tile_tank.png', 'seat': 'prod/tile_seat.png'}
 
 
@@ -163,6 +168,22 @@ def load_chart(side, span, reach, l4, lf, gx=0.75, gw=6.9, axis_y=4.45):
     return png(im)
 
 
+def v3_pieces(spec, build_dir):
+    """Build the KP in the KP_2_v3 engine and take its crane drawings: (engine, [side, folded, plate] pictures,
+    dimension labels, load-chart side drawing). Pictures are (blob, x, y, w, h) in inches."""
+    from .build import Engine
+    R.set_theme('dark')
+    e = Engine(dict(spec, style='dark', overrides={}, photos={}), build_dir); e.build()
+    an, pp = e.pages['anatomy'], e.pages['passport']
+    g = lambda sh: (sh.image.blob, sh.left / EMU, sh.top / EMU, sh.width / EMU, sh.height / EMU)
+    parts = [g(by_id(an, i)) for i in (85, 88, 82)]
+    dims = [(sh.text_frame.text, (sh.left + sh.width / 2) / EMU, (sh.top + sh.height / 2) / EMU)
+            for sh in an.shapes if sh.name.startswith('dim_') and sh.text_frame.text.strip()]
+    side = g(by_name(pp, 'crane_side_drawing')[0])
+    R.set_theme('dark')
+    return e, parts, dims, side
+
+
 # ---------------------------------------------------------------- pptx helpers
 def rgb(c): return RGBColor(*c)
 
@@ -226,14 +247,21 @@ class Deck:
 # ---------------------------------------------------------------- the KP
 class Ultra:
     def __init__(self, spec, build_dir):
-        if spec['kit_type'] != 'crane_kit':
-            raise SpecError('Стиль «Ultra» поки лише для крана в комплекті.')
+        if spec['kit_type'] not in ('crane_kit', 'npl_crane'):
+            raise SpecError('Стиль «Ultra» є для крана в комплекті та НПЛ-10 + кран. Оберіть інший стиль.')
+        self.npl = spec['kit_type'] == 'npl_crane'
         self.spec = spec; self.c = spec['crane']; self.cs = self.c['specs']
         self.prof = PROFILES[self.c['profile']]; self.no = str(self.prof.get('model_no') or '')
         self.build_dir = build_dir; self.cache = Cache(build_dir)
         self.m = self.c['model']
 
     def raster(self, kind, fn, *args, assets=()): return self.cache.get('ultra-' + kind, fn, args, assets)
+
+    def photo_of(self, key, d):
+        """(path, fx, fy) of a photo page: the settings' photo when one is set, else the style's."""
+        o = ((self.spec.get('overrides') or {}).get('bg') or {}).get(key) or {}
+        if o.get('path') and R.asset_ok(o['path']): return o['path'], float(o.get('fx', 0.5)), float(o.get('fy', 0.45))
+        return d
 
     def headline(self, lines, path=F_BOLD):
         lines = [[(t, tuple(c)) for t, c in ln] for ln in lines]
@@ -243,21 +271,13 @@ class Ultra:
 
     # -- pieces the KP_2_v3 engine draws for this crane
     def harvest(self):
-        from .build import Engine
-        R.set_theme('dark')
-        sp = dict(self.spec, style='dark', overrides={}, photos={})
-        e = Engine(sp, self.build_dir); e.build()
-        an, pp = e.pages['anatomy'], e.pages['passport']
-        g = lambda sh: (sh.image.blob, sh.left / EMU, sh.top / EMU, sh.width / EMU, sh.height / EMU)
-        parts = [g(by_id(an, i)) for i in (85, 88, 82)]
-        dims = [(sh.text_frame.text, (sh.left + sh.width / 2) / EMU, (sh.top + sh.height / 2) / EMU)
-                for sh in an.shapes if sh.name.startswith('dim_') and sh.text_frame.text.strip()]
-        side = g(by_name(pp, 'crane_side_drawing')[0])
+        e, parts, dims, side = v3_pieces(self.spec, self.build_dir)
         cut = by_id(list(Presentation(os.path.join(TPL, 'KP_2_v3.pptx')).slides)[4], 14).image.blob
         logo = by_id(list(Presentation(os.path.join(TPL, 'KP_2_v3.pptx')).slides)[1], 3).image.blob
         d6 = list(Presentation(os.path.join(TPL, 'KP_npl_label.pptx')).slides)[0]
         qrs = [by_name(d6, n)[0].image.blob for n in ('qr_сайт', 'qr_tiktok', 'qr_instagram')]
         R.set_theme('dark')
+        self.td = e.tdata() if self.npl else None
         return parts, dims, side, e.span, cut, logo, qrs
 
     def build(self):
@@ -270,8 +290,10 @@ class Ultra:
         self.chart = self.raster('chart', load_chart, side, span, reach, int(cs['lift_4m_kg']), int(cs['lift_full_kg']))
         D = self.deck = Deck()
         self.pages = []
-        for fn in (self.p_cover, self.p_crane, self.p_drawings, self.p_chart, self.p_kit, self.p_options, self.p_price, self.p_end):
-            fn()
+        order = ([self.p_cover, self.p_npl, self.p_npl_spec] if self.npl else [self.p_cover]) + \
+            [self.p_crane, self.p_drawings, self.p_chart, self.p_kit, self.p_options, self.p_price] + \
+            ([self.p_own] if self.npl else []) + [self.p_end]
+        for fn in order: fn()
         self.chrome()
         return D.prs
 
@@ -281,7 +303,7 @@ class Ultra:
         for i, (s, dark_top) in enumerate(self.pages, 1):
             if i == 1: continue
             D.img(s, self.logo, 0.5, 0.42, 0.62)
-            D.text(s, 1.35, 0.44, 4.2, 0.2, f"{self.m.upper()}  ·  КРАН У КОМПЛЕКТІ", 7.5, MUTED, True, track=1.5)
+            D.text(s, 1.35, 0.44, 4.2, 0.2, f"НПЛ-10  ×  {self.m.upper()}" if self.npl else f"{self.m.upper()}  ·  КРАН У КОМПЛЕКТІ", 7.5, MUTED, True, track=1.5)
             D.text(s, 5.2, 0.44, 2.57, 0.2, f"КП № {sp['number']}  ·  {sp['date']}", 7.5, MUTED, True, 'r', track=1.0)
             D.box(s, 0.5, 11.02, 7.27, 0.012, LINE, r=0)
             site = (sp['contacts']['sites'] or [''])[0]; ph = (sp['contacts']['phones'] or [''])[0]
@@ -289,6 +311,7 @@ class Ultra:
             D.text(s, 6.27, 11.1, 1.5, 0.25, [[(f'{i:02d}', dict(color=WHITE, size=10)), (f' / {n:02d}', dict(color=DIM, size=8))]], 10, WHITE, True, 'r')
 
     def kicker(self, s, x, y, t):
+        t = f'{len(self.pages) - 1:02d} · {t}'   # section number = page number after the cover
         self.deck.box(s, x, y + 0.035, 0.09, 0.09, OR, r=0.045)
         self.deck.text(s, x + 0.18, y, 6, 0.2, t.upper(), 7.5, OR, True, track=2.0)
 
@@ -300,14 +323,25 @@ class Ultra:
         D.img(s, self.logo, 0.5, 0.45, 0.85)
         D.text(s, 3.5, 0.48, 4.27, 0.22, f"КОМЕРЦІЙНА ПРОПОЗИЦІЯ № {sp['number']}", 8, MUTED, True, 'r', track=2.0)
         D.text(s, 3.5, 0.7, 4.27, 0.22, sp['date'], 8, DIM, True, 'r', track=2.0)
-        D.rt(s, self.headline([[('BMF ', WHITE), (self.no or self.m, OR)]], F_BLACK), 0.47, 1.4, 1.45, maxw=7.3)
-        D.text(s, 0.5, 3.2, 7.27, 0.4, 'Кран-маніпулятор у комплекті', 24, WHITE, True)
-        D.text(s, 0.5, 3.72, 7.27, 0.3, f"з ротатором {cs['rotator_t']} т і грейфером {cs['grapple_m2']} м² — уже в ціні крана", 12, MUTED)
-        D.img(s, self.raster('floor', floor_glow, 8.0, 2.8), 0.13, 6.1, 8.0, 2.8)
-        im = Image.open(io.BytesIO(self.cut)); w = 8.0; h = w * im.height / im.width
-        D.img(s, self.cut, (W - w) / 2, 8.45 - h, w, h)
-        kpis = [(cs['reach_m'], 'м', 'максимальний виліт'), (cs['torque_knm'], 'кНм', 'підйомний момент'),
-                (cs['lift_4m_kg'], 'кг', 'вантаж на вильоті 4 м')]
+        if self.npl:
+            D.rt(s, self.headline([[('НПЛ-10', WHITE)]], F_BLACK), 0.47, 1.4, 1.45, maxw=7.3)
+            D.text(s, 0.5, 3.2, 7.27, 0.4, [[('Лісовоз з краном ', {}), (self.m, dict(color=OR))]], 24, WHITE, True)
+            D.text(s, 0.5, 3.72, 7.27, 0.3, f"напівпричіп власного виробництва · ротатор {cs['rotator_t']} т і грейфер {cs['grapple_m2']} м² у комплекті", 12, MUTED)
+            D.img(s, self.raster('floor', floor_glow, 8.0, 2.8), 0.13, 6.1, 8.0, 2.8)
+            cut = self.raster('npl-cut', lambda p_: png(R.alpha_crop(Image.open(R.asset(p_)).convert('RGBA'))), NPL['cutout'], assets=(NPL['cutout'],))
+            im = Image.open(io.BytesIO(cut)); h = 4.95; w = h * im.width / im.height
+            D.img(s, cut, (W - w) / 2 + 0.2, 9.0 - h, w, h)
+            kpis = [('10 000', 'кг', 'вантажопідйомність НПЛ-10'), (cs['reach_m'], 'м', f'виліт крана {self.m}'),
+                    (cs['torque_knm'], 'кНм', 'підйомний момент')]
+        else:
+            D.rt(s, self.headline([[('BMF ', WHITE), (self.no or self.m, OR)]], F_BLACK), 0.47, 1.4, 1.45, maxw=7.3)
+            D.text(s, 0.5, 3.2, 7.27, 0.4, 'Кран-маніпулятор у комплекті', 24, WHITE, True)
+            D.text(s, 0.5, 3.72, 7.27, 0.3, f"з ротатором {cs['rotator_t']} т і грейфером {cs['grapple_m2']} м² — уже в ціні крана", 12, MUTED)
+            D.img(s, self.raster('floor', floor_glow, 8.0, 2.8), 0.13, 6.1, 8.0, 2.8)
+            im = Image.open(io.BytesIO(self.cut)); w = 8.0; h = w * im.height / im.width
+            D.img(s, self.cut, (W - w) / 2, 8.45 - h, w, h)
+            kpis = [(cs['reach_m'], 'м', 'максимальний виліт'), (cs['torque_knm'], 'кНм', 'підйомний момент'),
+                    (cs['lift_4m_kg'], 'кг', 'вантаж на вильоті 4 м')]
         cw = (7.27 - 0.3) / 3
         for i, (v, u, l) in enumerate(kpis):
             x = 0.5 + i * (cw + 0.15)
@@ -321,16 +355,81 @@ class Ultra:
         D.text(s, 4.1, 10.45, 3.67, 0.6, [' · '.join(ct['phones'][:2]), ' · '.join(ct['sites'][:2])], 9, MUTED, True, 'r', spacing=1.25)
         D.text(s, 0.5, 11.2, 7.27, 0.2, sp['maker']['line'].upper(), 6.5, DIM, True, track=1.5)
 
-    # 02 the crane
+    # НПЛ-10: photo, description, features
+    def p_npl(self):
+        D, td = self.deck, self.td
+        s = D.slide(self.raster('bg-a', page_bg, ((8.3, 6.5, 3.2, 0.14),)))
+        self.pages.append((s, False))
+        d = self.photo_of('npl', NPL['photo'])
+        D.img(s, self.raster('photo', photo, d[0], 7.27, 4.2, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.2, r=0.2)
+        D.box(s, 0.75, 4.67, 1.05, 0.3, OR, r=0.15)
+        D.text(s, 0.75, 4.67, 1.05, 0.3, 'НПЛ-10', 9, WHITE, True, 'c', 'm', track=1.0)
+        self.kicker(s, 0.5, 5.45, 'напівпричіп · власне виробництво')
+        D.rt(s, self.headline([[('Напівпричіп-лісовоз', WHITE)], [('НПЛ-10', OR)]]), 0.48, 5.8, 0.42)
+        D.text(s, 0.5, 6.87, 7.27, 0.9, [td['lead'], td['lead2']], 10.5, (210, 213, 218), spacing=1.25)
+        tw, gap = (7.27 - 0.15) / 2, 0.12
+        tiles = td['tiles'][:8]; rh = min(0.68, (10.85 - 7.85 - gap * 3) / 4)
+        for i, (t, sub) in enumerate(tiles):
+            x, y = 0.5 + (i % 2) * (tw + 0.15), 7.85 + (i // 2) * (rh + gap)
+            D.box(s, x, y, tw, rh, CARD, LINE, r=0.14)
+            D.text(s, x + 0.18, y, 0.35, rh, f'{i + 1:02d}', 8.5, OR, True, anchor='m')
+            D.text(s, x + 0.52, y + 0.04, tw - 0.62, rh - 0.08, [[(t, dict(bold=True, size=10.5, color=WHITE))], [(sub, dict(size=8, color=MUTED))]], 10.5, WHITE, anchor='m', spacing=1.05)
+
+    # НПЛ-10: drawings + specification
+    def p_npl_spec(self):
+        D, td = self.deck, self.td
+        s = D.slide(self.raster('bg-b', page_bg, ((-0.2, 3.2, 3.2, 0.14),)))
+        self.pages.append((s, False))
+        self.kicker(s, 0.5, 0.95, 'габарити та характеристики · НПЛ-10')
+        D.rt(s, self.headline([[('Міцний', WHITE)], [('на 10 тонн', OR)]]), 0.48, 1.3, 0.42)
+        bw, bh, top = 7.27, 3.35, 2.55
+        D.box(s, 0.5, top, bw, bh, CARD, LINE, r=0.2)
+        D.text(s, 0.75, top + 0.17, 5, 0.2, 'ГАБАРИТНІ РОЗМІРИ, ММ*', 7.5, MUTED, True, track=1.5)
+        side = self.raster('npl-dwg', lambda p_: png(R.alpha_crop(Image.open(R.asset(p_)).convert('RGBA'))), NPL['side'], assets=(NPL['side'],))
+        rear = self.raster('npl-dwg', lambda p_: png(R.alpha_crop(Image.open(R.asset(p_)).convert('RGBA'))), NPL['rear'], assets=(NPL['rear'],))
+        for data, x, w in ((side, 0.75, 4.45), (rear, 5.45, 2.1)):
+            im = Image.open(io.BytesIO(data)); k = min(w / im.width, (bh - 0.75) / im.height)
+            D.img(s, data, x + (w - im.width * k) / 2, top + 0.5 + (bh - 0.65 - im.height * k) / 2, im.width * k, im.height * k)
+        rows = td['spec_rows']; y0 = top + bh + 0.25; rh = min(0.3, (10.6 - y0) / len(rows))
+        for i, (l, v, u) in enumerate(rows):
+            y = y0 + i * rh
+            if i % 2 == 0: D.box(s, 0.5, y, 7.27, rh, CARD, r=0.08)
+            D.text(s, 0.75, y, 5, rh, l, 10, (214, 217, 222), anchor='m')
+            D.text(s, 5.0, y, 2.15, rh, [[(v, dict(bold=True, color=WHITE)), ((' ' + u) if u else '', dict(color=MUTED, size=9))]], 10.5, WHITE, align='r', anchor='m')
+        D.text(s, 0.5, y0 + len(rows) * rh + 0.06, 7.27, 0.3, td['note'], 7.5, DIM, spacing=1.1)
+
+    # НПЛ-10 kits: own production (photos from the user's KPs)
+    def p_own(self):
+        D, O = self.deck, OWN_PRODUCTION
+        s = D.slide(self.raster('bg-c', page_bg, ((8.4, 2.4, 3.6, 0.2), (-0.4, 10.5, 3.0, 0.1))))
+        self.pages.append((s, False))
+        self.kicker(s, 0.5, 0.95, 'власне виробництво')
+        a, b = O['headline']
+        D.rt(s, self.headline([[(a.rstrip('.').capitalize(), WHITE)], [(b.rstrip('.').capitalize(), OR)]]), 0.48, 1.3, 0.42)
+        D.text(s, 0.5, 2.5, 7.27, 0.75, O['quote'], 11, (214, 217, 222), spacing=1.25)
+        facts = O['facts']; n = len(facts); gap = 0.12; cw = (7.27 - gap * (n - 1)) / n
+        for i, (v, cap) in enumerate(facts):
+            x = 0.5 + i * (cw + gap)
+            D.box(s, x, 3.45, cw, 1.15, CARD, LINE, r=0.14)
+            D.text(s, x + 0.15, 3.58, cw - 0.25, 0.45, v, 19, OR if i == 0 else WHITE, True)
+            D.text(s, x + 0.15, 4.05, cw - 0.25, 0.5, cap.capitalize(), 8, MUTED, spacing=1.05)
+        photos = [p_ for _, p_, _, _ in O['photos']][:6]
+        foc = {p_: (fx, fy) for _, p_, fx, fy in O['photos']}
+        cw, ch, gap = (7.27 - 0.15) / 2, 1.95, 0.15
+        for i, p_ in enumerate(photos):
+            x, y = 0.5 + (i % 2) * (cw + gap), 4.85 + (i // 2) * (ch + gap)
+            D.img(s, self.raster('photo', photo, p_, cw, ch, *foc[p_], assets=(p_,)), x, y, cw, ch, r=0.16)
+
+    # the crane
     def p_crane(self):
         D, cs = self.deck, self.cs
         s = D.slide(self.raster('bg-a', page_bg, ((8.3, 6.5, 3.2, 0.14),)))
         self.pages.append((s, False))
-        d = PHOTOS[self.c['profile']]['crane']
+        d = self.photo_of('crane', PHOTOS[self.c['profile']]['crane'])
         D.img(s, self.raster('photo', photo, d[0], 7.27, 4.7, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.7, r=0.2)
         D.box(s, 0.75, 5.17, 1.05, 0.3, OR, r=0.15)
         D.text(s, 0.75, 5.17, 1.05, 0.3, self.m, 9, WHITE, True, 'c', 'm', track=1.0)
-        self.kicker(s, 0.5, 6.0, '01 · кран-маніпулятор')
+        self.kicker(s, 0.5, 6.0, 'кран-маніпулятор')
         D.rt(s, self.headline([[('Лісовий кран', WHITE)], [(self.m, OR)]]), 0.48, 6.35, 0.42)
         lead = self.c.get('lead') or self.prof.get('lead'); lead2 = self.c.get('lead2') or self.prof.get('lead2')
         D.text(s, 0.5, 7.42, 7.27, 0.95, [lead, lead2], 10.5, (210, 213, 218), spacing=1.25)
@@ -351,7 +450,7 @@ class Ultra:
         D, cs = self.deck, self.cs
         s = D.slide(self.raster('bg-b', page_bg, ((-0.2, 3.2, 3.2, 0.14),)))
         self.pages.append((s, False))
-        self.kicker(s, 0.5, 0.95, '02 · креслення виробника')
+        self.kicker(s, 0.5, 0.95, 'креслення виробника')
         D.rt(s, self.headline([[('Робоча зона', WHITE)], [('і габарити, мм', OR)]]), 0.48, 1.3, 0.42)
         im = Image.open(io.BytesIO(self.panel)); bw, bh = 7.27, 6.2
         D.box(s, 0.5, 2.55, bw, bh, CARD, LINE, r=0.2)
@@ -372,7 +471,7 @@ class Ultra:
         D, cs = self.deck, self.cs
         s = D.slide(self.raster('bg-a', page_bg, ((8.3, 6.5, 3.2, 0.14),)))
         self.pages.append((s, False))
-        self.kicker(s, 0.5, 0.95, '03 · технічний паспорт')
+        self.kicker(s, 0.5, 0.95, 'технічний паспорт')
         D.rt(s, self.headline([[('Вантажопідйомність', WHITE)], [('за вильотом', OR)]]), 0.48, 1.3, 0.42)
         im = Image.open(io.BytesIO(self.chart)); bw, bh = 7.27, 3.3
         D.box(s, 0.5, 2.55, bw, bh, CARD, LINE, r=0.2)
@@ -401,7 +500,7 @@ class Ultra:
         D, sp, cs = self.deck, self.spec, self.cs
         s = D.slide(self.raster('bg-b', page_bg, ((-0.2, 3.2, 3.2, 0.14),)))
         self.pages.append((s, False))
-        self.kicker(s, 0.5, 0.95, '04 · склад комплекту')
+        self.kicker(s, 0.5, 0.95, 'склад комплекту')
         D.rt(s, self.headline([[('Що входить', WHITE)], [('у комплект', OR)]]), 0.48, 1.3, 0.42)
         rows = sp['rows']; n = len(rows)
         top, bottom, gap = 2.55, 9.35, 0.15
@@ -433,6 +532,8 @@ class Ultra:
 
     def tile(self, r, w, h):
         iid = r.get('item_id') or ''
+        if r.get('kind') == 'trailer' and self.npl:
+            return self.raster('tile-npl', lambda p_, w_, h_: jpg(R.on_card(Image.open(R.asset(p_)).convert('RGBA'), w_, h_, 0.95)), NPL['cutout'], w, h, assets=(NPL['cutout'],))
         if r.get('kind') == 'crane':
             return self.raster('tile-crane', lambda c, w_, h_: jpg(R.on_card(Image.open(io.BytesIO(c)), w_, h_, 0.95)), self.cut, w, h)
         path = next((v for k, v in TILES.items() if v and iid.startswith(k)), None) or r.get('photo')
@@ -449,7 +550,7 @@ class Ultra:
         if not accs: return
         s = D.slide(self.raster('bg-a', page_bg, ((8.3, 6.5, 3.2, 0.14),)))
         self.pages.append((s, False))
-        self.kicker(s, 0.5, 0.95, '05 · додаткові опції')
+        self.kicker(s, 0.5, 0.95, 'додаткові опції')
         D.rt(s, self.headline([[('Додайте', WHITE)], [('під свою роботу', OR)]]), 0.48, 1.3, 0.42)
         cols = 2 if len(accs) <= 4 else 3; gap = 0.15
         cw = (7.27 - gap * (cols - 1)) / cols; rn = math.ceil(len(accs) / cols)
@@ -457,14 +558,15 @@ class Ultra:
         for i, a in enumerate(accs[:9]):
             x, y = 0.5 + (i % cols) * (cw + gap), 2.55 + (i // cols) * (ch + gap)
             D.box(s, x, y, cw, ch, CARD, LINE, r=0.18)
-            ph = ch * 0.52
+            ph = ch * (0.52 if cols == 2 else 0.42)
             if a.get('photo') and R.asset_ok(a['photo']):
                 tw = CARD_TWEAKS.get(a['photo'], {})
                 data = self.raster('tile', lambda p, w_, h_, t: jpg(R.card_photo(p, w_, h_, **dict(t))), a['photo'], cw - 0.3, ph, tuple(tw.items()), assets=(a['photo'],))
                 D.img(s, data, x + 0.15, y + 0.15, cw - 0.3, ph, r=0.12)
             ty = y + 0.15 + ph + 0.15
-            D.text(s, x + 0.22, ty, cw - 0.44, 0.3, a['title'], 12.5 if cols == 2 else 11, WHITE, True)
-            D.text(s, x + 0.22, ty + 0.33, cw - 0.44, ch - ph - 0.95, a['desc'], 9 if cols == 2 else 8, MUTED, spacing=1.15)
+            body = [[(a['title'], dict(bold=True, size=12.5 if cols == 2 else 10.5, color=WHITE))]]
+            if a.get('desc'): body.append([(a['desc'], dict(size=9 if cols == 2 else 8, color=MUTED))])
+            D.text(s, x + 0.22, ty, cw - 0.44, ch - ph - 0.75, body, 10, WHITE, spacing=1.12)
             D.text(s, x + 0.22, y + ch - 0.38, cw - 0.44, 0.25, a['price_text'], 9.5, OR, True)
 
     # 07 price + terms
@@ -472,7 +574,7 @@ class Ultra:
         D, sp = self.deck, self.spec
         s = D.slide(self.raster('bg-c', page_bg, ((8.4, 2.4, 3.6, 0.2), (-0.4, 10.5, 3.0, 0.1))))
         self.pages.append((s, False))
-        self.kicker(s, 0.5, 0.95, f"{len(self.pages) - 1:02d} · вартість")
+        self.kicker(s, 0.5, 0.95, 'вартість')
         D.rt(s, self.headline([[('Вартість', WHITE)], [('комплекту', OR)]]), 0.48, 1.3, 0.42)
         rows = sp['rows']; n = len(rows)
         rh = 0.72 if n <= 5 else max(0.5, 3.9 / n)
@@ -514,10 +616,12 @@ class Ultra:
         D, sp = self.deck, self.spec
         s = D.slide(self.raster('bg-d', page_bg, ((4.1, 11.9, 4.5, 0.22),), False))
         self.pages.append((s, True))
-        d = PHOTOS[self.c['profile']]['end']
+        d = self.photo_of('end', NPL['end'] if self.npl else PHOTOS[self.c['profile']]['end'])
         D.img(s, self.raster('photo-end', photo, d[0], W, 7.4, d[1], d[2], 0.42, assets=(d[0],)), 0, 0, W, 7.4)
-        D.rt(s, self.headline([[('Замовте', WHITE)], [(self.m, OR)]], F_BLACK), 0.47, 5.35, 0.62)
-        D.text(s, 0.5, 6.95, 5.6, 0.5, 'Відповімо на запитання, підберемо комплектацію під ваш причіп або трактор і підготуємо договір.', 11, (214, 217, 222), spacing=1.2)
+        D.rt(s, self.headline([[('Замовте', WHITE)], [('НПЛ-10' if self.npl else self.m, OR)]], F_BLACK), 0.47, 5.35, 0.62)
+        lead = ('Відповімо на запитання, підберемо кран і комплектацію НПЛ-10 під вашу роботу та підготуємо договір.' if self.npl else
+                'Відповімо на запитання, підберемо комплектацію під ваш причіп або трактор і підготуємо договір.')
+        D.text(s, 0.5, 6.95, 5.6, 0.5, lead, 11, (214, 217, 222), spacing=1.2)
         ct = sp['contacts']
         cards = [('ТЕЛЕФОН', ct['phones'][:2]), ('САЙТ', ct['sites'][:2]), ('EMAIL', [ct['email']] if ct['email'] else []),
                  ('АДРЕСА', ct['address'].split('\n') if ct['address'] else [])]

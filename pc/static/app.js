@@ -666,10 +666,10 @@ function priceInfo(kind, id, manual) {
 function admRowPrice(itemId) { const it = core.itemById(cat, itemId); return it?.price?.mode === "ref" ? uah(it.price.uah) : "—"; }
 function renderStyleChips() {
   const box = $("#styleChips"); const cur = box.dataset.v || admin.style || "dark"; box.innerHTML = "";
-  const ok = (s) => !s.kits.length || s.kits.includes(S.kt?.id);
+  const ok = (s) => !s.kits.length || s.kits.includes(S.kt?.extends || S.kt?.id);
   const pick = B.styles.find((s) => s.id === cur && ok(s)) ? cur : (ok(B.styles.find((s) => s.id === admin.style) || {}) ? admin.style : "dark");
   box.dataset.v = pick;
-  for (const s of B.styles) box.append(h("button", { class: "style-chip" + (s.id === pick ? " on" : ""), disabled: !ok(s), title: ok(s) ? s.title : "лише для НПЛ-10 + кран",
+  for (const s of B.styles) box.append(h("button", { class: "style-chip" + (s.id === pick ? " on" : ""), disabled: !ok(s), title: ok(s) ? s.title : "лише для: " + (s.kits_title || s.kits.join(", ")),
     onclick: () => { box.dataset.v = s.id; renderStyleChips(); } }, h("img", { src: `previews/${s.id}.jpg` }), s.title));
 }
 
@@ -878,7 +878,7 @@ function styleSeg(onPick) {
 function renderStyleCards() {
   const box = $("#styleCards"); box.innerHTML = "";
   for (const s of B.styles) box.append(h("div", { class: "stylecard" + (admin.style === s.id ? " on" : "") },
-    lbImg(`previews/${s.id}.jpg`, null, { alt: s.title }), h("b", {}, s.title), h("small", {}, s.kits.length ? "лише НПЛ-10 + кран" : "усі комплекти з краном"),
+    lbImg(`previews/${s.id}.jpg`, null, { alt: s.title }), h("b", {}, s.title), h("small", {}, s.kits.length ? s.kits_title || "не для всіх комплектів" : "усі комплекти з краном"),
     h("button", { class: "use" + (admin.style === s.id ? " primary" : ""), onclick: () => { admin.style = s.id; $("#styleChips").dataset.v = ""; saveAdmin(); renderStyleCards(); renderStyleChips(); } },
       admin.style === s.id ? "✓ За замовчуванням" : "Зробити основним")));
 }

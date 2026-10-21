@@ -36,8 +36,11 @@ def main(argv=None):
         tmp = build_dir = tempfile.mkdtemp(prefix='kpgen_build_')
     try:
         from .styles import STYLES
-        if STYLES[spec.get('style') or 'dark']['engine'] == 'd6':
+        engine = STYLES[spec.get('style') or 'dark']['engine']
+        if engine == 'd6':
             from .d6 import D6 as Engine
+        elif engine == 'ultra':
+            from .ultra import Ultra as Engine
         else:
             from .build import Engine
         prs = Engine(spec, build_dir).build()
