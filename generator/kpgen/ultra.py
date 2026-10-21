@@ -1,4 +1,5 @@
-# «Ultra» style (21.10.2026): KP for a crane in a kit (BMF 650 / 720 / 750) and for НПЛ-10 + crane, built from scratch
+# «Ultra» style (21.10.2026): KP for a crane in a kit (BMF 650 / 720 / 750), for НПЛ-10 + crane and for a truck
+# converted to a timber carrier (КРАЗ / ЗІЛ + crane), built from scratch
 # with python-pptx — dark graphite pages, rounded cards, large photos and type, BMF orange.
 # The manufacturer drawings and the load chart with the crane are the ones the KP_2_v3 engine draws for the model
 # (harvested from its build), so they stay as detailed as in the other KPs.
@@ -37,8 +38,12 @@ PHOTOS = {
 # НПЛ-10 kits: the user's photos and drawings (from their «НПЛ-10 Heavy Label» design and KPs)
 NPL = dict(photo=('prod/npl10_tractor.png', 0.5, 0.55), end=('npl/npl10_workshop_hd.jpg', 0.45, 0.3),
            cutout='npl/npl10_crane_cutout.png', side='npl/npl10_dwg_side.png', rear='npl/npl10_dwg_rear.png')
-# pages whose photo the settings can replace: key -> (title, default photo or None)
-PHOTO_PAGES = [('npl', 'НПЛ-10: фото'), ('crane', 'Кран: фото'), ('end', 'Контакти: фото на всю сторінку')]
+# truck kits: the user's photos of the conversion (КП «КАМАЗ + 750») and what it includes
+TRUCK_PH = dict(photo=('prod/truck_conversion.png', 0.5, 0.5), end=('prod/truck_conversion.png', 0.55, 0.5))
+TRUCK_TILES = [('Бортова платформа', '{stakes} стійки під сортименти'), ('Рама {wall} мм', 'довжина {length} м'),
+               ('Щит', 'передній щит платформи'), ('Піраміда з аутригерами', 'основа крана, стійкість під час роботи'),
+               ('Гідробак у зборі', 'з оливою гідравлічною 90 л'), ('Насос аксіально-поршневий', 'привід гідросистеми крана'),
+               ('Кран {model}', 'з ротатором {rotator} т і захватом {grapple} м²'), ('Монтаж', 'входить у вартість дообладнання')]
 TILES = {'crane': None, 'base_outriggers': 'prod/tile_base.png', 'tank': 'prod/tile_tank.png', 'seat': 'prod/tile_seat.png'}
 
 
@@ -247,9 +252,13 @@ class Deck:
 # ---------------------------------------------------------------- the KP
 class Ultra:
     def __init__(self, spec, build_dir):
-        if spec['kit_type'] not in ('crane_kit', 'npl_crane'):
-            raise SpecError('Стиль «Ultra» є для крана в комплекті та НПЛ-10 + кран. Оберіть інший стиль.')
-        self.npl = spec['kit_type'] == 'npl_crane'
+        if spec['kit_type'] not in ('crane_kit', 'npl_crane', 'truck_crane'):
+            raise SpecError('Стиль «Ultra» є для крана в комплекті, НПЛ-10 + кран і вантажівки з краном. Оберіть інший стиль.')
+        self.npl = spec['kit_type'] == 'npl_crane'; self.truck = spec['kit_type'] == 'truck_crane'
+        # truck brand from the conversion line («Дообладнання автомобіля ЗІЛ у лісовоз») or the KP title («ЗІЛ + BMF 650»)
+        conv = next((r['title'] for r in spec['rows'] if r.get('kind') == 'service'), '')
+        mt = re.search(r'автомобіля\s+(\S+)', conv)
+        self.truck_name = (mt.group(1) if mt else spec['title'].split(' + ')[0].strip()) if self.truck else ''
         self.spec = spec; self.c = spec['crane']; self.cs = self.c['specs']
         self.prof = PROFILES[self.c['profile']]; self.no = str(self.prof.get('model_no') or '')
         self.build_dir = build_dir; self.cache = Cache(build_dir)
@@ -290,9 +299,9 @@ class Ultra:
         self.chart = self.raster('chart', load_chart, side, span, reach, int(cs['lift_4m_kg']), int(cs['lift_full_kg']))
         D = self.deck = Deck()
         self.pages = []
-        order = ([self.p_cover, self.p_npl, self.p_npl_spec] if self.npl else [self.p_cover]) + \
+        order = ([self.p_cover, self.p_npl, self.p_npl_spec] if self.npl else [self.p_cover, self.p_truck] if self.truck else [self.p_cover]) + \
             [self.p_crane, self.p_drawings, self.p_chart, self.p_kit, self.p_options, self.p_price] + \
-            ([self.p_own] if self.npl else []) + [self.p_end]
+            ([self.p_own] if self.npl or self.truck else []) + [self.p_end]
         for fn in order: fn()
         self.chrome()
         return D.prs
@@ -303,7 +312,7 @@ class Ultra:
         for i, (s, dark_top) in enumerate(self.pages, 1):
             if i == 1: continue
             D.img(s, self.logo, 0.5, 0.42, 0.62)
-            D.text(s, 1.35, 0.44, 4.2, 0.2, f"НПЛ-10  ×  {self.m.upper()}" if self.npl else f"{self.m.upper()}  ·  КРАН У КОМПЛЕКТІ", 7.5, MUTED, True, track=1.5)
+            D.text(s, 1.35, 0.44, 4.2, 0.2, f"НПЛ-10  ×  {self.m.upper()}" if self.npl else f"{self.truck_name}  ×  {self.m.upper()}  ·  ЛІСОВОЗ" if self.truck else f"{self.m.upper()}  ·  КРАН У КОМПЛЕКТІ", 7.5, MUTED, True, track=1.5)
             D.text(s, 5.2, 0.44, 2.57, 0.2, f"КП № {sp['number']}  ·  {sp['date']}", 7.5, MUTED, True, 'r', track=1.0)
             D.box(s, 0.5, 11.02, 7.27, 0.012, LINE, r=0)
             site = (sp['contacts']['sites'] or [''])[0]; ph = (sp['contacts']['phones'] or [''])[0]
@@ -323,7 +332,15 @@ class Ultra:
         D.img(s, self.logo, 0.5, 0.45, 0.85)
         D.text(s, 3.5, 0.48, 4.27, 0.22, f"КОМЕРЦІЙНА ПРОПОЗИЦІЯ № {sp['number']}", 8, MUTED, True, 'r', track=2.0)
         D.text(s, 3.5, 0.7, 4.27, 0.22, sp['date'], 8, DIM, True, 'r', track=2.0)
-        if self.npl:
+        if self.truck:
+            D.rt(s, self.headline([[(self.truck_name + ' ', WHITE), ('+ ' + (self.no or self.m), OR)]], F_BLACK), 0.47, 1.4, 1.45, maxw=7.3)
+            D.text(s, 0.5, 3.2, 7.27, 0.4, [[('Лісовоз з краном ', {}), (self.m, dict(color=OR))]], 24, WHITE, True)
+            D.text(s, 0.5, 3.72, 7.27, 0.3, f"дообладнання вантажівки {self.truck_name} під ключ · ротатор {cs['rotator_t']} т і грейфер {cs['grapple_m2']} м² у комплекті", 12, MUTED)
+            d = self.photo_of('truck', TRUCK_PH['photo'])
+            D.img(s, self.raster('photo', photo, d[0], 7.27, 4.25, d[1], d[2], assets=(d[0],)), 0.5, 4.2, 7.27, 4.25, r=0.22)
+            kpis = [(self.truck_spec('stakes', '4'), 'шт', 'стійки платформи'), (cs['reach_m'], 'м', f'виліт крана {self.m}'),
+                    (cs['torque_knm'], 'кНм', 'підйомний момент')]
+        elif self.npl:
             D.rt(s, self.headline([[('НПЛ-10', WHITE)]], F_BLACK), 0.47, 1.4, 1.45, maxw=7.3)
             D.text(s, 0.5, 3.2, 7.27, 0.4, [[('Лісовоз з краном ', {}), (self.m, dict(color=OR))]], 24, WHITE, True)
             D.text(s, 0.5, 3.72, 7.27, 0.3, f"напівпричіп власного виробництва · ротатор {cs['rotator_t']} т і грейфер {cs['grapple_m2']} м² у комплекті", 12, MUTED)
@@ -354,6 +371,41 @@ class Ultra:
         ct = sp['contacts']
         D.text(s, 4.1, 10.45, 3.67, 0.6, [' · '.join(ct['phones'][:2]), ' · '.join(ct['sites'][:2])], 9, MUTED, True, 'r', spacing=1.25)
         D.text(s, 0.5, 11.2, 7.27, 0.2, sp['maker']['line'].upper(), 6.5, DIM, True, track=1.5)
+
+    def truck_spec(self, k, d):
+        r = next((r for r in self.spec['rows'] if r.get('kind') == 'service'), {})
+        m = {'stakes': r'(\d+)\s*стійк', 'wall': r'рама\s*(\d+)\s*мм', 'length': r'/\s*([\d,]+)\s*м'}[k]
+        mm = re.search(m, r.get('desc') or ''); return mm.group(1) if mm else d
+
+    # truck: what the conversion includes
+    def p_truck(self):
+        D, cs, t = self.deck, self.cs, self.truck_name
+        s = D.slide(self.raster('bg-a', page_bg, ((8.3, 6.5, 3.2, 0.14),)))
+        self.pages.append((s, False))
+        d = self.photo_of('npl', None)
+        if d:
+            D.img(s, self.raster('photo', photo, d[0], 7.27, 4.2, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.2, r=0.2)
+        else:   # the user's scheme of the conversion (platform, pyramid with outriggers, tank) on a card
+            sch = 'prod/truck_pyramid.png'
+            D.box(s, 0.5, 0.95, 7.27, 4.2, CARD, LINE, r=0.2)
+            D.img(s, self.raster('scheme', lambda p_, w_, h_: jpg(R.on_card(Image.open(R.asset(p_)).convert('RGBA'), w_, h_, 0.95)), sch, 7.0, 3.95, assets=(sch,)), 0.63, 1.08, 7.0, 3.95, r=0.16)
+            D.text(s, 5.0, 4.75, 2.6, 0.2, '* схематичне зображення', 7.5, DIM, align='r')
+        D.box(s, 0.75, 4.67, 2.3, 0.3, OR, r=0.15)
+        D.text(s, 0.75, 4.67, 2.3, 0.3, 'СХЕМА ДООБЛАДНАННЯ' if not d else 'ДООБЛАДНАННЯ', 8, WHITE, True, 'c', 'm', track=0.5)
+        self.kicker(s, 0.5, 5.45, 'дообладнання · власне виробництво')
+        D.rt(s, self.headline([[('Лісовоз на базі', WHITE)], [(t, OR)]]), 0.48, 5.8, 0.42)
+        conv = next((r for r in self.spec['rows'] if r.get('kind') == 'service'), {})
+        D.text(s, 0.5, 6.87, 7.27, 0.9, [f"Переобладнуємо вантажівку {t} у лісовоз для перевезення колод і брусів: бортова платформа зі стійками, "
+                                         f"піраміда з аутригерами під кран-маніпулятор {self.m}, гідросистема і монтаж.",
+                                         (conv.get('desc') or '').capitalize()], 10.5, (210, 213, 218), spacing=1.25)
+        fm = dict(stakes=self.truck_spec('stakes', '4'), wall=self.truck_spec('wall', '6'), length=self.truck_spec('length', '5'),
+                  model=self.m, rotator=cs['rotator_t'], grapple=cs['grapple_m2'])
+        tw, gap = (7.27 - 0.15) / 2, 0.12; rh = min(0.68, (10.85 - 7.85 - gap * 3) / 4)
+        for i, (a, b) in enumerate(TRUCK_TILES):
+            x, y = 0.5 + (i % 2) * (tw + 0.15), 7.85 + (i // 2) * (rh + gap)
+            D.box(s, x, y, tw, rh, CARD, LINE, r=0.14)
+            D.text(s, x + 0.18, y, 0.35, rh, f'{i + 1:02d}', 8.5, OR, True, anchor='m')
+            D.text(s, x + 0.52, y + 0.04, tw - 0.62, rh - 0.08, [[(a.format(**fm), dict(bold=True, size=10.5, color=WHITE))], [(b.format(**fm), dict(size=8, color=MUTED))]], 10.5, WHITE, anchor='m', spacing=1.05)
 
     # НПЛ-10: photo, description, features
     def p_npl(self):
@@ -405,15 +457,18 @@ class Ultra:
         self.pages.append((s, False))
         self.kicker(s, 0.5, 0.95, 'власне виробництво')
         a, b = O['headline']
+        facts = O['facts'] if not self.truck else [('до 60', 'ДНІВ ПІД ЗАМОВЛЕННЯ'), ('під ключ', 'ПЛАТФОРМА, ПІРАМІДА, ГІДРАВЛІКА'),
+                                                      ('монтаж', 'ВХОДИТЬ У ВАРТІСТЬ'), ('BMF', 'ОФІЦІЙНИЙ ДИСТРИБ’ЮТОР')]
         D.rt(s, self.headline([[(a.rstrip('.').capitalize(), WHITE)], [(b.rstrip('.').capitalize(), OR)]]), 0.48, 1.3, 0.42)
         D.text(s, 0.5, 2.5, 7.27, 0.75, O['quote'], 11, (214, 217, 222), spacing=1.25)
-        facts = O['facts']; n = len(facts); gap = 0.12; cw = (7.27 - gap * (n - 1)) / n
+        n = len(facts); gap = 0.12; cw = (7.27 - gap * (n - 1)) / n
         for i, (v, cap) in enumerate(facts):
             x = 0.5 + i * (cw + gap)
             D.box(s, x, 3.45, cw, 1.15, CARD, LINE, r=0.14)
             D.text(s, x + 0.15, 3.58, cw - 0.25, 0.45, v, 19, OR if i == 0 else WHITE, True)
             D.text(s, x + 0.15, 4.05, cw - 0.25, 0.5, cap.capitalize(), 8, MUTED, spacing=1.05)
         photos = [p_ for _, p_, _, _ in O['photos']][:6]
+        if self.truck: photos = sorted(photos, key=lambda p_: 'truck' not in p_)
         foc = {p_: (fx, fy) for _, p_, fx, fy in O['photos']}
         cw, ch, gap = (7.27 - 0.15) / 2, 1.95, 0.15
         for i, p_ in enumerate(photos):
@@ -616,10 +671,11 @@ class Ultra:
         D, sp = self.deck, self.spec
         s = D.slide(self.raster('bg-d', page_bg, ((4.1, 11.9, 4.5, 0.22),), False))
         self.pages.append((s, True))
-        d = self.photo_of('end', NPL['end'] if self.npl else PHOTOS[self.c['profile']]['end'])
+        d = self.photo_of('end', NPL['end'] if self.npl else TRUCK_PH['end'] if self.truck else PHOTOS[self.c['profile']]['end'])
         D.img(s, self.raster('photo-end', photo, d[0], W, 7.4, d[1], d[2], 0.42, assets=(d[0],)), 0, 0, W, 7.4)
-        D.rt(s, self.headline([[('Замовте', WHITE)], [('НПЛ-10' if self.npl else self.m, OR)]], F_BLACK), 0.47, 5.35, 0.62)
+        D.rt(s, self.headline([[('Замовте', WHITE)], [('НПЛ-10' if self.npl else f'{self.truck_name} + {self.no or self.m}' if self.truck else self.m, OR)]], F_BLACK), 0.47, 5.35, 0.62)
         lead = ('Відповімо на запитання, підберемо кран і комплектацію НПЛ-10 під вашу роботу та підготуємо договір.' if self.npl else
+                f'Відповімо на запитання, оглянемо вашу вантажівку {self.truck_name}, підберемо комплектацію і підготуємо договір.' if self.truck else
                 'Відповімо на запитання, підберемо комплектацію під ваш причіп або трактор і підготуємо договір.')
         D.text(s, 0.5, 6.95, 5.6, 0.5, lead, 11, (214, 217, 222), spacing=1.2)
         ct = sp['contacts']

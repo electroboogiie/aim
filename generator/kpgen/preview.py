@@ -37,7 +37,7 @@ def page(style, key, path, fx=0.5, fy=0.45, opacity=0.18, width=480):
     if S['engine'] == 'ultra':   # the photo page as the KP shows it (card on «НПЛ-10» / «Кран», full width on «Контакти»)
         from .ultra import photo, W
         R.set_theme('dark')
-        w, h = (W, 7.4) if key == 'end' else (7.27, 4.2 if key == 'npl' else 4.7)
+        w, h = (W, 7.4) if key == 'end' else (7.27, {'npl': 4.2, 'truck': 4.25}.get(key, 4.7))
         return _thumb(photo(path, w, h, fx, fy, 0.42 if key == 'end' else None), width)
     base = _template_bg(style, key)
     R.set_theme(_theme(style, base))

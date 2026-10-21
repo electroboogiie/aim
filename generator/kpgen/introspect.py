@@ -59,8 +59,8 @@ def background(style, key, width=330):
     """JPEG thumbnail of the page's background picture in the style's template."""
     if STYLES[style]['engine'] == 'ultra':
         from .preview import page
-        from .ultra import NPL, PHOTOS
-        d = NPL['photo'] if key == 'npl' else PHOTOS['bmf720'].get(key) or PHOTOS['bmf720']['end']
+        from .ultra import NPL, PHOTOS, TRUCK_PH
+        d = NPL['photo'] if key == 'npl' else TRUCK_PH['photo'] if key == 'truck' else PHOTOS['bmf720'].get(key) or PHOTOS['bmf720']['end']
         return page(style, key, *d, width=width)
     origin = {k: i for k, _, i in pages(style)}
     s = list(Presentation(template_path(style)).slides)[origin[key]]

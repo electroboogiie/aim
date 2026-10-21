@@ -114,6 +114,15 @@ class EngineTest(unittest.TestCase):
         code, res, err = run(spec)
         self.assertEqual(code, 0, err); self.assertEqual(res['pages'], 7)
 
+    def test_ultra_truck(self):
+        """«Ultra» for a truck converted to a timber carrier: brand from the conversion line, price on request."""
+        with open(os.path.join(HERE, 'specs', 'zil_bmf650.json'), encoding='utf-8') as f: spec = json.load(f)
+        spec['style'] = 'ultra'
+        code, res, err = run(spec)
+        self.assertEqual(code, 0, err); self.assertEqual(res['pages'], 10)
+        flat = ' '.join(t for p in texts(Presentation(res['pptx'])) for t in p)
+        self.assertIn('ЗІЛ  ×  BMF 650', flat); self.assertNotIn('КРАЗ', flat)
+
     def test_npl_label_crane_pages(self):
         """«НПЛ-10 Heavy Label» with BMF 750: crane texts and headlines for 750, chart without the template bars."""
         spec = self.sample('npl10_bmf750'); spec['style'] = 'npl_label'
