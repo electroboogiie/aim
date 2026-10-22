@@ -415,3 +415,19 @@ table.prices td small { white-space: normal; } #fixBox table.prices td:last-chil
 .price-pick .chk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pick { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
 .pick .chk { white-space: nowrap; }
+.sub-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 14px 0 6px; }
+.sub-head h3 { margin: 0; font-size: 14px; }
+.extras { display: grid; gap: 6px; }
+.extra-row { display: grid; grid-template-columns: 1fr 1fr 110px 60px auto; gap: 6px; align-items: center; }
+.extra-row.new { padding-top: 6px; border-top: 1px dashed var(--line); }
+.extra-row input { min-width: 0; }
+.extra-saved { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
+.extra-saved .chip { padding: 0 2px 0 0; gap: 0; cursor: default; }
+.extra-saved .chip button { border: 0; background: none; }
+tr.extra td { background: #FBFAF6; }
+.pdate { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 8px; margin-top: 3px; }
+.pdate small { color: var(--mut); white-space: nowrap; }
+@media (max-width: 640px) {
+  .extra-row { grid-template-columns: 1fr 110px 60px auto; }
+  .extra-row input:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+}

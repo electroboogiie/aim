@@ -162,7 +162,7 @@ test("validateSelection: manual prices, kit price, discount and date", () => {
 
 test("slot candidates follow compatibility", () => {
   const base = slotCandidates(c, "crane_kit", "base", sel({ crane: "bmf750" }));
-  assert.deepEqual(base.filter((x) => x.allowed).map((x) => x.id), ["base_outriggers_750"]);
+  assert.deepEqual(base.filter((x) => x.allowed).map((x) => x.id), ["base_outriggers_750", "truck_pyramid_outriggers"]);
   const trailers = slotCandidates(c, "bmf_trailer_crane", "trailer", sel({ crane: "bmf905" }));
   assert.deepEqual(trailers.filter((x) => x.allowed).map((x) => x.id), ["bmf14t2_pro_l", "bmf17t2"]);
   const cranes = slotCandidates(c, "bmf_trailer_crane", "crane", sel({ trailer: "bmf8t2" }));

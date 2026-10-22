@@ -281,3 +281,24 @@ test("default settings are valid for the catalog; bad settings are reported", ()
   assert.ok(bad.length >= 5, bad.join("\n"));
   assert.ok(bad.some((e) => e.includes("невідома компанія «nobody»")));
 });
+
+test("own positions typed in by hand: priced rows after the kit, × qty, unpriced ones leave the total incomplete", () => {
+  const c = miniCatalog([item("x", ref(10000, "2026-01-01", 0, 0))]);
+  const q = quote(c, settings(), null, one("x", null, null, {
+    extras: [{ title: "Монтажні роботи", price_uah: 100000 }, { title: "  " , price_uah: 5 }, { title: "Ящик", desc: "для інструмента", price_uah: 2000, qty: 2 }, { title: "Доставка", price_uah: null }],
+  }));
+  assert.deepEqual(q.rows.map((r) => [r.title, r.price_uah, r.kind ?? null]), [
+    ["Виріб x", 10000, "component"], ["Монтажні роботи", 100000, "extra"], ["Ящик — 2 шт", 4000, "extra"], ["Доставка", null, "extra"]]);
+  assert.equal(q.rows[2]!.desc, "для інструмента");
+  assert.equal(q.total_uah, 114000);
+  assert.equal(q.complete, false);
+  assert.ok(q.warnings.some((w) => w.includes("«Доставка» — ціна за запитом")), q.warnings.join("\n"));
+});
+
+test("bundle kit priced position by position (itemized): own prices, no kit price, rows in the KP", () => {
+  const q = quote(pairCatalog(), settings(), null, pair("t2", "c1", { itemized: true, extras: [{ title: "Монтаж", price_uah: 1000 }] }));
+  assert.equal(q.price_display, "itemized");
+  assert.equal(q.kit_price_uah, undefined);
+  assert.deepEqual(q.rows.map((r) => r.price_uah), [300000, 600000, 1000]);
+  assert.equal(q.total_uah, 901000);
+});

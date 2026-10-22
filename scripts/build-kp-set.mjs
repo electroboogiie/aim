@@ -23,8 +23,9 @@ const report = [];
 let n = 0;
 for (const p of catalog.presets) {
   if (p.archived || (only && !only.includes(p.id))) continue;
-  const input = { kit_type: p.kit_type ?? p.selection.kit_type, selection: core.presetSelection(p, catalog), date };
-  const key = JSON.stringify(input.selection);
+  const input = { kit_type: p.kit_type ?? p.selection.kit_type, selection: core.presetSelection(p, catalog), date,
+    ...(p.extras ? { extras: p.extras } : {}), ...(p.itemized ? { itemized: true } : {}), ...(p.quantities ? { quantities: p.quantities } : {}) };
+  const key = JSON.stringify([input.selection, input.extras ?? null, !!input.itemized, input.quantities ?? null]);
   if (seen.has(key)) { report.push({ id: p.id, same_as: seen.get(key) }); continue; }
   seen.set(key, p.id);
   const errs = core.validateSelection(catalog, input);

@@ -45,6 +45,7 @@ export interface Item {
   compatible?: string[];                // item ids this item fits (e.g. a base or trailer -> crane ids)
   featured?: boolean;                   // main product (BMF 650 / 720 / 750): offered first in pickers
   unit?: ItemUnit;                      // priced per unit with a quantity the manager sets (oil per litre)
+  tile_with?: { item: string; title: string };   // KP configuration page: one tile with that item (titled so), prices added
   source: string;
   needs_confirmation?: string[];
 }
@@ -91,6 +92,7 @@ export interface KitType {
   title_slots?: string[];               // slots whose item models form the KP title, joined by " + "
   terms?: string[];                     // Term ids printed on the KP by default
   maker_line?: string;                  // "Виробник: {maker}"
+  price_note?: string;                  // KP price page note instead of the «eur_rate» term text
 }
 
 export interface Slot {
@@ -146,6 +148,9 @@ export interface Preset {
     rows?: PresetSourceRow[];           // price rows as printed in the KP
     note?: string;
   };
+  extras?: QuoteExtra[];                // own positions of the source KP (e.g. «Монтажні роботи»)
+  itemized?: boolean;                   // the source KP prices a bundle kit position by position
+  quantities?: Record<string, number>;  // item id -> quantity (litres of oil) of the source KP
 }
 
 export interface AccessoryVariant {
@@ -211,9 +216,14 @@ export interface Selection {
   accessories: SelectionAccessory[];
 }
 
+/** A position typed in by hand on the configurator page (e.g. «Монтажні роботи»): not in the catalog. */
+export interface QuoteExtra { title: string; desc?: string; price_uah: number | null; qty?: number | null }
+
 export interface QuoteInput {
   kit_type: string;
   selection: Selection;
+  extras?: QuoteExtra[];                // own positions, priced on their own after the kit positions
+  itemized?: boolean;                   // bundle kits: price every position on its own instead of one kit price
   discount_pct?: number;
   manual_prices?: Record<string, number>;
   kit_price_uah?: number | null;        // bundle kits: manual kit price, overrides bundle / sum
@@ -292,6 +302,7 @@ export interface KpSpec {
   npl: { brakes: string; wheels: string; stakes: string } | null;
   trailer?: { id: string; model: string; title: string; short: string; profile: string; specs: Record<string, string> } | null;  // BMF trailer kits
   rows: KpSpecRow[];
+  config_rows?: KpSpecRow[];            // configuration page tiles when they differ from rows (Item.tile_with)
   accessories: { group: string; title: string; desc: string; photo: string; price_text: string }[];
   total_text: string;
   price_note: string;

@@ -86,6 +86,11 @@ class EngineTest(unittest.TestCase):
         opts = T[7]
         self.assertEqual(sum('ціна за запитом' == t for t in opts), 9)
         self.assertTrue(any('Також на замовлення: Регулюючий клапан, Грейфери Hardox, Ротатори.' in t for t in opts))
+        self.assertEqual(sum(bool(re.fullmatch(r'T-0\d', t)) for t in T[8]), 0)   # no T-labels by default since the KPs of 22.10.2026
+        spec['overrides'] = dict(layout=dict(show=dict(term=True)))
+        code, res, err = run(spec)
+        self.assertEqual(code, 0, err)
+        T = self.check_numbers(Presentation(res['pptx']))
         self.assertEqual(sum(bool(re.fullmatch(r'T-0\d', t)) for t in T[8]), 3)
 
     def test_bad_photo_paths(self):
@@ -145,7 +150,7 @@ class EngineTest(unittest.TestCase):
         spec = self.sample('bmf720_komplekt'); del spec['crane']['specs']['reach_m']
         code, _, err = run(spec); self.assertEqual(code, 1); self.assertIn('reach_m', err)
         spec = self.sample('bmf720_komplekt'); spec['rows'] = spec['rows'] * 3
-        code, _, err = run(spec); self.assertEqual(code, 1); self.assertIn('максимум 8', err)
+        code, _, err = run(spec); self.assertEqual(code, 1); self.assertIn('максимум 10', err)
 
 
 if __name__ == '__main__':

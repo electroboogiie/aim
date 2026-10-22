@@ -5,7 +5,7 @@ import { TEXT_ON_REQUEST, eurRate, priceRule } from "./pricing.js";
 export const CRANE_SPEC_KEYS = ["reach_m", "torque_knm", "lift_4m_kg", "lift_full_kg", "grapple_m2", "rotator_t", "valve",
     "valve_flow_l", "slew_knm", "slew_cyl", "turn_deg", "pressure_bar", "pump_lpm", "legs", "weight_kg", "telescope"];
 export const REQUIRED_CRANE_SPECS = ["reach_m", "torque_knm", "lift_4m_kg", "lift_full_kg", "grapple_m2", "rotator_t", "turn_deg"];
-export const MAX_KP_ROWS = 8;
+export const MAX_KP_ROWS = 10;
 export const MAX_KP_TERMS = 7;
 export const MAX_KP_CARDS = 9;
 export class KpSpecError extends Error {
@@ -50,6 +50,29 @@ export function kpRows(q) {
     }
     rows.forEach((r, i) => { r.no = i + 1; });
     return rows;
+}
+/** Configuration page tiles: an item with tile_with shares one tile with that item (as КВП + кардан in the ЗІЛ KP); null when none merge. */
+function configTiles(c, rows, q) {
+    const price = (id) => q.rows.find((r) => r.item_id === id)?.price_uah;
+    const out = rows.map((r) => ({ ...r }));
+    let merged = false;
+    for (const r of [...out]) {
+        const tw = r.item_id ? itemById(c, r.item_id)?.tile_with : undefined;
+        const host = tw && out.find((x) => x.item_id === tw.item && x !== r);
+        if (!tw || !host)
+            continue;
+        const a = price(host.item_id), b = price(r.item_id);
+        host.title = tw.title;
+        host.desc = [host.desc, r.desc].filter(Boolean).join("; ");
+        if (q.price_display === "itemized" && typeof a === "number" && typeof b === "number")
+            host.price_text = formatUah(a + b);
+        out.splice(out.indexOf(r), 1);
+        merged = true;
+    }
+    if (!merged)
+        return null;
+    out.forEach((r, i) => { r.no = i + 1; });
+    return out;
 }
 /**
  * Options page cards: the chosen accessories, then (offer) the kit's other compatible accessories that have a photo,
@@ -207,7 +230,9 @@ export function buildKpSpec(c, settings, q, meta) {
     if (q.discount_pct > 0 && !unpriced)
         notes.push(`Вартість зі знижкою ${formatPct(q.discount_pct)} (без знижки ${formatUah(q.subtotal_uah)}).`);
     const eurTerm = termById(c, "eur_rate");
-    if (eurTerm)
+    if (kt.price_note)
+        notes.push(kt.price_note);
+    else if (eurTerm)
         notes.push(eurTerm.text);
     const spec = {
         template: "kp_v3",
@@ -232,6 +257,9 @@ export function buildKpSpec(c, settings, q, meta) {
         },
         terms,
     };
+    const tiles = configTiles(c, rows, q);
+    if (tiles)
+        spec.config_rows = tiles;
     if (meta.photos)
         spec.photos = meta.photos;
     if (meta.accessories_note)

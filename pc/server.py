@@ -180,7 +180,10 @@ def apply_admin(spec, admin):
         if o and key in HERO_PAGES and not (key == 'cover' and panel) and STYLES[style]['engine'] == 'v3':
             photos[key] = o['path']; photos[key + '_focus'] = [float(o.get('fx', 0.5)), float(o.get('fy', 0.45))]
     if photos: spec['photos'] = photos
-    spec['overrides'] = {'bg': bg, 'texts': st.get('texts') or {}, 'layout': admin.get('layout') or {}}
+    layout = dict(admin.get('layout') or {})   # this KP's own switches (e.g. no client name -> no «Підготовлено для») win
+    own = ((spec.get('overrides') or {}).get('layout') or {}).get('show') or {}
+    if own: layout['show'] = {**(layout.get('show') or {}), **own}
+    spec['overrides'] = {'bg': bg, 'texts': st.get('texts') or {}, 'layout': layout}
     ct = dict(spec.get('contacts') or {})   # contacts from the admin: every style
     for k, v in ((admin.get('layout') or {}).get('contacts') or {}).items():
         if k in ('phones', 'sites', 'socials') and isinstance(v, str): v = [x.strip() for x in v.split('\n') if x.strip()]

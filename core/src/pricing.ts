@@ -232,7 +232,7 @@ export function quote(c: Catalog, settings: Settings, rate: RateInfo | null | un
   const date = input.date ?? todayIso();
   const eur = eurRate(settings, rate);
   const ctx: PriceContext = { settings, eur, rate, date };
-  const bundleKit = kt.price_display === "bundle";
+  const bundleKit = kt.price_display === "bundle" && !input.itemized;
   const manual = input.manual_prices ?? {};
 
   const itemAcc: Acc = { warnings: [], noEurRef: [], noMetal: [], needsRate: false, usedRate: false };
@@ -364,6 +364,17 @@ export function quote(c: Catalog, settings: Settings, rate: RateInfo | null | un
     acc.warnings.push(`Не задано індекс металу: металозалежну частку цін не перераховано (${uniq(acc.noMetal).join(", ")}).`);
   }
 
+  // own positions typed in on the configurator page: after the kit positions, each with its own price
+  (input.extras ?? []).forEach((x, i) => {
+    const title = String(x.title ?? "").trim();
+    if (!title) return;
+    const qty = typeof x.qty === "number" && x.qty > 1 ? Math.round(x.qty) : 1;
+    const price = typeof x.price_uah === "number" && Number.isFinite(x.price_uah) ? x.price_uah * qty : null;
+    if (price === null) { complete = false; acc.warnings.push(`«${title}» — ${TEXT_ON_REQUEST}, у суму не входить.`); }
+    rows.push({ no: rows.length + 1, item_id: `extra_${i + 1}`, title: qty > 1 ? `${title} — ${qty} шт` : title, desc: String(x.desc ?? "").trim(),
+      qty: 1, price_uah: price, price_text: price === null ? TEXT_ON_REQUEST : formatUah(price), breakdown: "позиція вписана вручну", kind: "extra" });
+  });
+
   const base = (bundleKit ? kitPrice ?? 0 : 0) + rows.reduce((s, r) => s + (r.price_uah ?? 0), 0);
   const subtotal = base + choices.reduce((s, x) => s + x.price_uah, 0) + accessories.reduce((s, r) => s + (r.price_uah ?? 0), 0);
   const total = discount > 0 ? roundTo(subtotal * (1 - discount / 100), settings.rounding_uah) : subtotal;
@@ -371,7 +382,7 @@ export function quote(c: Catalog, settings: Settings, rate: RateInfo | null | un
   const q: Quote = {
     kit_type: kt.id, rows, choices, accessories, subtotal_uah: subtotal, discount_pct: discount, total_uah: total,
     eur_rate: eur.rate, eur_rate_source: eur.source, date, valid_until: addDays(date, settings.validity_days),
-    warnings: uniq(acc.warnings), price_display: kt.price_display, complete, eur_applied: acc.usedRate,
+    warnings: uniq(acc.warnings), price_display: bundleKit || kt.price_display !== "bundle" ? kt.price_display : "itemized", complete, eur_applied: acc.usedRate,
   };
   if (bundleKit) { q.kit_price_uah = kitPrice; q.bundle_id = bundleId; }
   if (kitBreakdown) q.kit_breakdown = kitBreakdown;

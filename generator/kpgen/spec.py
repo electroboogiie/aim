@@ -3,7 +3,7 @@ import json, sys
 from .profiles import PROFILES, TRAILERS
 from .raster import asset_ok
 
-MAX_ROWS = 8          # price page
+MAX_ROWS = 10         # price page
 MAX_TERMS = 7
 MAX_CARDS = 9         # accessories page (3 x 3)
 REQUIRED_CRANE_SPECS = ('reach_m', 'torque_knm', 'lift_4m_kg', 'lift_full_kg', 'grapple_m2', 'rotator_t', 'turn_deg')
@@ -91,11 +91,18 @@ def validate(spec):
     rows = spec['rows']
     if not isinstance(rows, list) or not rows: raise SpecError('У КП немає жодної позиції (rows).')
     if len(rows) > MAX_ROWS: raise SpecError(f'Забагато позицій для сторінки «Вартість»: {len(rows)} (максимум {MAX_ROWS}).')
-    rows = [dict(no=r.get('no', i), title=_s(r.get('title')), desc=_s(r.get('desc')), qty=r.get('qty', 1),
-                 price_text=_s(r.get('price_text')), item_id=r.get('item_id'), kind=r.get('kind'),
-                 photo=_photo(r.get('photo'), f'позиції {i}'), photo_force=bool(r.get('photo_force')),
-                 photo_pos=_pos(r.get('photo_pos')))
-            for i, r in enumerate(rows, 1)]
+    norm = lambda rs, what: [dict(no=r.get('no', i), title=_s(r.get('title')), desc=_s(r.get('desc')), qty=r.get('qty', 1),
+                                  price_text=_s(r.get('price_text')), item_id=r.get('item_id'), kind=r.get('kind'),
+                                  photo=_photo(r.get('photo'), f'{what} {i}'), photo_force=bool(r.get('photo_force')),
+                                  photo_pos=_pos(r.get('photo_pos')))
+                             for i, r in enumerate(rs, 1)]
+    rows = norm(rows, 'позиції')
+    # optional cards of the configuration page when they differ from the price rows (positions merged into one card)
+    cfg = spec.get('config_rows')
+    if cfg is not None:
+        if not isinstance(cfg, list) or not cfg or len(cfg) > MAX_ROWS:
+            raise SpecError(f'config_rows: від 1 до {MAX_ROWS} карток конфігурації.')
+        cfg = norm(cfg, 'картки конфігурації')
     terms = [dict(title=_s(t.get('title')), text=_s(t.get('text'))) for t in (spec.get('terms') or [])]
     if len(terms) > MAX_TERMS: raise SpecError(f'Забагато умов співпраці: {len(terms)} (максимум {MAX_TERMS}).')
     accs = [dict(group=_s(a.get('group')), title=_s(a.get('title')), desc=_s(a.get('desc')),
@@ -120,7 +127,7 @@ def validate(spec):
     client = spec['client'] if isinstance(spec['client'], dict) else {'name': _s(spec['client'])}
     contacts = spec['contacts']
     maker = spec['maker']
-    return dict(spec, crane=crane, rows=rows, terms=terms, accessories=accs, npl=npl, trailer=trailer or None,
+    return dict(spec, crane=crane, rows=rows, config_rows=cfg, terms=terms, accessories=accs, npl=npl, trailer=trailer or None,
                 client=dict(name=_s(client.get('name')), contact=_s(client.get('contact'))),
                 contacts=dict(phones=list(contacts.get('phones') or []), email=_s(contacts.get('email')),
                               sites=list(contacts.get('sites') or []), address=_s(contacts.get('address')),

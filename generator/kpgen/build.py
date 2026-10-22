@@ -39,7 +39,7 @@ NOTE_NPL = ('Аксесуари з каталогів BMF (bmf.rv.ua, bmf.ee) д
 LAYOUT_TEXTS = dict(
     kp_title='КОМЕРЦІЙНА ПРОПОЗИЦІЯ', cover_kicker='FORESTRY CRANE SYSTEM', cover_kicker_trailer='TIMBER TRAILER SYSTEM',
     sight_title='TARGET LOCKED', client_label='ПІДГОТОВЛЕНО ДЛЯ',
-    footer='{сайт}  ·  {телефон}', footer_label='СИСТЕМА ЛІСОВОГО КРАНА',
+    footer='{сайт}  ·  {телефон}', footer_label='СИСТЕМА ЛІСОВОГО КРАНА', footer_label_price='ВАРТІСТЬ КОМПЛЕКТУ',
     sec_manifest='МАНІФЕСТ', sec_crane_in_kit='КРАН-МАНІПУЛЯТОР', sec_anatomy='КОНСТРУКЦІЯ', sec_passport='ТЕХНІЧНИЙ ПАСПОРТ',
     sec_passport_in_kit='ТЕХНІЧНИЙ ПАСПОРТ КРАНА', sec_trailer_npl='НАПІВПРИЧІП', sec_trailer='ПРИЧІП',
     sec_trailer_spec='ГАБАРИТИ ТА ХАРАКТЕРИСТИКИ', sec_config='КОНФІГУРАЦІЯ', sec_options='ДОДАТКОВІ ОПЦІЇ', sec_price='ВАРТІСТЬ',
@@ -52,9 +52,14 @@ LAYOUT_TEXTS = dict(
     lbl_phone='ТЕЛЕФОН', lbl_email='E-MAIL', lbl_site='САЙТ', lbl_address='АДРЕСА', lbl_socials='СОЦМЕРЕЖІ',
     lbl_production='ВИРОБНИЦТВО', production='Напівпричепи НПЛ-10\n100+ виготовлено в Сарнах')
 LAYOUT_SHOW = dict(kp_no=True, kp_date=True, frames=True, sight=True, client=True, footer=True, footer_label=True,
-                   module=True, term=True)
-SIGHT_BOX = (4.05, 1.3, 1.75, 1.75)   # template: frame corners 5-12, centre ring 13, leader 14, label 15+16
+                   module=False, term=False)   # «МОДУЛЬ 01» and «T-01» off since the KPs of 22.10.2026
+SIGHT_BOX = (4.05, 1.3, 1.75, 1.75)
+SIGHTS = {'prod/truck_conversion.png': dict(x=6.1, y=1.7, w=1.55, h=1.9)}   # default sight per cover photo (on the crane)   # template: frame corners 5-12, centre ring 13, leader 14, label 15+16
 PAGE_W, PAGE_H = 8.27, 11.69
+
+
+def is_mounting(row):
+    return (row.get('item_id') or '').lower().startswith('mount') or 'монтаж' in (row.get('title') or '').lower()
 
 
 def plural(n, one_, few, many):
@@ -159,6 +164,13 @@ class Engine:
         self.config_page(crane_blob)
         self.price_page()
         if self.npl: self.own_production(seat_blob)
+        # truck kits: the conversion page and the conversion maker's page unless the spec says otherwise (КП ЗІЛ 22.10.2026)
+        extra = self.spec['pages'] if isinstance(self.spec.get('pages'), dict) else dict(conversion=True, own_production=True)
+        if self.truck and extra.get('own_production'):   # the conversion maker's page right after the BMF one
+            own = dup_slide(prs, maker, list(prs.slides).index(maker) + 1)
+            self.own_production(seat_blob, own); self.pages['own_production'] = own
+        if self.truck and extra.get('conversion'):   # what the conversion includes, right after the cover
+            self.pages['conversion'] = self.conversion_page(dup_slide(prs, manifest, 1))
         self.crane_blob = crane_blob
         self.cover_page()
         self.end_page()
@@ -481,7 +493,7 @@ class Engine:
         return data or (R.png(im) if im.mode == 'RGBA' else R.jpg(im))
 
     def config_page(self, crane_blob):
-        s = self.pages['config']; rows = self.spec['rows']; n = len(rows)
+        s = self.pages['config']; rows = self.spec.get('config_rows') or self.spec['rows']; n = len(rows)
         slots = {'TL': (13, 14, 15, 18, 19, 20, 21), 'TR': (36, 37, 38, 39, 40, 41, 42),
                  'BL': (22, 23, 24, 25, 26, 27, 28), 'BR': (29, 30, 31, 32, 33, 34, 35)}
         sh = lambda sid: by_id(s, sid)
@@ -527,14 +539,24 @@ class Engine:
             sh(19).width = I(7.37 - 0.32); sh(20).width = I(7.37 - 0.32 - 2.0)
             sh(21).left = r0.left + r0.width - I(0.16) - sh(21).width
             fill(slots['TL'], rows[0], imgs[0], (I(0.45 + 0.4), I(2.55 + 0.35), I(7.37 - 0.8), I(4.4)))
-        else:
-            self.grid_tiles(s, slots, rows, imgs)
+        elif n <= 9 and not (self.spec.get('config_rows') and any(im is None for _, im, _ in imgs)):
+            if any(im is None for _, im, _ in imgs): self.split_tiles(s, slots, rows, imgs, 5.67)   # photo-less as low cards
+            else: self.grid_tiles(s, slots, rows, imgs)
+        else:   # 10+ positions (or own cards with some lacking a photo): the upgrade chips give their place to the tiles,
+                # the "in the crane price" banner moves down
+            down = 1.45
+            for sh in list(s.shapes):
+                if 48 <= sh.shape_id <= 64: remove(sh)
+                elif sh.shape_id in (43, 45, 46, 47, 66, 68): sh.top += I(down)
+            if any(im is None for _, im, _ in imgs): self.split_tiles(s, slots, rows, imgs, 5.67 + down)
+            else: self.grid_tiles(s, slots, rows, imgs, 5.67 + down)
+            return
         self.config_chips(s)
 
-    def grid_tiles(self, s, slots, rows, imgs):
-        """5-8 positions: 3 columns of smaller tiles cloned from the first tile."""
-        n = len(rows); cols = 3; nrows = (n + cols - 1) // cols
-        gap = 0.11; x0, y0, tw_all, th_all = 0.45, 2.55, 7.37, 5.67
+    def grid_tiles(self, s, slots, rows, imgs, th_all=5.67):
+        """5-12 positions: 3 columns of smaller tiles (4 from 10 positions) cloned from the first tile."""
+        n = len(rows); cols = 3 if n <= 9 else 4; nrows = (n + cols - 1) // cols
+        gap = 0.11; x0, y0, tw_all = 0.45, 2.55, 7.37
         tw = (tw_all - gap * (cols - 1)) / cols; th = (th_all - gap * (nrows - 1)) / nrows
         proto = [by_id(s, i) for i in slots['TL']]
         for i, (row, (keep, im, data)) in enumerate(zip(rows, imgs)):
@@ -542,16 +564,73 @@ class Engine:
             rect, pic, label, line, title, desc, price = (clone(s, p) for p in proto)
             geom(rect, x, y, tw, th)
             geom(label, x + 0.16, y + 0.14, 1.6, 0.2); put(label, f"{self.L['module']} {i + 1:02d}"); label.name = 'module_label'
-            ph = th - 1.35
-            geom(line, x + 0.16, y + th - 0.88, tw - 0.32, 0)
-            geom(title, x + 0.16, y + th - 0.81, tw - 0.32, 0.22); put(title, row['title'])
-            set_size(title, 950 if len(row['title']) <= 30 else int(950 * 30 / len(row['title'])))   # one line in a third-width tile
-            geom(desc, x + 0.16, y + th - 0.57, tw - 0.32, 0.3); put(desc, row['desc']); set_size(desc, 700)
+            if cols == 3:
+                ph = th - 1.35
+                geom(line, x + 0.16, y + th - 0.88, tw - 0.32, 0)
+                geom(title, x + 0.16, y + th - 0.81, tw - 0.32, 0.22); put(title, row['title'])
+                set_size(title, 950 if len(row['title']) <= 30 else int(950 * 30 / len(row['title'])))   # one line in a third-width tile
+                geom(desc, x + 0.16, y + th - 0.57, tw - 0.32, 0.3); put(desc, row['desc']); set_size(desc, 700)
+            else:   # quarter-width tile: title in up to two lines, description in up to four
+                ph = th - 1.52
+                geom(line, x + 0.16, y + th - 1.12, tw - 0.32, 0)
+                geom(title, x + 0.16, y + th - 1.06, tw - 0.32, 0.36); put(title, row['title']); set_size(title, 850 if len(row['title']) <= 40 else 750)
+                geom(desc, x + 0.16, y + th - 0.68, tw - 0.32, 0.38); put(desc, row['desc']); set_size(desc, 600)
             geom(price, x + 0.16, y + th - 0.30, tw - 0.32, 0.24); put(price, row['price_text']); set_size(price, 1100)
             if im is None: remove(pic)
             else:
                 if keep != proto[1].shape_id: set_image(pic, self.encoded(im, data))
                 fit(pic, im, (I(x + 0.16), I(y + 0.36), I(tw - 0.32), I(ph - 0.1)))
+        for slot in slots.values():
+            for i in slot: remove(by_id(s, i))
+
+    def split_tiles(self, s, slots, rows, imgs, th_all):
+        """10+ positions, some without a photo: photo tiles in rows of up to 4 (a shorter last row spreads wider),
+        positions without a photo as low cards in rows of up to 3 under them."""
+        P = [i for i, (_, im, _) in enumerate(imgs) if im is not None]; Q = [i for i in range(len(rows)) if i not in P]
+        gap, x0, y0, W = 0.11, 0.45, 2.55, 7.37; hc = 1.0 if self.show['module'] else 1.15
+        pc = 3 if len(P) <= 6 else 4; mod = self.show['module']   # without the "МОДУЛЬ 01" labels texts and photos move up
+        prow = [P[k:k + pc] for k in range(0, len(P), pc)]; qrow = [Q[k:k + 3] for k in range(0, len(Q), 3)]
+        if len(prow) > 1 and len(prow[-1]) == 1: prow[-2:] = [prow[-2][:-1], prow[-2][-1:] + prow[-1]]   # no lone tile
+        hp = (th_all - len(qrow) * (hc + gap) - gap * (len(prow) - 1)) / max(1, len(prow))
+        proto = [by_id(s, i) for i in slots['TL']]
+        y = y0
+        for group, h in [(g, hp) for g in prow] + [(g, hc) for g in qrow]:
+            w = (W - gap * (len(group) - 1)) / len(group)
+            # wide photo tiles of one row share the text block height of their longest description (~6 chars per inch at 7 pt)
+            dl = max(-(-len(rows[i]['desc'] or ' ') // int((w - 0.32) * 20.5)) for i in group)
+            # one-line titles and descriptions sit closer together, leaving the photo more height
+            tight = len(group) < 4 and dl <= 1 and all(len(rows[i]['title']) <= (w - 0.32) * 14 for i in group)
+            for j, i in enumerate(group):
+                row, (keep, im, data) = rows[i], imgs[i]; x = x0 + j * (w + gap)
+                rect, pic, label, line, title, desc, price = (clone(s, p) for p in proto)
+                geom(rect, x, y, w, h)
+                geom(label, x + 0.16, y + 0.14, 1.6, 0.2); put(label, f"{self.L['module']} {i + 1:02d}"); label.name = 'module_label'
+                put(title, row['title']); put(desc, row['desc']); put(price, row['price_text'])
+                if im is None and mod:   # low card: label and price on the top line, title and description under them
+                    remove(pic); remove(line)
+                    geom(price, x + w - 1.56, y + 0.08, 1.4, 0.26); set_size(price, 1050)
+                    geom(title, x + 0.16, y + 0.34, w - 0.32, 0.34); set_size(title, 850)
+                    geom(desc, x + 0.16, y + 0.68, w - 0.32, 0.28); set_size(desc, 600)
+                    continue
+                if im is None:   # low card without the label: title over the description, price at the bottom
+                    remove(pic); remove(line)
+                    geom(title, x + 0.16, y + 0.12, w - 0.32, 0.36); set_size(title, 850)
+                    geom(desc, x + 0.16, y + 0.47, w - 0.32, 0.3); set_size(desc, 600)
+                    geom(price, x + 0.16, y + h - 0.30, w - 0.32, 0.24); set_size(price, 1050)
+                    continue
+                wide = len(group) < 4   # title in up to two lines, description in up to three (wide) or five (quarter) lines
+                lh = (0.86 if tight else 1.02 + 0.12 * max(0, dl - 2)) if wide else 1.28
+                geom(line, x + 0.16, y + h - lh, w - 0.32, 0)
+                geom(title, x + 0.16, y + h - lh + 0.06, w - 0.32, 0.38)
+                if wide: set_size(title, 950 if len(row['title']) <= 30 else 850)
+                else: set_size(title, 850 if len(row['title']) <= 24 else 750)
+                geom(desc, x + 0.16, y + h - lh + (0.36 if tight else 0.46), w - 0.32, 0.3 if wide else 0.5)
+                set_size(desc, 700 if wide else 600)
+                geom(price, x + 0.16, y + h - 0.30, w - 0.32, 0.24); set_size(price, 1100)
+                if keep != proto[1].shape_id: set_image(pic, self.encoded(im, data))
+                top = 0.36 if mod else 0.18
+                fit(pic, im, (I(x + 0.16), I(y + top), I(w - 0.32), I(h - lh - top - 0.1)))
+            y += h + gap
         for slot in slots.values():
             for i in slot: remove(by_id(s, i))
 
@@ -631,7 +710,9 @@ class Engine:
                 if lower(sh): sh.top -= up
             box.height -= up
         elif n > 4:
-            pitch = max(0.34, 2.4 / n); extra = I(n * pitch - 2.4)
+            pitch = max(0.36, 2.4 / n); wrap = 75 if n <= 8 else 80   # 9+ rows: smaller description type fits more per line
+            hs = [pitch + (0.18 if len(r['desc'] or '') > wrap else 0) for r in rows]   # two-line descriptions get a taller row
+            extra = I(sum(hs) - 2.4)
             if extra > 0:   # up to 0.25" comes out of the padding under the total, the rest moves the page down
                 slack = min(extra, I(0.25))
                 for sh in s.shapes:
@@ -645,7 +726,7 @@ class Engine:
                 c = clone(s, proto_c); conn_after.append(c.shape_id)
                 row_ids.append(tuple(ids))
             for k in range(n):
-                y = 3.00 + k * pitch
+                y = 3.00 + sum(hs[:k])
                 for sid, off in zip(row_ids[k], (0.09, 0.08, 0.09, 0.09)): by_id(s, sid).top = I(y + off)
                 if k: by_id(s, conn_after[k - 1]).top = I(y)
         for k, row in enumerate(rows):
@@ -654,11 +735,13 @@ class Engine:
             put(td, row['title'], row['desc'] or ' ')
             put(qty, str(row['qty'])); put(pr, row['price_text'])
             if not row['desc']: td.text_frame.paragraphs[1].runs[0].text = ''
+            elif n > 8: td.text_frame.paragraphs[1].runs[0].font.size = Pt(6.6)
         put(one(s, 'fld_total'), self.spec['total_text'])
         if len(self.spec['total_text']) > 14: set_size(one(s, 'fld_total'), int(4200 * 14 / len(self.spec['total_text'])))
         # chips under the price box
+        mount = any(is_mounting(r) for r in rows)
         tags = self.spec.get('price_tags') or (['З УРАХУВАННЯМ ПДВ', 'ПАКЕТ ДЛЯ РЕЄСТРАЦІЇ'] if self.npl or self.trl
-                                               else ['З УРАХУВАННЯМ ПДВ', 'МОНТАЖ ВХОДИТЬ'] if self.truck else None)
+                                               else ['З УРАХУВАННЯМ ПДВ', 'МОНТАЖ ВХОДИТЬ'] if self.truck or mount else None)
         if tags:
             for sid, t in zip((41, 43), tags): put(by_id(s, sid), t.upper())
         put(one(s, 'fld_price_date'), f"ЦІНИ СТАНОМ НА {self.spec.get('price_date') or self.spec['date']}")
@@ -686,7 +769,14 @@ class Engine:
                 conns.append(clone(s, by_id(s, 66)).shape_id)
         head = by_id(s, 50).top
         pitch = min(0.52, (I(11.15) - head) / EMU / max(t, 5))
-        lines = [max(2, -(-len(term['text']) // 85)) for term in terms]   # ~85 characters per line of the term text
+        per_line = 85
+        if not self.show['term']:   # no "T-01" numbers: titles and texts move left into their place, texts get wider
+            for k in range(t):
+                no, title, text = (by_id(s, i) for i in ids[k])
+                d = title.left - no.left
+                title.left -= d; text.left -= d; text.width += d
+            per_line = int(85 * text.width / (text.width - d))
+        lines = [max(2, -(-len(term['text']) // per_line)) for term in terms]   # ~85 characters per line of the term text
         if t <= 5 and max(lines) > 2:   # long terms (the truck KP's payment stages): rows as tall as their text
             y = head / EMU
             for k, n in enumerate(lines):
@@ -705,21 +795,60 @@ class Engine:
             if pitch < 0.45: set_size(text, 750)
 
     # ------------------------------------------------------------ own production (НПЛ-10 kits)
-    def own_production(self, seat_blob):
-        s = self.pages['maker']; O = OWN_PRODUCTION
+    def own_production(self, seat_blob, s=None):
+        truck = s is not None; s = s or self.pages['maker']; O = OWN_PRODUCTION
         put(by_id(s, 12), *O['headline'])
-        put(by_id(s, 10), 'НПЛ-10 · ВЛАСНЕ ВИРОБНИЦТВО')
+        put(by_id(s, 10), 'ГІДМАН · ВЛАСНЕ ВИРОБНИЦТВО' if truck else 'НПЛ-10 · ВЛАСНЕ ВИРОБНИЦТВО')
+        if truck: put(by_id(s, 11), '// 08 — ВИРОБНИК ДООБЛАДНАННЯ · ' + self.spec['maker']['name'].upper())
         put(by_id(s, 23), ['● ', O['badge']])
-        for vid, (v, cap) in zip((27, 30, 33, 36, 39), O['facts']):
+        facts = O['truck_facts'] if truck else O['facts']
+        for vid, (v, cap) in zip((27, 30, 33, 36, 39), facts):
             put(by_id(s, vid), v); put(by_id(s, vid + 1), cap)
         put(by_id(s, 41), ['“', O['quote']])
         put(by_id(s, 42), '// НАШІ ВИРОБИ')
-        for sid, path, fx, fy in O['photos']:
+        swap = {sid: (sid, path, fx, fy) for sid, path, fx, fy in (O['truck_photos'] if truck else ())}
+        base = {p_[0] for p_ in O['photos']}
+        for sid, path, fx, fy in [swap.get(p_[0], p_) for p_ in O['photos']] + [v for k, v in swap.items() if k not in base]:
             pic = by_id(s, sid); w, h = pic.width / EMU, pic.height / EMU
             set_image(pic, self.raster('graded', R.graded_photo, path, w, h, fx, fy, assets=(path,)))
         pic = by_id(s, O['seat_tile']); w, h = pic.width / EMU, pic.height / EMU  # operator seat, cut-out from KP_2_v3
-        set_image(pic, self.raster('seat', lambda b, w_, h_: R.jpg(R.on_card(R.cutout_glow(R.alpha_crop(Image.open(io.BytesIO(b))), a=60), w_, h_, 0.86)),
+        if O['seat_tile'] not in swap: set_image(pic, self.raster('seat', lambda b, w_, h_: R.jpg(R.on_card(R.cutout_glow(R.alpha_crop(Image.open(io.BytesIO(b))), a=60), w_, h_, 0.86)),
                                    seat_blob, w, h))
+        for sid, path in (O['truck_gallery'] if truck else ()):   # the conversion's own products (the user's cut-outs) on cards
+            pic = by_id(s, sid); w, h = pic.width / EMU, pic.height / EMU
+            set_image(pic, self.raster('own_cut', lambda p, w_, h_: R.jpg(R.on_card(R.cutout_glow(R.alpha_crop(Image.open(R.asset(p))), a=60), w_, h_, 0.9)),
+                                       path, w, h, assets=(path,)))
+
+    def conversion_page(self, s):
+        """Truck kits: copy of the manifest page about the conversion (the user's scheme, lead, 8 included items)."""
+        from .ultra import conversion
+        rows = self.spec['rows']; t = self.spec['title'].split(' + ')[0].strip()
+        cv = conversion(rows, self.m(), self.cs, t, lambda k, d: d)
+        put(by_id(s, 11), '// 01 — ДООБЛАДНАННЯ · ВЛАСНЕ ВИРОБНИЦТВО')
+        put(by_id(s, 12), 'ЛІСОВОЗ', 'НА БАЗІ', f'{t.upper()}.')
+        lead = cv['lead']; cut = lead.index(':')
+        put(by_id(s, 13), lead[:cut] + '.')
+        cd = cv['desc']
+        put(by_id(s, 14), lead[cut + 2:cut + 3].upper() + lead[cut + 3:] + (f' У вартість дообладнання входять: {cd}.' if cd else ''))
+        for sid, w in ((12, 3.3), (13, 3.25), (14, 3.25)): by_id(s, sid).width = I(w)   # the scheme takes the right half
+        by_id(s, 14).height = I(2.2)
+        bg = by_name(s, 'bg')[0]   # page background of the config page (no crane photo) + the scheme as a cut-out on the right
+        set_image(bg, by_name(self.pages['config'], 'bg')[0].image.blob)
+        sch = 'prod/truck_pyramid.png'
+        data = self.raster('scheme', lambda p: R.png(R.cutout_glow(R.alpha_crop(Image.open(R.asset(p))), a=45)), sch, assets=(sch,))
+        im = Image.open(io.BytesIO(data))
+        pic = s.shapes.add_picture(io.BytesIO(data), I(3.7), I(1.35), I(4.2), I(4.2 * im.height / im.width))
+        s.shapes._spTree.remove(pic._element); s.shapes._spTree.insert(3, pic._element)   # under the texts, over the background
+        fit(pic, im, (I(3.85), I(1.3), I(4.0), I(3.55)))
+        put(by_id(s, 16), ['4', ' шт'], 'стійки лісовозної платформи')
+        put(by_id(s, 17), '// ЩО ВХОДИТЬ У ДООБЛАДНАННЯ')
+        for k, (a, b) in enumerate(cv['tiles'][:8]):
+            base = 19 + 5 * k
+            put(by_id(s, base), f'{k + 1:02d}')
+            title, desc = by_id(s, base + 2), by_id(s, base + 3)
+            put(title, a); put(desc, b); title.width = I(1.62)
+            if len(a) > 18: set_size(title, 760 if len(a) > 24 else 800 if len(a) > 22 else 900)
+        return s
 
     # ------------------------------------------------------------ cover, end page, chrome
     def cover_page(self):
@@ -733,7 +862,14 @@ class Engine:
                 put(by_id(s, kid), k); put(by_id(s, vid), [v, u])
             self.outline(s, D['outline'], 4.1 if self.panel else 7.35)
         else:
-            put(by_id(s, 22), self.spec.get('cover_text') or self.crane_cover_text())
+            lead = self.spec.get('cover_text') or (self.truck_cover()[1] if self.truck else self.crane_cover_text())
+            put(by_id(s, 22), lead)
+            if len(lead) > 140: by_id(s, 22).width = I(7.37)   # long lead: two full-width lines
+            hl = self.spec.get('cover_headline') or (self.truck_cover()[0] if self.truck else None)
+            if hl:   # two lines, white and orange; long ones get smaller type to stay on one line each
+                hs = by_id(s, 21); put(hs, *hl[:2])
+                longest = max(len(x) for x in hl[:2])   # ~0.0087" per character and point of the bold caps, 7.25" line
+                if longest > 16: set_size(hs, max(2200, min(3600, int(7.25 / (0.0087 * longest)) * 100)))
             for vid, v in ((26, cs['reach_m']), (30, cs['torque_knm']), (34, cs['lift_4m_kg']), (38, cs['turn_deg'])):
                 put(by_id(s, vid), [v, None])
             if not self.P.get('native'): self.outline(s, self.P['model_no'], 4.1 if self.panel else 7.35)
@@ -778,6 +914,8 @@ class Engine:
             elif iid.startswith('seat'): parts.append('місцем оператора')
             elif iid.startswith('truck_pyramid'): parts.append('пірамідою з аутригерами')
             elif iid == 'pump': parts.append('насосом')
+            elif iid.startswith('oil'): parts.append('оливою')
+            elif is_mounting(r): parts.append('монтажем')
         parts = list(dict.fromkeys(parts))
         text = f'Гідравлічний кран-маніпулятор {self.m()} з ротатором і захватом'
         if self.truck:
@@ -786,6 +924,14 @@ class Engine:
         if parts:
             text += ' — повний комплект з ' + (', '.join(parts[:-1]) + ' і ' + parts[-1] if len(parts) > 1 else parts[0])
         return text + '.'
+
+    def truck_cover(self):
+        """Truck kits: cover headline and lead as approved in the ЗІЛ KP of 22.10.2026."""
+        t = self.spec['title'].split(' + ')[0].strip(); m = self.m(); cs = self.cs
+        return ([f'ДООБЛАДНАННЯ АВТОМОБІЛЯ {t.upper()}', f'+ КРАН-МАНІПУЛЯТОР {m.upper()}'],
+                f'Лісовоз з краном {m} · ротатор {cs["rotator_t"]}\u00a0т і грейфер {cs["grapple_m2"]}\u00a0м² у комплекті: '
+                f'дообладнання вантажівки {t} в транспортний засіб (лісовоз-сортиментовоз), який призначений для перевезення '
+                f'колод, брусів під ключ.')
 
     def outline(self, s, text, max_w_in, cap=2.45):
         o = one(s, 'model_outline')
@@ -863,7 +1009,12 @@ class Engine:
             if k in Ls: put(kick, L[k])
         cl = by_name(s, 'fld_client')
         if cl:
-            if not show['client']: drop(cl[0])
+            if not show['client']:
+                drop(cl[0])
+                if not self.panel:   # the headline, lead and KPI cards move down into the client's place
+                    for sid in [21, 22] + list(range(23, 39)):
+                        sh = find(s, sid)
+                        if sh is not None: sh.top += I(0.55)
             elif 'client_label' in Ls: put(cl[0], L['client_label'])
         if not show['frames']:
             for sid in range(43, 51): drop(find(s, sid))
@@ -873,7 +1024,7 @@ class Engine:
                 for sid in range(5, 17): drop(find(s, sid))
             else:
                 if 'sight_title' in Ls: put(lab, L['sight_title'])
-                box = self.sights.get(self.cover_key) or self.sights.get('*')
+                box = self.sights.get(self.cover_key) or self.sights.get('*') or SIGHTS.get(self.cover_key)
                 if box: self.sight(s, box)
         for page in self.prs.slides:
             for sh in list(page.shapes):
@@ -883,7 +1034,9 @@ class Engine:
                     if not show['footer']: drop(sh)
                 elif sh.shape_id == 10 and sh.top > I(11):
                     if not show['footer_label']: drop(sh)
-                    elif t == LAYOUT_TEXTS['footer_label'] and 'footer_label' in Ls: put(sh, L['footer_label'])
+                    elif t == LAYOUT_TEXTS['footer_label']:   # the price page is signed with its own subject
+                        if 'price' in self.pages and page.slide_id == self.pages['price'].slide_id: put(sh, L['footer_label_price'])
+                        elif 'footer_label' in Ls: put(sh, L['footer_label'])
                 elif sh.name == 'module_label':
                     if not show['module']: drop(sh)
                 elif sh.name == 'term_no' and not show['term']: drop(sh)

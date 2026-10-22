@@ -93,7 +93,7 @@ test("terms: ids or literal terms, unknown id and more than 7 are errors", () =>
   assert.deepEqual(specErrors(() => buildKpSpec(c, s, q, { ...meta, number: "" })), ["Не задано номер КП."]);
 });
 
-test("blockers: cranes without KP pages, kits without a crane, more than 8 rows", () => {
+test("blockers: cranes without KP pages, kits without a crane, more than 10 rows", () => {
   const q850 = quote(c, s, noRate, { kit_type: "npl_crane", date: "2026-10-18",
     selection: { slots: { trailer: "npl10", crane: "bmf850" }, choices: {}, accessories: [] } });
   assert.deepEqual(kpBlockers(c, q850), ["Для BMF 850 ще немає сторінок КП (є для BMF 650, BMF 720, BMF 750 і BMF 905)."]);
@@ -106,7 +106,8 @@ test("blockers: cranes without KP pages, kits without a crane, more than 8 rows"
   const slots = Object.fromEntries(kt.slots.map((sl) => [sl.id, sl.candidates.find((id) => id.endsWith("750")) ?? sl.candidates[0]!]));
   const accs = c.accessories.filter((a) => a.group === "crane" && (!a.compatible || a.compatible.includes("bmf750"))).slice(0, 3);
   const big = quote(c, s, noRate, { kit_type: "crane_kit", date: "2026-10-18",
-    selection: { slots, choices: {}, accessories: accs.map((a) => ({ id: a.id, price_uah: 1000 })) } });
+    selection: { slots, choices: {}, accessories: accs.map((a) => ({ id: a.id, price_uah: 1000 })) },
+    extras: [{ title: "Монтажні роботи", price_uah: 100000 }, { title: "Доставка", price_uah: 5000 }] });
   const n = big.rows.length + accs.length;
   assert.ok(n > MAX_KP_ROWS, String(n));
   assert.ok(kpBlockers(c, big).includes(`Забагато позицій для сторінки «Вартість»: ${n} (максимум ${MAX_KP_ROWS}).`), kpBlockers(c, big).join("\n"));
@@ -154,4 +155,22 @@ test("toolbox: 1 or 2 pieces, price × pieces, the card says how many", () => {
   assert.equal(many.accessories[0].qty, 2, "no more than max_qty");
   assert.equal(two.total_uah - one.total_uah, 10000);
   assert.match(buildKpSpec(c, s, two, meta).accessories[0].title, /— 2 шт$/);
+});
+
+test("ЗІЛ KP of 22.10.2026: 10 price rows, КВП and кардан share one configuration tile, truck price note", () => {
+  const p = presetById(c, "zil_bmf650_2026-10-22")!;
+  const q = quote(c, s, noRate, { kit_type: p.kit_type, selection: presetSelection(p, c), itemized: p.itemized, quantities: p.quantities, extras: p.extras, date: "2026-10-22" });
+  const spec = buildKpSpec(c, s, q, meta);
+  assert.equal(spec.rows.length, 10);
+  assert.equal(spec.total_text, `1${NB}477${NB}025${NB}₴`);
+  assert.equal(spec.config_rows?.length, 9);
+  const t = spec.config_rows!.find((r) => r.item_id === "pto_kvp")!;
+  assert.equal(t.title, "КВП у комплекті і вал карданний УАЗ 469");
+  assert.equal(t.price_text, `23${NB}000${NB}₴`);
+  assert.ok(!spec.config_rows!.some((r) => r.item_id === "cardan_uaz469"));
+  assert.match(spec.price_note, /^Ціни з ПДВ\. Ціна крана прив’язана до курсу EUR/);
+  assert.equal(spec.rows[0]!.desc, "лісовозна платформа, гідролінії РВТ, світлотехніка, фарбування, встановлення крана, інші монтажні роботи");
+  // without the кардан the tiles are the rows
+  const q2 = quote(c, s, noRate, { kit_type: p.kit_type, selection: { ...presetSelection(p, c), slots: { ...presetSelection(p, c).slots, cardan: null } }, itemized: true, date: "2026-10-22" });
+  assert.equal(buildKpSpec(c, s, q2, meta).config_rows, undefined);
 });

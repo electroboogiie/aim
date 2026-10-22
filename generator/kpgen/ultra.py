@@ -53,6 +53,30 @@ TRUCK_TILES_PTO = [('Лісовозна платформа', 'надрамник
 TILES = {'crane': None, 'base_outriggers': 'prod/tile_base.png', 'tank': 'prod/tile_tank.png', 'seat': 'prod/tile_seat.png'}
 
 
+def conversion(rows, model, cs, t, truck_spec):
+    """What a truck conversion includes, read from the KP rows: lead text, the conversion's own description, tiles."""
+    conv = next((r for r in rows if r.get('kind') == 'service'), {})
+    cd = conv.get('desc') or ''
+    frame = bool(re.search(r'рама\s*\d', cd))
+    oil = next((m.group(1) for r in rows for m in [re.search(r'олива.*?(\d+)\s*л', r.get('title') or '', re.I)] if m), '90')
+    pump = next((r for r in rows if re.search(r'насос', r.get('title') or '', re.I)), None)
+    pm = re.search(r'PBF\S+', (pump or {}).get('title') or cd)
+    frame_in = any(re.search(r'подовження рами', r.get('title') or '', re.I) for r in rows) or 'подовження рами автомобіля' in cd
+    last = (('Подовження рами', 'лонжерони шасі з підсилювальними накладками') if frame_in else
+            ('Монтаж', 'без подовження рами автомобіля') if 'без подовження' in cd else ('Монтаж', 'встановлення крана на платформу'))
+    has = dict(pump=pump is not None or 'насос' in cd.lower(), pto=any('КВП' in (r.get('title') or '') for r in rows) or 'коробка відбору' in cd.lower())
+    lead = (f"Переобладнуємо вантажівку {t} у лісовоз для перевезення колод і брусів: бортова платформа зі стійками, "
+            f"піраміда з аутригерами під кран-маніпулятор {model}, гідросистема і монтаж." if frame else
+            f"Переобладнуємо вантажівку {t} у лісовоз для перевезення колод і брусів: лісовозна платформа, піраміда з аутригерами "
+            f"під кран-маніпулятор {model}, гідросистема з приводом від КВП і встановлення крана.")
+    fm = dict(stakes=truck_spec('stakes', '4'), wall=truck_spec('wall', '6'), length=truck_spec('length', '5'),
+              model=model, rotator=cs['rotator_t'], grapple=cs['grapple_m2'], oil=oil,
+              pump=f'{pm.group(0).rstrip(",;")}, привід гідросистеми крана' if pm else 'привід гідросистеми крана', last=last[0], last_sub=last[1])
+    tiles = [(a, b.replace('90 л', '{oil} л')) for a, b in TRUCK_TILES] if frame else \
+            [(a.format(**fm), b) for a, b, k in TRUCK_TILES_PTO if not k or has[k]]
+    return dict(frame=frame, desc=cd, lead=lead, fm=fm, tiles=[(a.format(**fm), b.format(**fm)) for a, b in tiles])
+
+
 # ---------------------------------------------------------------- rasters
 def font(path, px): return ImageFont.truetype(path, int(px))
 
@@ -400,27 +424,9 @@ class Ultra:
         D.text(s, 0.75, 4.67, 2.3, 0.3, 'СХЕМА ДООБЛАДНАННЯ' if not d else 'ДООБЛАДНАННЯ', 8, WHITE, True, 'c', 'm', track=0.5)
         self.kicker(s, 0.5, 5.45, 'дообладнання · власне виробництво')
         D.rt(s, self.headline([[('Лісовоз на базі', WHITE)], [(t, OR)]]), 0.48, 5.8, 0.42)
-        rows = self.spec['rows']
-        conv = next((r for r in rows if r.get('kind') == 'service'), {})
-        cd = conv.get('desc') or ''
-        frame = bool(re.search(r'рама\s*\d', cd))
-        oil = next((m.group(1) for r in rows for m in [re.search(r'олива.*?(\d+)\s*л', r.get('title') or '', re.I)] if m), '90')
-        pump = next((r for r in rows if re.search(r'насос', r.get('title') or '', re.I)), None)
-        pm = re.search(r'PBF\S+', (pump or {}).get('title') or cd)
-        frame_in = any(re.search(r'подовження рами', r.get('title') or '', re.I) for r in rows) or 'подовження рами автомобіля' in cd
-        last = (('Подовження рами', 'лонжерони шасі з підсилювальними накладками') if frame_in else
-                ('Монтаж', 'без подовження рами автомобіля') if 'без подовження' in cd else ('Монтаж', 'встановлення крана на платформу'))
-        has = dict(pump=pump is not None or 'насос' in cd.lower(), pto=any('КВП' in (r.get('title') or '') for r in rows) or 'коробка відбору' in cd.lower())
-        lead = (f"Переобладнуємо вантажівку {t} у лісовоз для перевезення колод і брусів: бортова платформа зі стійками, "
-                f"піраміда з аутригерами під кран-маніпулятор {self.m}, гідросистема і монтаж." if frame else
-                f"Переобладнуємо вантажівку {t} у лісовоз для перевезення колод і брусів: лісовозна платформа, піраміда з аутригерами "
-                f"під кран-маніпулятор {self.m}, гідросистема з приводом від КВП і встановлення крана.")
-        D.text(s, 0.5, 6.87, 7.27, 0.9, [lead, cd[:1].upper() + cd[1:]], 10.5 if frame else 9.5, (210, 213, 218), spacing=1.2)
-        fm = dict(stakes=self.truck_spec('stakes', '4'), wall=self.truck_spec('wall', '6'), length=self.truck_spec('length', '5'),
-                  model=self.m, rotator=cs['rotator_t'], grapple=cs['grapple_m2'], oil=oil,
-                  pump=f'{pm.group(0).rstrip(",;")}, привід гідросистеми крана' if pm else 'привід гідросистеми крана', last=last[0], last_sub=last[1])
-        tiles = [(a, b.replace('90 л', '{oil} л')) for a, b in TRUCK_TILES] if frame else \
-                [(a.format(**fm), b) for a, b, k in TRUCK_TILES_PTO if not k or has[k]]
+        cv = conversion(self.spec['rows'], self.m, cs, t, self.truck_spec)
+        frame, cd, fm, tiles = cv['frame'], cv['desc'], cv['fm'], cv['tiles']
+        D.text(s, 0.5, 6.87, 7.27, 0.9, [cv['lead'], cd[:1].upper() + cd[1:]], 10.5 if frame else 9.5, (210, 213, 218), spacing=1.2)
         tw, gap = (7.27 - 0.15) / 2, 0.12; rh = min(0.68, (10.85 - 7.85 - gap * 3) / 4)
         for i, (a, b) in enumerate(tiles[:8]):
             x, y = 0.5 + (i % 2) * (tw + 0.15), 7.85 + (i // 2) * (rh + gap)
@@ -653,17 +659,23 @@ class Ultra:
         self.kicker(s, 0.5, 0.95, 'вартість')
         D.rt(s, self.headline([[('Вартість', WHITE)], [('комплекту', OR)]]), 0.48, 1.3, 0.42)
         rows = sp['rows']; n = len(rows)
-        rh = 0.72 if n <= 5 else max(0.5, 3.9 / n)
+        rh = 0.72 if n <= 5 else max(0.5, 3.9 / n) if n <= 8 else 0.46   # 9+ rows: compact rows, description runs under the price
+        dense = n > 8; tfs = 12 if dense else 14
         top = 2.55; th = n * rh + 0.3
-        D.box(s, 0.5, top, 7.27, th + 1.55, CARD, LINE, r=0.2)
+        note = [f"Станом на {sp.get('price_date') or sp['date']}."]
+        if sp.get('valid_until'): note.append(f"Пропозиція дійсна до {sp['valid_until']}.")
+        if sp.get('price_note'): note.append(sp['price_note'])
+        pad = 0.12 if len(' '.join(note)) > 120 else 0   # a two-line note needs room above the card's bottom edge
+        D.box(s, 0.5, top, 7.27, th + 1.55 + pad, CARD, LINE, r=0.2)
         for i, r in enumerate(rows):
             y = top + 0.15 + i * rh
             if i: D.box(s, 0.8, y, 6.67, 0.01, LINE, r=0)
             D.text(s, 0.8, y + 0.12, 0.45, 0.3, f'{i + 1:02d}', 10, OR, True)
-            D.text(s, 1.3, y + 0.08, 4.4, 0.3, r['title'], 14, WHITE, True)
-            if r['desc'] and rh >= 0.6: D.text(s, 1.3, y + 0.38, 4.4, 0.28, r['desc'], 9.5, MUTED)
+            D.text(s, 1.3, y + (0.06 if dense else 0.08), 4.6 if dense else 4.4, 0.3, r['title'], tfs, WHITE, True)
+            if r['desc'] and dense: D.text(s, 1.3, y + 0.27, 6.17, 0.2, r['desc'], 7.5, MUTED)
+            elif r['desc'] and rh >= 0.6: D.text(s, 1.3, y + 0.38, 4.4, 0.28, r['desc'], 9.5, MUTED)
             pt = r['price_text'] or 'у комплекті'
-            D.text(s, 5.0, y + 0.08, 2.47, 0.3, pt, 14, WHITE if any(c.isdigit() for c in pt) else MUTED, True, 'r')
+            D.text(s, 5.0, y + (0.06 if dense else 0.08), 2.47, 0.3, pt, tfs, WHITE if any(c.isdigit() for c in pt) else MUTED, True, 'r')
         y = top + th + 0.05
         D.box(s, 0.8, y, 6.67, 0.015, OR, r=0)
         D.text(s, 0.8, y + 0.2, 3, 0.25, 'РАЗОМ, З ПДВ', 8.5, MUTED, True, track=2.0)
@@ -671,12 +683,9 @@ class Ultra:
         digits = any(c.isdigit() for c in total)
         hl = self.headline([[(total, WHITE), (' ₴' if digits else '', OR)]], F_BLACK)
         D.rt(s, hl, 0.78, y + 0.52, 0.55 if digits else 0.4, maxw=6.7)
-        note = [f"Станом на {sp.get('price_date') or sp['date']}."]
-        if sp.get('valid_until'): note.append(f"Пропозиція дійсна до {sp['valid_until']}.")
-        if sp.get('price_note'): note.append(sp['price_note'])
         D.text(s, 0.8, y + 1.15, 6.67, 0.35, ' '.join(note), 8, DIM, spacing=1.15)
         terms = sp['terms'][:6]
-        ty = top + th + 1.85
+        ty = top + th + pad + (1.66 if dense else 1.85)
         if terms and ty < 9.6:
             D.text(s, 0.5, ty, 4, 0.2, 'УМОВИ СПІВПРАЦІ', 7.5, OR, True, track=2.0)
             cols = 3 if len(terms) > 4 else 2; gap = 0.12; cw = (7.27 - gap * (cols - 1)) / cols

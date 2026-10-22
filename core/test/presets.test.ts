@@ -20,7 +20,8 @@ const KNOWN_GAPS: Record<string, string> = {
 
 const known = c.presets.filter((p) => p.source.total_uah !== null && p.source.date !== "");
 const expected = (p: Preset) => Math.round(p.source.total_uah! * (p.source.vat_included === false ? 1 + s.vat_pct / 100 : 1));
-const run = (p: Preset, rate: RateInfo) => quote(c, s, rate, { kit_type: p.kit_type, selection: p.selection, date: p.source.date });
+const run = (p: Preset, rate: RateInfo) => quote(c, s, rate, { kit_type: p.kit_type, selection: p.selection, date: p.source.date,
+  ...(p.extras ? { extras: p.extras } : {}), ...(p.itemized ? { itemized: true } : {}), ...(p.quantities ? { quantities: p.quantities } : {}) });
 
 const noRate: RateInfo = { eur: null, source: "none" };
 const refDates = refRateDates(c);

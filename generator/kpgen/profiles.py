@@ -136,6 +136,11 @@ OWN_PRODUCTION = dict(
             (25, 'prod/base_outriggers.jpg', 0.5, 0.6), (43, 'prod/npl10_tractor.png', 0.6, 0.5),
             (46, 'prod/tank.jpg', 0.5, 0.5), (52, 'prod/npl10_rear.jpg', 0.5, 0.45)],
     seat_tile=49,
+    truck_facts=[('до 60', 'ДНІВ ПІД ЗАМОВЛЕННЯ'), ('під ключ', 'ДООБЛАДНАННЯ ВАНТАЖІВОК'), ('монтаж', 'ВХОДИТЬ У ВАРТІСТЬ'),
+                 ('100+', 'НПЛ-10 ВИГОТОВЛЕНО'), ('BMF', 'ОФІЦІЙНИЙ ДИСТРИБ’ЮТОР')],
+    # the conversion KP: the user's photos (22.10.2026) for the third top photo and the middle two of «наші вироби»
+    truck_photos=[(25, 'prod/own_foto3.jpg', 0.5, 0.6), (46, 'prod/own_foto1.jpg', 0.5, 0.55), (49, 'prod/own_foto2.jpg', 0.5, 0.55)],
+    truck_gallery=[],   # cut-outs on cards, (shape id, path)
 )
 
 
@@ -165,4 +170,4 @@ TRAILERS = {
 
 # Truck converted to a timber carrier (kit truck_crane): end-page photo from the user's КП КАМАЗ + 750 (26.02.2026);
 # the cover keeps the crane's photo (the truck photo there is a small cut-out).
-TRUCK = dict(cover=None, end=('prod/truck_conversion.png', 0.5, 0.55))
+TRUCK = dict(cover=('prod/truck_conversion.png', 0.9, 0.5), end=('prod/truck_conversion.png', 0.5, 0.55))
