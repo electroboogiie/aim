@@ -15,6 +15,7 @@ from pptx.oxml.ns import qn
 from pptx.util import Pt
 
 from . import raster as R
+from . import edits as E
 from .cache import Cache
 from .pptx_util import EMU, I, by_id, by_name
 from .profiles import PROFILES, DECAL_CONFIG, CARD_TWEAKS, OWN_PRODUCTION
@@ -208,7 +209,7 @@ def v3_pieces(spec, build_dir):
     dimension labels, load-chart side drawing). Pictures are (blob, x, y, w, h) in inches."""
     from .build import Engine
     R.set_theme('dark')
-    e = Engine(dict(spec, style='dark', overrides={}, photos={}), build_dir); e.build()
+    e = Engine(dict(spec, style='dark', overrides={}, photos={}, edit={}), build_dir); e.crane_only()
     an, pp = e.pages['anatomy'], e.pages['passport']
     g = lambda sh: (sh.image.blob, sh.left / EMU, sh.top / EMU, sh.width / EMU, sh.height / EMU)
     parts = [g(by_id(an, i)) for i in (85, 88, 82)]
@@ -273,10 +274,13 @@ class Deck:
 
     def rt(self, s, data_cap, x, y, cap_in, maxw=None):
         """Place a raster headline: cap height cap_in inches, the tops of the capitals at y."""
-        data, cap, off = data_cap; im = Image.open(io.BytesIO(data))
+        data, cap, off = data_cap[:3]; im = Image.open(io.BytesIO(data))
         k = cap_in / cap
         if maxw and im.width * k > maxw: k = maxw / im.width
-        return self.img(s, data, x, y - off * k, im.width * k, im.height * k)
+        pic = self.img(s, data, x, y - off * k, im.width * k, im.height * k)
+        if len(data_cap) > 3 and data_cap[3]:   # page editor: the headline's original text (name) and the text drawn (alt text)
+            pic.name = data_cap[3][0]; pic._element.nvPicPr.cNvPr.set('descr', data_cap[3][1])
+        return pic
 
 
 # ---------------------------------------------------------------- the KP
@@ -293,6 +297,10 @@ class Ultra:
         self.prof = PROFILES[self.c['profile']]; self.no = str(self.prof.get('model_no') or '')
         self.build_dir = build_dir; self.cache = Cache(build_dir)
         self.m = self.c['model']
+        self.hide = E.hidden_pages(spec); self.reg = []; self.keys = []; self.dropped = []; self.cur = None   # page editor
+        self.hl_edits = {(e.get('page'), e['was'][3:]): e['text'] for e in (spec.get('edit') or {}).get('shapes') or []
+                         if str(e.get('was', '')).startswith('hl:') and e.get('text') is not None}
+        if 'options' in self.hide and spec['accessories']: spec['accessories'] = []; self.dropped.append('options')
 
     def raster(self, kind, fn, *args, assets=()): return self.cache.get('ultra-' + kind, fn, args, assets)
 
@@ -302,11 +310,20 @@ class Ultra:
         if o.get('path') and R.asset_ok(o['path']): return o['path'], float(o.get('fx', 0.5)), float(o.get('fy', 0.45))
         return d
 
-    def headline(self, lines, path=F_BOLD):
+    def headline(self, lines, path=F_BOLD, edit=True):
+        key = '\n'.join(''.join(t for t, _ in ln) for ln in lines)
+        new = (self.hl_edits.get((self.cur, key)) if (self.cur, key) in self.hl_edits else self.hl_edits.get(('*', key))) if edit else None
+        if new is not None:   # changed in the page editor: each line keeps the colours of the line it replaces
+            out = []
+            for i, nt in enumerate(x for x in new.split('\n') if x.strip()):
+                ln = lines[min(i, len(lines) - 1)]
+                if len(ln) > 1 and nt.startswith(ln[0][0]) and len(nt) > len(ln[0][0]): out.append([(ln[0][0], ln[0][1]), (nt[len(ln[0][0]):], ln[1][1])])
+                else: out.append([(nt, ln[0][1])])
+            lines = out or lines
         lines = [[(t, tuple(c)) for t, c in ln] for ln in lines]
         res = self.cache.get('ultra-hl', lambda L, p: (lambda r: (png(r[0]), [r[1], r[2]]))(rtext(L, p)), (lines, path))
         data, (cap, off) = res
-        return data, cap, off
+        return data, cap, off, (('hl:' + key, new if new is not None else key) if edit else None)
 
     # -- pieces the KP_2_v3 engine draws for this crane
     def harvest(self):
@@ -332,9 +349,20 @@ class Ultra:
         order = ([self.p_cover, self.p_npl, self.p_npl_spec] if self.npl else [self.p_cover, self.p_truck] if self.truck else [self.p_cover]) + \
             [self.p_crane, self.p_drawings, self.p_chart, self.p_kit, self.p_options, self.p_price] + \
             ([self.p_own] if self.npl or self.truck else []) + [self.p_end]
-        for fn in order: fn()
+        for fn in order:
+            key = fn.__name__[2:]
+            if key in self.hide and key != 'cover':
+                if key != 'options': self.dropped.append(key)
+                continue
+            n0 = len(self.pages); self.cur = key; fn()
+            if len(self.pages) > n0: self.keys.append(key)
         self.chrome()
+        self.done = E.apply(dict(zip(self.keys, (s for s, _ in self.pages))), sp)
         return D.prs
+
+    def zones_json(self):
+        return E.zones(self.deck.prs, list(zip(self.keys, (s for s, _ in self.pages))), self.reg, self.done, 'ultra', W, H,
+                       hero=lambda k, sh: sh.name[5:] if sh.name.startswith('hero:') else None, dropped=self.dropped)
 
     # header / footer on every page but the cover
     def chrome(self):
@@ -372,7 +400,7 @@ class Ultra:
             D.text(s, 0.5, 3.1, 7.27, 0.66, [[(hl[0], {})], [(hl[-1], dict(color=OR))]], hs, WHITE, True, spacing=1.0)
             D.text(s, 0.5, 3.83, 7.27, 0.5, lead, 10.5 if len(lead) <= 200 else 9.5, MUTED, spacing=1.15)
             d = self.photo_of('truck', TRUCK_PH['photo'])
-            D.img(s, self.raster('photo', photo, d[0], 7.27, 4.0, d[1], d[2], assets=(d[0],)), 0.5, 4.47, 7.27, 4.0, r=0.22)
+            D.img(s, self.raster('photo', photo, d[0], 7.27, 4.0, d[1], d[2], assets=(d[0],)), 0.5, 4.47, 7.27, 4.0, r=0.22).name = 'hero:truck'
             kpis = [(self.truck_spec('stakes', '4'), 'шт', 'стійки платформи'), (cs['reach_m'], 'м', f'виліт крана {self.m}'),
                     (cs['torque_knm'], 'кНм', 'підйомний момент')]
         elif self.npl:
@@ -419,7 +447,7 @@ class Ultra:
         self.pages.append((s, False))
         d = self.photo_of('npl', None)
         if d:
-            D.img(s, self.raster('photo', photo, d[0], 7.27, 4.2, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.2, r=0.2)
+            D.img(s, self.raster('photo', photo, d[0], 7.27, 4.2, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.2, r=0.2).name = 'hero:npl'
         else:   # the user's scheme of the conversion (platform, pyramid with outriggers, tank) on a card
             sch = 'prod/truck_pyramid.png'
             D.box(s, 0.5, 0.95, 7.27, 4.2, CARD, LINE, r=0.2)
@@ -445,7 +473,7 @@ class Ultra:
         s = D.slide(self.raster('bg-a', page_bg, ((8.3, 6.5, 3.2, 0.14),)))
         self.pages.append((s, False))
         d = self.photo_of('npl', NPL['photo'])
-        D.img(s, self.raster('photo', photo, d[0], 7.27, 4.2, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.2, r=0.2)
+        D.img(s, self.raster('photo', photo, d[0], 7.27, 4.2, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.2, r=0.2).name = 'hero:npl'
         D.box(s, 0.75, 4.67, 1.05, 0.3, OR, r=0.15)
         D.text(s, 0.75, 4.67, 1.05, 0.3, 'НПЛ-10', 9, WHITE, True, 'c', 'm', track=1.0)
         self.kicker(s, 0.5, 5.45, 'напівпричіп · власне виробництво')
@@ -513,7 +541,7 @@ class Ultra:
         s = D.slide(self.raster('bg-a', page_bg, ((8.3, 6.5, 3.2, 0.14),)))
         self.pages.append((s, False))
         d = self.photo_of('crane', PHOTOS[self.c['profile']]['crane'])
-        D.img(s, self.raster('photo', photo, d[0], 7.27, 4.7, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.7, r=0.2)
+        D.img(s, self.raster('photo', photo, d[0], 7.27, 4.7, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.7, r=0.2).name = 'hero:crane'
         D.box(s, 0.75, 5.17, 1.05, 0.3, OR, r=0.15)
         D.text(s, 0.75, 5.17, 1.05, 0.3, self.m, 9, WHITE, True, 'c', 'm', track=1.0)
         self.kicker(s, 0.5, 6.0, 'кран-маніпулятор')
@@ -595,6 +623,7 @@ class Ultra:
         for i, r in enumerate(rows):
             x, y, cw = 0.5, top + i * (ch + gap), 7.27
             D.box(s, x, y, cw, ch, CARD, LINE, r=0.18)
+            self.reg.append(dict(s=s, id=f'tile:{i}', kind='tile', what=(x, y, cw, ch), item=r.get('item_id'), n=i))
             ph = ch - 0.24; pw = min(ph * 1.6, 2.7)
             D.img(s, self.tile(r, pw, ph), x + 0.12, y + 0.12, pw, ph, r=0.12)
             tx = x + 0.12 + pw + 0.3
@@ -613,6 +642,7 @@ class Ultra:
             D.text(s, tx, y + 0.08, tw, ch - 0.16, body, 13, WHITE, anchor='m', spacing=1.12)
             D.text(s, cw + x - prw - 0.2, y, prw, ch, pt, 14, pc, True, align='r', anchor='m')
         by = min(9.6, top + n * (ch + gap) + 0.2)
+        self.reg.append(dict(s=s, id='add:kit', kind='add', what=(0.5, top + n * (ch + gap) - 0.03, 7.27, 0.2)))
         D.box(s, 0.5, by, 7.27, 1.0, CARD2, OR, r=0.18, lw=1.0)
         D.text(s, 0.8, by, 6.8, 1.0, [[('Уже в ціні крана:  ', dict(color=MUTED, size=11)),
                                          (f"ротатор {cs['rotator_t']} т  +  грейфер {cs['grapple_m2']} м²", dict(bold=True, size=15))]], 15, WHITE, anchor='m')
@@ -678,6 +708,7 @@ class Ultra:
         D.box(s, 0.5, top, 7.27, th + 1.55 + pad, CARD, LINE, r=0.2)
         for i, r in enumerate(rows):
             y = top + 0.15 + ys[i]
+            self.reg.append(dict(s=s, id=f'row:{i}', kind='row', what=(0.5, y, 7.27, hs[i]), item=r.get('item_id'), n=i))
             if i: D.box(s, 0.8, y, 6.67, 0.01, LINE, r=0)
             D.text(s, 0.8, y + 0.12, 0.45, 0.3, f'{i + 1:02d}', 10, OR, True)
             D.text(s, 1.3, y + (0.06 if dense else 0.08), 4.6 if dense else 4.4, 0.3, r['title'], tfs, WHITE, True)
@@ -686,11 +717,12 @@ class Ultra:
             pt = r['price_text'] or 'у комплекті'
             D.text(s, 5.0, y + (0.06 if dense else 0.08), 2.47, 0.3, pt, tfs, WHITE if any(c.isdigit() for c in pt) else MUTED, True, 'r')
         y = top + th + 0.05
+        self.reg.append(dict(s=s, id='add:price', kind='add', what=(0.5, top + 0.15 + sum(hs), 7.27, 0.15)))
         D.box(s, 0.8, y, 6.67, 0.015, OR, r=0)
         D.text(s, 4.47, y + 0.2, 3, 0.25, 'РАЗОМ, З ПДВ', 8.5, MUTED, True, 'r', track=2.0)   # total at the right edge
         total = sp['total_text'].replace(' ₴', '').replace(' ₴', '').strip()
         digits = any(c.isdigit() for c in total)
-        hl = self.headline([[(total, WHITE), (' ₴' if digits else '', OR)]], F_BLACK)
+        hl = self.headline([[(total, WHITE), (' ₴' if digits else '', OR)]], F_BLACK, edit=False)
         pic = D.rt(s, hl, 0.78, y + 0.52, 0.55 if digits else 0.4, maxw=6.7)
         pic.left = I(7.47) - pic.width
         D.text(s, 0.8, y + 1.15, 6.67, 0.35, ' '.join(note), 8, DIM, spacing=1.15)
@@ -716,7 +748,7 @@ class Ultra:
         s = D.slide(self.raster('bg-d', page_bg, ((4.1, 11.9, 4.5, 0.22),), False))
         self.pages.append((s, True))
         d = self.photo_of('end', NPL['end'] if self.npl else TRUCK_PH['end'] if self.truck else PHOTOS[self.c['profile']]['end'])
-        D.img(s, self.raster('photo-end', photo, d[0], W, 7.4, d[1], d[2], 0.42, assets=(d[0],)), 0, 0, W, 7.4)
+        D.img(s, self.raster('photo-end', photo, d[0], W, 7.4, d[1], d[2], 0.42, assets=(d[0],)), 0, 0, W, 7.4).name = 'hero:end'
         D.rt(s, self.headline([[('Замовте', WHITE)], [('НПЛ-10' if self.npl else f'{self.truck_name} + {self.no or self.m}' if self.truck else self.m, OR)]], F_BLACK), 0.47, 5.35, 0.62)
         lead = ('Відповімо на запитання, підберемо кран і комплектацію НПЛ-10 під вашу роботу та підготуємо договір.' if self.npl else
                 f'Відповімо на запитання, оглянемо вашу вантажівку {self.truck_name}, підберемо комплектацію і підготуємо договір.' if self.truck else

@@ -10,6 +10,7 @@ from pptx.enum.text import PP_ALIGN
 from pptx.util import Pt
 
 from . import raster as R
+from . import edits as E
 from .cache import Cache
 from .profiles import (PROFILES, TEMPLATE_720, PHOTO_FOCUS, CARD_TWEAKS, TEMPLATE_TILES, NPL10, OWN_PRODUCTION, TRAILERS, TRUCK,
                        DECAL_ANATOMY, DECAL_CONFIG, chart_for)
@@ -108,6 +109,8 @@ class Engine:
         self.show = dict(LAYOUT_SHOW, **{k: bool(v) for k, v in (lay.get('show') or {}).items() if k in LAYOUT_SHOW})
         self.sights = lay.get('sight') or {}
         self.cover_key = 'template'
+        self.hide = E.hidden_pages(spec); self.reg = []; self.dropped = []   # page editor: pages switched off, zones it shows
+        if 'options' in self.hide and spec['accessories']: spec['accessories'] = []; self.dropped.append('options')
         ct = dict(spec['contacts'])
         for k, v in (lay.get('contacts') or {}).items():
             if k not in ('phones', 'email', 'sites', 'address', 'socials') or not v: continue
@@ -146,6 +149,13 @@ class Engine:
         return self.raster(which + '_bg', maker, path, fx, fy, assets=(path,))
 
     # ------------------------------------------------------------ build
+    def crane_only(self):
+        """Only the crane pages (Ultra takes the drawings from them): much faster than build()."""
+        prs = Presentation(template_path(self.style)); self.prs = prs
+        self.pages = dict(zip(('cover', 'manifest', 'anatomy', 'passport', 'config', 'price', 'maker', 'end'), list(prs.slides)))
+        self.crane_pages()
+        return prs
+
     def build(self):
         prs = Presentation(template_path(self.style))
         self.prs = prs
@@ -162,6 +172,10 @@ class Engine:
             self.options = self.options_page(dup_slide(prs, config, idx))
         self.opt_no = list(prs.slides).index(self.options) + 1 if self.options else None
         self.config_page(crane_blob)
+        tiles = [z['what'][0] for z in self.reg if z['kind'] == 'tile' and z['what'][0]._element.getparent() is not None]
+        if tiles:
+            bottom = max(r.top + r.height for r in tiles) / EMU
+            self.reg.append(dict(s=self.pages['config'], id='add:config', kind='add', what=(0.45, bottom + 0.03, 7.37, 0.22)))
         self.price_page()
         if self.npl: self.own_production(seat_blob)
         # truck kits: the conversion page and the conversion maker's page unless the spec says otherwise (КП ЗІЛ 22.10.2026)
@@ -174,16 +188,46 @@ class Engine:
         self.crane_blob = crane_blob
         self.cover_page()
         self.end_page()
+        self.drop_hidden()
         self.chrome()
         if self.options: self.pages['options'] = self.options
         self.layout()
         self.overrides()
+        self.done = E.apply(self.pages, self.spec)
         prune_images(prs)
         return prs
 
+    def drop_hidden(self):
+        """Pages the editor switched off; «Опції …: с. NN» follows the options page to its new number."""
+        if not self.hide: return
+        pk = dict(self.pages, **({'options': self.options} if self.options else {}))
+        if self.npl: pk['own_production'] = pk.pop('maker')
+        for k in self.hide:
+            if k not in pk or pk[k] is self.pages['cover'] or pk[k] not in list(self.prs.slides): continue
+            E.drop_slide(self.prs, pk[k]); self.dropped.append(k)
+            if pk[k] is self.options: self.options = None
+            self.pages = {k_: s for k_, s in self.pages.items() if s is not pk[k]}
+        if self.options and self.options in list(self.prs.slides):
+            new = list(self.prs.slides).index(self.options) + 1
+            if new != self.opt_no:
+                old = f'с. {self.opt_no:02d}'
+                for s in self.prs.slides:
+                    for sh in s.shapes:
+                        if not sh.has_text_frame: continue
+                        for p in sh.text_frame.paragraphs:
+                            for r in p.runs:
+                                if old in r.text: r.text = r.text.replace(old, f'с. {new:02d}')
+                self.opt_no = new
+
+    def zones_json(self):
+        by = {s.slide_id: k for k, s in self.pages.items()}
+        order = [(by.get(s.slide_id, f'p{i}'), s) for i, s in enumerate(self.prs.slides, 1)]
+        return E.zones(self.prs, order, self.reg, self.done, self.style, PAGE_W, PAGE_H, hero=lambda k, sh: k if sh.name == 'bg' else None,
+                       dropped=self.dropped)
+
     # ------------------------------------------------------------ admin overrides: page underlays and page texts
     def overrides(self):
-        if self.npl: self.pages['own_production'] = self.pages.pop('maker')
+        if self.npl and 'maker' in self.pages: self.pages['own_production'] = self.pages.pop('maker')
         ov = self.spec.get('overrides') or {}
         for key, o in (ov.get('bg') or {}).items():
             s = self.pages.get(key); path = (o or {}).get('path')
@@ -463,10 +507,7 @@ class Engine:
         """(template shape id or None, PIL image or None, encoded bytes or None) for the row's tile."""
         iid = (row.get('item_id') or '').lower(); kind = row.get('kind')
         if row.get('photo_force') and row.get('photo') and R.asset_ok(row['photo']):   # photo set in the admin
-            im = Image.open(R.asset(row['photo']))
-            if im.mode in ('RGBA', 'LA', 'P') and im.convert('RGBA').getchannel('A').getextrema()[0] < 250:
-                return None, R.cutout_glow(R.alpha_crop(im)), None
-            return None, R.grade(im.convert('RGB'), sat=0.8, bright=0.92, warm=0.0), None
+            return self.tile_photo(row['photo'])
         if kind == 'crane' or (not kind and iid == (self.c.get('id') or '').lower()):
             return 14, Image.open(io.BytesIO(crane_blob)), crane_blob
         if self.T and kind == 'trailer':
@@ -481,12 +522,18 @@ class Engine:
             if prefix != 'crane' and iid.startswith(prefix):
                 blob = by_id(self.pages['config'], sid).image.blob
                 return sid, Image.open(io.BytesIO(blob)), blob
-        if row.get('photo') and R.asset_ok(row['photo']):
-            im = Image.open(R.asset(row['photo']))
-            if im.mode in ('RGBA', 'LA', 'P') and im.convert('RGBA').getchannel('A').getextrema()[0] < 250:
-                return None, R.cutout_glow(R.alpha_crop(im)), None
-            return None, R.grade(im.convert('RGB'), sat=0.8, bright=0.92, warm=0.0), None
+        if row.get('photo') and R.asset_ok(row['photo']): return self.tile_photo(row['photo'])
         return None, None, None
+
+    def tile_photo(self, path):
+        """A position photo for its tile: a cut-out gets the glow, a photo is toned; cached (PNG encoding is slow)."""
+        def make(p):
+            im = Image.open(R.asset(p))
+            if im.mode in ('RGBA', 'LA', 'P') and im.convert('RGBA').getchannel('A').getextrema()[0] < 250:
+                return R.png(R.cutout_glow(R.alpha_crop(im)))
+            return R.jpg(R.grade(im.convert('RGB'), sat=0.8, bright=0.92, warm=0.0))
+        data = self.raster('tile_photo', make, path, assets=(path,))
+        return None, Image.open(io.BytesIO(data)), data
 
     @staticmethod
     def encoded(im, data):
@@ -503,6 +550,8 @@ class Engine:
 
         def fill(slot, row, img, box=None):
             rect, pic, label, line, title, desc, price = (sh(i) for i in slot)
+            k = next(i for i, r in enumerate(rows) if r is row)
+            self.reg.append(dict(s=s, id=f'tile:{k}', kind='tile', what=[rect], item=row.get('item_id'), n=k))
             put(title, row['title']); put(desc, row['desc']); put(price, row['price_text'])
             keep, im, data = img
             if keep == pic.shape_id and box is None: return
@@ -562,6 +611,7 @@ class Engine:
         for i, (row, (keep, im, data)) in enumerate(zip(rows, imgs)):
             x = x0 + (i % cols) * (tw + gap); y = y0 + (i // cols) * (th + gap)
             rect, pic, label, line, title, desc, price = (clone(s, p) for p in proto)
+            self.reg.append(dict(s=s, id=f'tile:{i}', kind='tile', what=[rect], item=row.get('item_id'), n=i))
             geom(rect, x, y, tw, th)
             geom(label, x + 0.16, y + 0.14, 1.6, 0.2); put(label, f"{self.L['module']} {i + 1:02d}"); label.name = 'module_label'
             if cols == 3:
@@ -603,6 +653,7 @@ class Engine:
             for j, i in enumerate(group):
                 row, (keep, im, data) = rows[i], imgs[i]; x = x0 + j * (w + gap)
                 rect, pic, label, line, title, desc, price = (clone(s, p) for p in proto)
+                self.reg.append(dict(s=s, id=f'tile:{i}', kind='tile', what=[rect], item=row.get('item_id'), n=i))
                 geom(rect, x, y, w, h)
                 geom(label, x + 0.16, y + 0.14, 1.6, 0.2); put(label, f"{self.L['module']} {i + 1:02d}"); label.name = 'module_label'
                 put(title, row['title']); put(desc, row['desc']); put(price, row['price_text'])
@@ -736,6 +787,9 @@ class Engine:
             put(qty, str(row['qty'])); put(pr, row['price_text'])
             if not row['desc']: td.text_frame.paragraphs[1].runs[0].text = ''
             elif n > 8: td.text_frame.paragraphs[1].runs[0].font.size = Pt(6.6)
+            self.reg.append(dict(s=s, id=f'row:{k}', kind='row', what=[no, td, qty, pr], item=row.get('item_id'), n=k))
+        last = by_id(s, row_ids[n - 1][1])
+        self.reg.append(dict(s=s, id='add:price', kind='add', what=(0.45, (last.top + last.height) / EMU + 0.02, 7.37, 0.25)))
         put(one(s, 'fld_total'), self.spec['total_text'])
         if len(self.spec['total_text']) > 14: set_size(one(s, 'fld_total'), int(4200 * 14 / len(self.spec['total_text'])))
         # chips under the price box
@@ -1043,12 +1097,13 @@ class Engine:
                     if not show['module']: drop(sh)
                 elif sh.name == 'term_no' and not show['term']: drop(sh)
                 elif t == LAYOUT_TEXTS['anatomy_note'] and 'anatomy_note' in Ls: put(sh, L['anatomy_note'])
-        mk = self.pages['maker']
-        badge, gal = find(mk, 23), find(mk, 42)
+        mk = self.pages.get('maker')   # switched off in the page editor: nothing to sign
+        badge, gal = (find(mk, 23), find(mk, 42)) if mk is not None else (None, None)
         bk, gk = ('own_badge', 'own_gallery') if self.npl else ('maker_badge', 'maker_gallery')
         if badge is not None and bk in Ls: put(badge, ['● ', L[bk]])
         if gal is not None and gk in Ls: put(gal, L[gk])
-        e = self.pages['end']
+        e = self.pages.get('end')
+        if e is None: return
         for sh in e.shapes:
             if not sh.has_text_frame: continue
             for k in ('lbl_phone', 'lbl_email', 'lbl_site', 'lbl_address', 'lbl_socials', 'lbl_production'):

@@ -11,6 +11,7 @@
   <div class="brand"><span class="logo">BMF</span><div><b>Конфігуратор КП</b><small>тестова модель для ПК</small></div></div>
   <nav class="main-nav">
     <button data-tab="conf" class="on">Конфігуратор</button>
+    <button data-tab="edit">Редактор КП</button>
     <button data-tab="hist">Історія КП</button>
     <button data-tab="admin">Налаштування</button>
   </nav>
@@ -76,10 +77,31 @@
           <div class="gen-row">
             <button id="gen" class="primary">Створити КП (PPTX + PDF)</button>
             <button id="genNew" class="ghost" hidden>Зберегти як нову КП</button>
+            <button id="editPages" class="ghost" title="сторінки КП картинками: тексти, фото, позиції, сторінки — з переглядом">Редагувати сторінки</button>
           </div>
           <div id="genResult"></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ======================= PAGE EDITOR ======================= -->
+  <section id="tab-edit" class="tab">
+    <div class="ed-head">
+      <button id="edBack" class="ghost">← Конфігуратор</button>
+      <b id="edTitle"></b>
+      <span id="edStatus" class="ed-status"></span>
+      <span class="grow"></span>
+      <button id="edReload" class="ghost" title="зібрати сторінки ще раз">Оновити</button>
+      <button id="edReset" class="ghost">Скинути правки цієї КП</button>
+      <button id="edSave" class="primary">Зберегти зміни…</button>
+    </div>
+    <p class="hint ed-hint">Клік по елементу на сторінці — його поле праворуч. Зміни одразу йдуть у цю КП і перебудовують сторінки (кілька секунд); позиції, назви й ціни міняються на всіх сторінках разом. «Зберегти зміни…» — що з цього піде також у шаблон стилю чи в базову КП.</p>
+    <div id="edResult"></div>
+    <div class="ed">
+      <aside id="edThumbs" class="ed-thumbs"></aside>
+      <div id="edPage" class="ed-page"></div>
+      <aside id="edSide" class="ed-side"></aside>
     </div>
   </section>
 

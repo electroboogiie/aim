@@ -19,9 +19,10 @@ ADMIN = os.path.join(DATA, 'admin.json')
 HIST = os.path.join(DATA, 'history.json')
 VERSIONS = os.path.join(DATA, 'versions')
 PREVIEW = os.path.join(CACHE, 'preview')
+PAGES = os.path.join(CACHE, 'pages')     # page editor: page images of the KP being edited (last 20 kept)
 UPLOADS = os.path.join(DATA, 'uploads')   # a copy of uploaded photos: pc/data survives replacing the program folder
 CUSTOM = os.path.join(ASSETS, 'custom')   # where the generator reads them
-for d in (DATA, OUT, CACHE, VERSIONS, PREVIEW, UPLOADS, CUSTOM): os.makedirs(d, exist_ok=True)
+for d in (DATA, OUT, CACHE, VERSIONS, PREVIEW, PAGES, UPLOADS, CUSTOM): os.makedirs(d, exist_ok=True)
 
 
 def sync_uploads():
@@ -112,7 +113,7 @@ def preview(kind, q):
 
 
 def styles_info():
-    return [dict(id=k, title=v['title'], kits=list(v.get('kits') or []), kits_title=v.get('kits_title') or '',
+    return [dict(id=k, title=v['title'], engine=v['engine'], kits=list(v.get('kits') or []), kits_title=v.get('kits_title') or '',
                  pages=[dict(key=key, title=t, hero=v['engine'] == 'ultra' or (v['engine'] == 'v3' and key in HERO_PAGES and not (key == 'cover' and v.get('cover') == 'panel')))
                         for key, t, _ in pages(k)]) for k, v in STYLES.items()]
 
@@ -173,6 +174,8 @@ def apply_admin(spec, admin):
     spec['style'] = style
     st = (admin.get('styles') or {}).get(style) or {}
     bg = {k: v for k, v in (st.get('bg') or {}).items() if v and v.get('path')}
+    own_bg = ((spec.get('overrides') or {}).get('bg') or {})   # page photos chosen in the page editor for this KP win
+    bg.update({k: v for k, v in own_bg.items() if isinstance(v, dict) and v.get('path')})
     photos = dict(spec.get('photos') or {})
     panel = STYLES[style].get('cover') == 'panel'
     for key in ('cover', 'end'):
@@ -267,6 +270,59 @@ def generate(body):
     return res
 
 
+PAGES_LOCK = threading.Lock()   # one page preview at a time: each runs LibreOffice over every page
+GALLERY_DIRS = {'custom': 'Завантажені', 'prod': 'Власне виробництво', 'npl': 'НПЛ-10', 'bmf': 'BMF', 'bmf_trailers': 'Причепи BMF',
+                'acc': 'Опції', 'acc_rv': 'Опції bmf.rv.ua'}
+
+
+def gallery():
+    out = []
+    for d, title in GALLERY_DIRS.items():
+        base = os.path.join(ASSETS, d)
+        for root, _, files in os.walk(base):
+            for f in sorted(files):
+                if os.path.splitext(f)[1].lower() in IMG_EXT:
+                    out.append({'path': os.path.relpath(os.path.join(root, f), ASSETS).replace(os.sep, '/'), 'group': title})
+    return out
+
+
+def page_preview(body):
+    """Page editor: the KP built without PDF, every page as a PNG, the zones the editor can change."""
+    admin = read_json(ADMIN, default_admin())
+    spec = apply_admin(body['spec'], admin)
+    key = hashlib.sha1(json.dumps(spec, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+    out = os.path.join(PAGES, key)
+    meta = read_json(os.path.join(out, 'pages.json'), None)
+    if meta: return meta
+    with PAGES_LOCK:
+        meta = read_json(os.path.join(out, 'pages.json'), None)
+        if meta: return meta
+        os.makedirs(out, exist_ok=True)
+        spec_path = os.path.join(out, 'spec.json'); write_json(spec_path, spec)
+        env = dict(os.environ, KPGEN_BUILD=CACHE, PYTHONIOENCODING='utf-8')
+        r = subprocess.run([sys.executable, '-m', 'kpgen', '--spec', spec_path, '--out', out, '--no-pdf'], cwd=GEN, env=env,
+                           capture_output=True, text=True, encoding='utf-8', errors='replace')
+        try: last = json.loads(r.stdout.strip().splitlines()[-1])
+        except (ValueError, IndexError): last = {}
+        if r.returncode or not last.get('pptx'):
+            msgs = [l.replace('kpgen: ', '') for l in r.stderr.splitlines() if l.startswith('kpgen:')] or r.stderr.splitlines()[-3:]
+            shutil.rmtree(out, ignore_errors=True)
+            raise ValueError(msgs[-1] if msgs else 'КП не зібрано')
+        zones = read_json(os.path.splitext(last['pptx'])[0] + '.zones.json', {'pages': []})
+        from kpgen.pdf import pages_png, PdfError
+        try: pngs = pages_png(last['pptx'], out, int(body.get('width') or 640), timeout=240, cache_dir=os.path.join(PAGES, '_png'))
+        except PdfError as e: raise ValueError(str(e))
+        pages_ = []
+        for i, png in enumerate(pngs):
+            z = zones['pages'][i] if i < len(zones['pages']) else {'key': f'p{i + 1}', 'title': f'Сторінка {i + 1}', 'zones': []}
+            pages_.append(dict(z, png=f'/pages/{key}/{os.path.basename(png)}'))
+        meta = {'id': key, 'style': spec['style'], 'pages': pages_, 'hidden': zones.get('hidden') or []}
+        write_json(os.path.join(out, 'pages.json'), meta)
+        old = sorted((os.path.join(PAGES, d) for d in os.listdir(PAGES) if d != '_png'), key=os.path.getmtime)[:-20]
+        for d in old: shutil.rmtree(d, ignore_errors=True)
+        return meta
+
+
 def nbu_eur():
     """Офіційний курс EUR НБУ на сьогодні: {rate, date (ISO)}."""
     from urllib.request import urlopen
@@ -349,6 +405,8 @@ class H(BaseHTTPRequestHandler):
                 data = background(style, key)
                 return self.send(200, data, 'image/jpeg', cache=True) if data else self.send(404, {'error': 'немає фону'})
             if p.startswith('/assets/'): return self.file(safe_join(ASSETS, p[8:]), cache=True)
+            if p == '/api/gallery': return self.send(200, gallery())
+            if p.startswith('/pages/'): return self.file(safe_join(PAGES, p[7:]))
             if p.startswith('/out/'): return self.file(safe_join(OUT, p[5:]), download=p.endswith('.pptx'))
             if p == '/' or p == '/admin': p = '/index.html'
             return self.file(safe_join(STATIC, p.lstrip('/')))
@@ -414,6 +472,11 @@ class H(BaseHTTPRequestHandler):
             try: body = json.loads(self.body())
             except ValueError: return self.send(400, {'error': 'Неправильний JSON'})
             try: return self.send(200, generate(body))
+            except ValueError as e: return self.send(400, {'error': str(e)})
+        if p == '/api/pages':
+            try: body = json.loads(self.body())
+            except ValueError: return self.send(400, {'error': 'Неправильний JSON'})
+            try: return self.send(200, page_preview(body))
             except ValueError as e: return self.send(400, {'error': str(e)})
         if p == '/api/versions/restore':
             try: vid = json.loads(self.body()).get('id', '')

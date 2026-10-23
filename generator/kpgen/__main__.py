@@ -43,10 +43,14 @@ def main(argv=None):
             from .ultra import Ultra as Engine
         else:
             from .build import Engine
-        prs = Engine(spec, build_dir).build()
+        eng = Engine(spec, build_dir)
+        prs = eng.build()
         name = file_name(spec)
         pptx = os.path.join(out, name + '.pptx')
         prs.save(pptx)
+        if hasattr(eng, 'zones_json'):   # page editor: editable zones of each page
+            with open(os.path.join(out, name + '.zones.json'), 'w', encoding='utf-8') as f:
+                json.dump(eng.zones_json(), f, ensure_ascii=False)
         pages = len(prs.slides)
         t1 = time.time()
         pdf = None

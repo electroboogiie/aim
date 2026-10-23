@@ -128,6 +128,42 @@ class EngineTest(unittest.TestCase):
         flat = ' '.join(t for p in texts(Presentation(res['pptx'])) for t in p)
         self.assertIn('ЗІЛ  ×  BMF 650', flat); self.assertNotIn('КРАЗ', flat)
 
+    def test_page_editor(self):
+        """Page editor: pages switched off (numbers follow), a text changed on one page and on every page, a picture hidden,
+        zones of positions and texts written next to the pptx; Ultra headlines (pictures) edited as texts."""
+        for style in ('dark', 'ultra'):
+            spec = self.sample('npl10_bmf750'); spec['style'] = style
+            code, res, err = run(spec)
+            self.assertEqual(code, 0, err)
+            with open(res['pptx'][:-5] + '.zones.json', encoding='utf-8') as f: Z = json.load(f)
+            keys = [p['key'] for p in Z['pages']]
+            self.assertEqual(len(keys), res['pages'])
+            price = next(p for p in Z['pages'] if p['key'] == 'price')
+            rows = [z for z in price['zones'] if z['kind'] == 'row']
+            self.assertEqual(len(rows), len(spec['rows']))
+            self.assertTrue(any(z['kind'] == 'add' for z in price['zones']))
+            cover = Z['pages'][0]['zones']
+            big = max((z for z in cover if z['kind'] == 'text'), key=lambda z: z['pt'])
+            off = 'options' if 'options' in keys else keys[2]
+            hdr = next(z for z in price['zones'] if z['kind'] == 'text' and 'КП № ' in z['text'])
+            spec['edit'] = {'hide_pages': [off, 'cover'], 'shapes': [
+                {'page': 'cover', 'sid': big['sid'], 'was': big['was'], 'text': 'НОВИЙ\nЗАГОЛОВОК'},
+                {'page': '*', 'sid': hdr['sid'], 'was': hdr['was'], 'text': 'ШАПКА З РЕДАКТОРА'}]}
+            code, res2, err = run(spec)
+            self.assertEqual(code, 0, err)
+            self.assertEqual(res2['pages'], res['pages'] - 1, style)
+            prs = Presentation(res2['pptx'])
+            if style == 'dark': T = self.check_numbers(prs)
+            else: T = texts(prs)
+            flat = ' '.join(t for p in T for t in p)
+            self.assertGreaterEqual(flat.count('ШАПКА З РЕДАКТОРА'), res2['pages'] - 2, style)
+            if style == 'dark': self.assertIn('НОВИЙ\nЗАГОЛОВОК', T[0])
+            else:   # headline picture redrawn: its alt text is the new text
+                alts = [sh._element.nvPicPr.cNvPr.get('descr') for sh in prs.slides[0].shapes if sh.name.startswith('hl:')]
+                self.assertIn('НОВИЙ\nЗАГОЛОВОК', alts)
+            with open(res2['pptx'][:-5] + '.zones.json', encoding='utf-8') as f: Z2 = json.load(f)
+            self.assertEqual([h['key'] for h in Z2['hidden']], [off])
+
     def test_npl_label_crane_pages(self):
         """«НПЛ-10 Heavy Label» with BMF 750: crane texts and headlines for 750, chart without the template bars."""
         spec = self.sample('npl10_bmf750'); spec['style'] = 'npl_label'

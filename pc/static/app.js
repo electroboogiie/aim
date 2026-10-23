@@ -25,7 +25,8 @@ const asset = (p) => (p ? "/assets/" + p : "");
 const qs = (o) => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
 
 let B, cat0, settings, admin, cat;
-const S = { kt: null, sel: null, manual: {}, kitPrice: null, discount: 0, qty: {}, historyId: null, preset: null, extras: [], itemized: false };
+const S = { kt: null, sel: null, manual: {}, kitPrice: null, discount: 0, qty: {}, historyId: null, preset: null, extras: [], itemized: false,
+  edits: null, editLog: {}, basePreset: null };   // page editor: this KP's page edits, what each change is saved to, the ready kit it came from
 const KINDS = { crane: "Крани BMF", trailer: "Причепи", component: "Комплектуючі", service: "Послуги" };
 const KIT_SHORT = { crane_kit: "Кран у комплекті", npl_crane: "НПЛ-10 + кран", bmf_trailer_crane: "Причіп BMF + кран", truck_crane: "Вантажівка + кран" };
 const GROUPS = { crane: "Для крана", trailer: "Для причепа", truck: "Для вантажівки" };
@@ -247,6 +248,10 @@ function effCatalog() {
   c.accessories = overlay(c.accessories, A.accs).map((a) => ({ ...a, price: effRule("accessories", a.id, a.price), photo: F.accessories?.[a.id] || a.photo || "" }));
   for (const b of c.bundles) b.price = effRule("bundles", b.price_of || b.id, b.price);
   for (const t of c.texts.terms) { const o = admin.texts?.terms?.[t.id]; if (o?.title) t.title = o.title; if (o?.text) t.text = o.text; }
+  for (const p of admin.page_presets || []) {   // base KPs changed or made in the page editor
+    const i = c.presets.findIndex((x) => x.id === p.id);
+    if (i >= 0) c.presets[i] = { ...c.presets[i], ...structuredClone(p) }; else c.presets.push(structuredClone(p));
+  }
   return c;
 }
 /** Choice with the settings: title, default, options (switched-off ones dropped unless keepOff), option edits. */
@@ -280,6 +285,8 @@ function normAdmin() {
   admin.bom ??= {}; admin.labour ??= [];
   for (const k of ["items", "bundles", "accessories"]) admin.prices[k] ??= {};
   admin.texts.terms ??= {}; admin.texts.cranes ??= {}; admin.texts.npl ??= {};
+  admin.page_edits ??= { tpl: {}, preset: {} }; admin.page_edits.tpl ??= {}; admin.page_edits.preset ??= {};   // page editor: style templates, base KPs
+  admin.page_presets ??= [];   // ready kits saved from the page editor (an id of catalog.json replaces that kit)
   admin.extras ??= [{ title: "Монтажні роботи", desc: "", price_uah: 100000, at: "2026-10-22" }];   // own positions offered for quick adding
 }
 /** Prices of the KPs of 22.10.2026 (owner): fixed once on the user's PC as well, the previous price kept for undo. */
@@ -315,13 +322,14 @@ async function boot() {
   cat = effCatalog();
   $$(".main-nav button").forEach((b) => b.onclick = () => tab(b.dataset.tab));
   $$("#adminNav button").forEach((b) => b.onclick = () => sub(b.dataset.sub));
-  initConf(); initAdmin(); renderHist();
+  initConf(); initAdmin(); initEditor(); renderHist();
 }
 function tab(id) {
   $$(".main-nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id));
   $$(".tab").forEach((t) => t.classList.toggle("on", t.id === "tab-" + id));
   if (id === "conf") { cat = effCatalog(); renderKitTabs(); renderFeatured(); renderConf(); }
   if (id === "hist") renderHist();
+  if (id === "edit") showEditor();
   window.scrollTo(0, 0);
 }
 function sub(id) {
@@ -352,7 +360,7 @@ function renderKitTabs() {
 }
 function setKit(id) {
   S.kt = core.kitTypeById(cat, id); S.sel = core.defaultSelection(S.kt, cat); S.manual = {}; S.kitPrice = null; S.qty = {}; S.preset = null;
-  S.extras = []; S.itemized = false;
+  S.extras = []; S.itemized = false; S.edits = null; S.editLog = {}; S.basePreset = null; editorBadge();
   S.sel = core.reconcileSelection(cat, id, S.sel);
   S.sel.accessories = baseAccessories();
   renderKitTabs(); renderFeatured(); renderConf();
@@ -365,7 +373,7 @@ function applyPreset(p) {
   S.kt = core.kitTypeById(cat, p.kit_type);
   S.sel = core.reconcileSelection(cat, p.kit_type, core.presetSelection(p, cat));
   S.manual = {}; S.kitPrice = null; S.qty = { ...(p.quantities || {}) }; S.preset = p.id;
-  S.extras = structuredClone(p.extras || []); S.itemized = !!p.itemized;
+  S.extras = structuredClone(p.extras || []); S.itemized = !!p.itemized; S.edits = null; S.editLog = {}; S.basePreset = p.id; editorBadge();
   renderKitTabs(); renderFeatured(); renderConf();
 }
 function presetKey(p) { const sl = p.selection.slots; return [sl.crane, sl.trailer, sl.conversion].join("|"); }
@@ -792,7 +800,39 @@ function specFrom(q, meta, style) {
     spec.upgrade_chips = chips.length > 8 ? [...chips.slice(0, 8 - (spec.accessories?.length ? 2 : 0)), ...(spec.accessories?.length ? chips.slice(-2) : [])] : chips;
   }
   spec.style = style;
+  applyPageEdits(spec, meta);
   return spec;
+}
+// ------------------------------------------------------------------ page editor: edit layers (style template -> base KP -> this KP)
+const EMPTY_EDITS = () => ({ pages: {}, shapes: {}, rows: {}, heroes: {} });
+const tplKey = (style, kit) => `${style}:${kit}`;
+function mergeEdits(...layers) {
+  const o = EMPTY_EDITS();
+  for (const e of layers) {
+    if (!e) continue;
+    Object.assign(o.pages, e.pages || {}); Object.assign(o.shapes, e.shapes || {}); Object.assign(o.heroes, e.heroes || {});
+    for (const [k, v] of Object.entries(e.rows || {})) o.rows[k] = { ...(o.rows[k] || {}), ...v };
+  }
+  return o;
+}
+function layersOf(style, kit, base, kp) {
+  return [admin.page_edits?.tpl?.[tplKey(style, kit)], base ? admin.page_edits?.preset?.[base] : null, kp];
+}
+/** Page edits into the generator spec: pages off, texts / photos / hidden elements, position names and photos, page photos. */
+function applyPageEdits(spec, meta) {
+  const E = mergeEdits(...layersOf(spec.style, spec.kit_type, meta.base, meta.edits));
+  for (const r of [...spec.rows, ...(spec.config_rows || [])]) {
+    const e = r.item_id && E.rows[r.item_id];
+    if (!e) continue;
+    if (e.title) r.title = e.title;
+    if ("desc" in e && e.desc != null) r.desc = e.desc;
+    if (e.photo) { r.photo = e.photo; r.photo_force = true; }
+  }
+  const bg = Object.fromEntries(Object.entries(E.heroes).filter(([, v]) => v?.path));
+  if (Object.keys(bg).length) (spec.overrides ??= {}).bg = { ...(spec.overrides.bg || {}), ...bg };
+  const hide = Object.entries(E.pages).filter(([k, v]) => v === false && k !== "cover").map(([k]) => k);
+  const shapes = Object.values(E.shapes).filter((x) => x?.was);
+  if (hide.length || shapes.length) spec.edit = { hide_pages: hide, shapes };
 }
 async function generate(asNew) {
   if (!lastQuote) return toast("Спершу виправте комплект");
@@ -803,11 +843,11 @@ async function generate(asNew) {
   try {
     spec = specFrom(lastQuote, { number: $("#kpNumber").value || "0001",
       client: { name: $("#client").value.trim(), contact: $("#clientContact").value.trim() }, show_client: $("#clientShow").checked,
-      offer_accessories: $("#offerAcc").checked }, $("#styleChips").dataset.v || "dark");
+      offer_accessories: $("#offerAcc").checked, edits: S.edits, base: S.basePreset }, $("#styleChips").dataset.v || "dark");
   } catch (e) { return toast((e.errors || [String(e)])[0]); }
   const state = { kit_type: S.kt.id, selection: S.sel, manual: S.manual, kitPrice: S.kitPrice, discount: S.discount, qty: S.qty, preset: S.preset,
     number: $("#kpNumber").value, date: $("#kpDate").value, client: $("#client").value, contact: $("#clientContact").value, style: spec.style, offerAcc: $("#offerAcc").checked, clientShow: $("#clientShow").checked,
-    extras: S.extras.filter((x) => x.title?.trim()), itemized: S.itemized };
+    extras: S.extras.filter((x) => x.title?.trim()), itemized: S.itemized, edits: S.edits, editLog: S.editLog, basePreset: S.basePreset };
   const btn = $("#gen"), res = $("#genResult");
   btn.disabled = true; $("#genNew").disabled = true; btn.innerHTML = '<span class="spin"></span>Створюю КП… (PDF — до хвилини)'; res.innerHTML = "";
   try {
@@ -847,11 +887,12 @@ function loadState(entry) {
   S.kt = core.kitTypeById(cat, st.kit_type);
   S.sel = core.reconcileSelection(cat, st.kit_type, st.selection);
   Object.assign(S, { manual: st.manual || {}, kitPrice: st.kitPrice ?? null, discount: st.discount || 0, qty: st.qty || {}, preset: st.preset || null, historyId: entry.id,
-    extras: structuredClone(st.extras || []), itemized: !!st.itemized });
+    extras: structuredClone(st.extras || []), itemized: !!st.itemized, edits: structuredClone(st.edits || null), editLog: structuredClone(st.editLog || {}),
+    basePreset: st.basePreset || st.preset || null });
   $("#kpNumber").value = st.number || entry.number || ""; $("#kpDate").value = st.date || core.todayIso();
   $("#client").value = st.client || ""; $("#clientContact").value = st.contact || ""; $("#discount").value = S.discount;
   $("#offerAcc").checked = st.offerAcc === true; $("#clientShow").checked = st.clientShow !== false; $("#styleChips").dataset.v = st.style || entry.style; $("#genResult").innerHTML = "";
-  tab("conf"); editBanner();
+  tab("conf"); editBanner(); editorBadge();
 }
 
 // ------------------------------------------------------------------ history
@@ -1809,7 +1850,7 @@ function recalcEntry(e) {
 async function regenerateEntry(e, q, sel) {
   const st = e.state;
   const spec = specFrom(q, { number: st.number || e.number || "0001", client: { name: st.client || e.client || "", contact: st.contact || e.contact || "" },
-    show_client: st.clientShow !== false, offer_accessories: st.offerAcc === true }, st.style || e.style || admin.style || "dark");
+    show_client: st.clientShow !== false, offer_accessories: st.offerAcc === true, edits: st.edits || null, base: st.basePreset || null }, st.style || e.style || admin.style || "dark");
   const r = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spec, state: { ...st, selection: sel || st.selection }, history_id: e.id }) });
   if (!r.pptx) throw new Error((r.messages || ["КП не створено"]).slice(-1)[0]);
   return r;
@@ -2495,6 +2536,452 @@ async function renderVersions() {
       const r = await api("/api/versions/restore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: v.id }) });
       admin = r.admin; normAdmin(); cat = effCatalog(); toast("Відновлено"); renderVersions(); renderStyleCards(); }) }, "Відновити"))));
   if (!list.length) box.append(h("p", { class: "hint" }, "Версій ще немає: вони з’являться після першої зміни в адмінці."));
+}
+
+// ------------------------------------------------------------------ page editor («Редактор КП»): page images, editable zones, changes by scope
+// Each page is a PNG from the server (/api/pages); zones say where positions, texts and photos are. A change goes into this KP's
+// edits (S.edits) at once and the pages are rebuilt; on saving, each change can also go into the style template or the base KP.
+const ED = { meta: null, key: "cover", sel: null, seq: 0, busy: false, thumbs: {}, gallery: null, spec: null, timer: null };
+const edits = () => (S.edits ??= EMPTY_EDITS());
+const edStyle = () => $("#styleChips").dataset.v || admin.style || "dark";
+const edStyleInfo = () => B.styles.find((s) => s.id === edStyle());
+function edMeta() {
+  return { number: $("#kpNumber").value || "0001", client: { name: $("#client").value.trim(), contact: $("#clientContact").value.trim() },
+    show_client: $("#clientShow").checked, offer_accessories: $("#offerAcc").checked, edits: S.edits, base: S.basePreset };
+}
+function edCount() { return Object.keys(S.editLog || {}).length; }
+function editorBadge() {
+  const b = $("#editPages"); if (!b) return;
+  const n = edCount();
+  b.textContent = n ? `Редагувати сторінки (змін: ${n})` : "Редагувати сторінки";
+}
+async function openEditor() {
+  renderQuote();
+  if (!lastQuote) return toast("Спершу оберіть комплект");
+  if (edStyleInfo()?.engine === "d6") return toast("Редактор сторінок працює зі стилями KP_2_v3 (темний і світлі) та Ultra. Оберіть один із них у картці «КП».");
+  tab("edit");
+}
+function edStatus(text, cls = "") { const el = $("#edStatus"); if (el) { el.className = "ed-status " + cls; el.textContent = text; } }
+function refreshPages(now = false) {
+  clearTimeout(ED.timer);
+  ED.timer = setTimeout(() => loadPages(), now ? 0 : 700);
+  edStatus("Оновлюю сторінки…", "busy");
+}
+async function loadPages() {
+  const seq = ++ED.seq;
+  renderQuote();
+  if (!lastQuote) { edStatus("Комплект не зібрано: поверніться до конфігуратора", "err"); return; }
+  let spec;
+  try { spec = specFrom(lastQuote, edMeta(), edStyle()); } catch (e) { edStatus((e.errors || [String(e)])[0], "err"); return; }
+  edStatus("Оновлюю сторінки… (перший раз — до пів хвилини)", "busy");
+  try {
+    const r = await api("/api/pages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spec }) });
+    if (seq !== ED.seq) return;
+    ED.meta = r; ED.spec = spec;
+    for (const p of r.pages) ED.thumbs[p.key] = p.png;
+    if (!r.pages.some((p) => p.key === ED.key)) ED.key = r.pages[0]?.key;
+    edStatus(`Сторінок: ${r.pages.length}` + (edCount() ? ` · змін: ${edCount()}` : ""));
+    renderEditor();
+  } catch (e) { if (seq === ED.seq) edStatus("Не вдалося оновити сторінки: " + e.message, "err"); }
+}
+/** Remembers a change for the save dialog: what it is and where else it may go (style template, base KP). */
+function edLog(key, label, can = { tpl: true, base: true }) {
+  const old = S.editLog[key];
+  S.editLog[key] = { label, can, tpl: old?.tpl || false, base: old?.base || false };
+  editorBadge();
+}
+function edDrop(key) { delete S.editLog[key]; editorBadge(); }
+
+function renderEditor() {
+  const thumbs = $("#edThumbs"), page = $("#edPage"), side = $("#edSide");
+  $("#edTitle").textContent = lastQuote ? `КП № ${$("#kpNumber").value || "—"} · ${ED.spec?.title || ""} · ${edStyleInfo()?.title || edStyle()}` : "";
+  if (!ED.meta) { thumbs.innerHTML = ""; page.innerHTML = ""; side.innerHTML = ""; if (!ED.timer) refreshPages(true); return; }
+  // left: pages with a switch each (the cover stays); switched-off pages stay in the list, dimmed
+  thumbs.innerHTML = "";
+  const list = [...ED.meta.pages.map((p, i) => ({ ...p, no: i + 1, on: true })), ...(ED.meta.hidden || []).map((p) => ({ ...p, on: false, png: ED.thumbs[p.key] }))];
+  for (const p of list) {
+    const sw = h("input", { type: "checkbox", checked: p.on, disabled: p.key === "cover", title: p.key === "cover" ? "титулка є завжди" : "сторінка в КП",
+      onclick: (e) => e.stopPropagation(), onchange: (e) => setPage(p, e.target.checked) });
+    thumbs.append(h("div", { class: "ed-thumb" + (p.key === ED.key && p.on ? " on" : "") + (p.on ? "" : " off"), onclick: () => { if (p.on) { ED.key = p.key; ED.sel = null; renderEditor(); } } },
+      p.png ? h("img", { src: p.png, alt: p.title }) : h("div", { class: "ph" }, p.title),
+      h("div", { class: "cap" }, h("label", { class: "chk" }, sw, h("span", {}, p.on ? `${String(p.no).padStart(2, "0")} · ${p.title}` : `${p.title} — вимкнено`)))));
+  }
+  const P = ED.meta.pages.find((p) => p.key === ED.key) || ED.meta.pages[0];
+  // centre: the page and its zones
+  page.innerHTML = "";
+  const img = h("img", { src: P.png, alt: P.title, draggable: "false" });
+  const over = h("div", { class: "ed-over" });
+  const zs = [...P.zones].sort((a, b) => (b.full ? 1 : 0) - (a.full ? 1 : 0) || b.box[2] * b.box[3] - a.box[2] * a.box[3]);
+  for (const z of zs) {
+    if (z.kind === "add") continue;
+    const target = z.row || z.id;
+    over.append(h("div", { class: `zone k-${z.kind}` + (z.full ? " full" : "") + (ED.sel === target ? " sel" : ""), "data-z": target,
+      style: `left:${z.box[0] * 100}%;top:${z.box[1] * 100}%;width:${z.box[2] * 100}%;height:${z.box[3] * 100}%`,
+      title: z.kind === "text" ? z.text.slice(0, 80) : z.kind === "pic" ? "фото" : "позиція",
+      onclick: (e) => { e.stopPropagation(); ED.sel = target; renderEditor(); },
+      onmouseenter: () => hl(target, true), onmouseleave: () => hl(target, false) }));
+  }
+  page.append(h("div", { class: "ed-sheet" }, img, over));
+  side.innerHTML = "";
+  const place = () => layoutSide(P, img, side);
+  if (img.complete) place(); else img.onload = place;
+}
+function hl(id, on) { $$(`[data-z="${CSS.escape(id)}"]`).forEach((el) => el.classList.toggle("hot", on)); }
+
+/** Right column: a field level with each zone (pushed down when the one above is taller). */
+function layoutSide(P, img, side) {
+  const H = img.clientHeight, E = mergeEdits(...layersOf(edStyle(), ED.spec.kit_type, S.basePreset, S.edits));
+  const fields = [];
+  for (const z of P.zones) {
+    if (z.kind === "row" || z.kind === "tile") fields.push([z, rowCard(z, P)]);
+    else if (z.kind === "add") fields.push([z, addCard(z)]);
+    else if (z.row) continue;
+    else if (z.kind === "text" && (z.pt >= 12 || z.text.length >= 40 || z.edited || ED.sel === z.id)) fields.push([z, textCard(z, P)]);
+    else if (z.kind === "pic" && (z.hero || ED.sel === z.id || (!z.full && z.box[2] * z.box[3] >= 0.06))) fields.push([z, picCard(z, P)]);
+  }
+  fields.sort((a, b) => a[0].box[1] - b[0].box[1]);
+  let y = 0;
+  for (const [z, el] of fields) {
+    const target = z.row || z.id;
+    el.dataset.z = target; el.classList.add("ed-field");
+    if (ED.sel === target) el.classList.add("sel");
+    el.onmouseenter = () => hl(target, true); el.onmouseleave = () => hl(target, false);
+    el.onclick = (e) => {
+      if (ED.sel === target) return;
+      ED.sel = target;
+      // a position card opens (description, variant, photo) on a click outside its fields; a field click only marks it
+      if ((z.kind === "row" || z.kind === "tile") && !/^(INPUT|SELECT|TEXTAREA|BUTTON|OPTION)$/.test(e.target.tagName)) return renderEditor();
+      $$(".zone.sel, .ed-field.sel").forEach((x) => x.classList.remove("sel")); $$(`[data-z="${CSS.escape(target)}"]`).forEach((x) => x.classList.add("sel"));
+    };
+    side.append(el);
+    const top = Math.max(y, Math.round(z.box[1] * H) - 4);
+    el.style.top = top + "px";
+    y = top + el.offsetHeight + 6;
+  }
+  const gone = Object.entries(E.shapes).filter(([, e]) => (e.page === P.key || e.page === "*") && e.hide);
+  if (gone.length) {
+    const el = h("div", { class: "ed-field ed-gone" }, h("b", {}, "Сховано на цій сторінці"),
+      gone.map(([k, e]) => h("div", { class: "row" }, h("span", {}, e.label || (e.was.startsWith("pic:") ? "фото" : e.was.slice(0, 40))),
+        h("button", { class: "sm", onclick: () => { setShape(e.page, { sid: e.sid, was: e.was }, null, e.label); } }, "Повернути"))));
+    side.append(el); el.style.top = y + "px"; y += el.offsetHeight + 6;
+  }
+  side.style.minHeight = Math.max(H, y) + "px";
+}
+function scopeBox(key) {
+  const L = S.editLog[key]; if (!L) return null;
+  const chk = (f, label) => L.can[f] ? h("label", { class: "chk" }, h("input", { type: "checkbox", checked: L[f], onchange: (e) => { L[f] = e.target.checked; } }), label) : null;
+  return h("div", { class: "scope" }, h("small", {}, "Ця КП ✓ · також:"), chk("tpl", "у шаблон стилю"), chk("base", S.basePreset ? "у базову КП" : "у нову базову КП"));
+}
+
+// ---- texts, photos, elements of a page (matched by their original text / picture: spec.edit.shapes)
+const shapeKey = (page, was) => `${page}|${was}`;
+function setShape(page, z, patch, label) {
+  const k = shapeKey(page, z.was), E = edits();
+  if (!patch) delete E.shapes[k]; else E.shapes[k] = { page, sid: z.sid, was: z.was, label, ...patch };
+  if (!patch) edDrop("shape:" + k); else edLog("shape:" + k, label);
+  refreshPages();
+}
+function textCard(z, P) {
+  // a text that is on several pages (the KP title in the headers) changes on all of them unless unticked
+  const pagesWith = ED.meta.pages.filter((p) => p.zones.some((x) => x.was === z.was)).length;
+  const allKey = shapeKey("*", z.was), every = pagesWith > 1 && (S.edits?.shapes?.[allKey] || !S.edits?.shapes?.[shapeKey(P.key, z.was)]);
+  const pg = every ? "*" : P.key;
+  const k = shapeKey(pg, z.was), e = S.edits?.shapes?.[k];
+  const orig = z.was.startsWith("hl:") ? z.was.slice(3) : z.was;   // Ultra headlines are pictures: their text is in the id
+  const short = orig.replace(/\s+/g, " ").slice(0, 34) + (orig.length > 34 ? "…" : "");
+  const multi = z.text.includes("\n") || z.text.length > 50;
+  const inp = h(multi ? "textarea" : "input", { value: z.text, rows: multi ? Math.min(6, Math.max(2, Math.ceil(z.text.length / 46) + z.text.split("\n").length - 1)) : null,
+    onchange: (ev) => {
+      const v = ev.target.value;
+      if (pg === "*") delete edits().shapes[shapeKey(P.key, z.was)];
+      if (v === orig) setShape(pg, z, null); else setShape(pg, z, { text: v }, `Напис «${short}» → «${v.replace(/\s+/g, " ").slice(0, 40)}»` + (pg === "*" ? " (усі сторінки)" : ""));
+    } });
+  const allBox = pagesWith > 1 ? h("label", { class: "chk all-p" }, h("input", { type: "checkbox", checked: every, onchange: (ev) => {
+    const E = edits(), from = shapeKey(ev.target.checked ? P.key : "*", z.was), to = shapeKey(ev.target.checked ? "*" : P.key, z.was);
+    if (E.shapes[from]) {
+      E.shapes[to] = { ...E.shapes[from], page: ev.target.checked ? "*" : P.key }; delete E.shapes[from];
+      S.editLog["shape:" + to] = S.editLog["shape:" + from]; delete S.editLog["shape:" + from];
+      refreshPages();
+    } else if (!ev.target.checked) { E.shapes[to] = { page: P.key, sid: z.sid, was: z.was, text: z.text, label: "" }; }
+    renderEditor();
+  } }), `на всіх сторінках, де є цей напис (${pagesWith})`) : null;
+  return h("div", { class: "card-f" }, h("div", { class: "fh" }, h("small", {}, z.was.startsWith("hl:") ? "Заголовок" : "Напис"),
+      e ? h("button", { class: "sm ghost", title: "як було", onclick: () => setShape(pg, z, null) }, "↺") : null,
+      h("button", { class: "sm ghost", title: pg === "*" ? "прибрати з усіх сторінок" : "прибрати з цієї сторінки", onclick: () => setShape(pg, z, { hide: true }, `Сховати напис «${short}»` + (pg === "*" ? " (усі сторінки)" : "")) }, "Сховати")),
+    inp, allBox, scopeBox("shape:" + k));
+}
+function gallerySelect(cur, onpick, firstLabel = "— як зараз —") {
+  const groups = new Map();
+  for (const g of ED.gallery || []) { if (!groups.has(g.group)) groups.set(g.group, []); groups.get(g.group).push(g.path); }
+  const sel = h("select", { onchange: (e) => { if (e.target.value === "__up") return upload(); onpick(e.target.value || null); } },
+    h("option", { value: "" }, firstLabel), h("option", { value: "__up" }, "⬆ Завантажити своє фото…"),
+    [...groups].map(([g, ps]) => h("optgroup", { label: g }, ps.map((p) => h("option", { value: p }, p.split("/").pop())))));
+  sel.value = cur || "";
+  function upload() {
+    const f = h("input", { type: "file", accept: "image/jpeg,image/png,image/webp", onchange: async () => {
+      const file = f.files[0]; if (!file) return;
+      try {
+        const r = await api("/api/upload", { method: "POST", headers: { "X-Filename": encodeURIComponent(file.name) }, body: file });
+        ED.gallery = [{ path: r.path, group: "Завантажені" }, ...(ED.gallery || [])];
+        onpick(r.path);
+      } catch (e) { toast(e.message); }
+    } });
+    f.click(); sel.value = cur || "";
+  }
+  return sel;
+}
+function picCard(z, P) {
+  const thumb = (p) => p ? h("img", { class: "pv", src: asset(p), alt: "" }) : null;
+  if (z.hero) {   // page photo: cropped and toned by the style, as in «Налаштування» → «Фото сторінок»
+    const cur = S.edits?.heroes?.[z.hero]?.path;
+    const k = "hero:" + z.hero;
+    return h("div", { class: "card-f" }, h("div", { class: "fh" }, h("small", {}, z.full ? "Фото сторінки (фон)" : "Фото сторінки"),
+        cur ? h("button", { class: "sm ghost", title: "як було", onclick: () => { delete edits().heroes[z.hero]; edDrop(k); refreshPages(); } }, "↺") : null),
+      h("div", { class: "pic-row" }, thumb(cur), gallerySelect(cur, (p) => {
+        if (!p) { delete edits().heroes[z.hero]; edDrop(k); } else { edits().heroes[z.hero] = { path: p, fx: 0.5, fy: 0.45 }; edLog(k, `Фото сторінки «${P.title}» → ${p.split("/").pop()}`); }
+        refreshPages();
+      })), scopeBox(k));
+  }
+  const k = shapeKey(P.key, z.was), cur = S.edits?.shapes?.[k]?.path;
+  return h("div", { class: "card-f" }, h("div", { class: "fh" }, h("small", {}, "Фото"),
+      cur ? h("button", { class: "sm ghost", onclick: () => setShape(P.key, z, null) }, "↺") : null,
+      h("button", { class: "sm ghost", onclick: () => setShape(P.key, z, { hide: true }, `Сховати фото на сторінці «${P.title}»`) }, "Сховати")),
+    h("div", { class: "pic-row" }, thumb(cur), gallerySelect(cur, (p) => p ? setShape(P.key, z, { path: p }, `Фото на сторінці «${P.title}» → ${p.split("/").pop()}`) : setShape(P.key, z, null))),
+    scopeBox("shape:" + k));
+}
+
+// ---- pages on / off
+function setPage(p, on) {
+  const E = edits(), lower = mergeEdits(...layersOf(edStyle(), ED.spec.kit_type, S.basePreset, null)).pages[p.key];
+  if (on && lower !== false) delete E.pages[p.key]; else E.pages[p.key] = on;
+  const k = "page:" + p.key;
+  if (E.pages[p.key] === undefined) edDrop(k); else edLog(k, `Сторінка «${p.title}»: ${on ? "увімкнено" : "вимкнено"}`);
+  if (!on && ED.key === p.key) ED.key = "cover";
+  refreshPages(true);
+}
+
+// ---- positions: rows of the price page, tiles of the configuration / kit page
+function rowOf(z) {
+  const rows = z.kind === "tile" ? ED.spec.config_rows || ED.spec.rows : ED.spec.rows;
+  const sr = (z.item && rows.find((r) => r.item_id === z.item)) || rows[z.n];
+  if (!sr) return null;
+  const id = sr.item_id;
+  if (sr.kind === "extra" || /^extra_\d+$/.test(id || "")) {
+    const live = S.extras.map((x, i) => [x, i]).filter(([x]) => x.title?.trim());
+    const i = live[Number(id.slice(6)) - 1]?.[1];
+    return { sr, type: "extra", i, x: S.extras[i] };
+  }
+  if (sr.kind === "accessory") return { sr, type: "acc", acc: S.sel.accessories.find((a) => a.id === id), qr: lastQuote.accessories.find((a) => (a.item_id || a.id) === id) };
+  const qr = id && lastQuote.rows.find((r) => r.item_id === id);
+  if (!qr) return { sr, type: "fixed" };
+  return { sr, type: "item", qr, slot: S.kt.slots.find((s) => s.id === qr.slot) };
+}
+function posChanged(label) {
+  S.preset = null;
+  edLog("pos:" + Date.now().toString(36), label, { tpl: false, base: true });
+  renderQuote(); refreshPages(true);
+}
+function rowEdit(id, field, v, orig, label) {
+  const E = edits(), r = { ...(E.rows[id] || {}) };
+  if (v === orig || (field === "photo" && !v)) delete r[field]; else r[field] = v;
+  if (Object.keys(r).length) E.rows[id] = r; else delete E.rows[id];
+  const k = `row:${id}:${field}`;
+  if (r[field] === undefined) edDrop(k); else edLog(k, label);
+  refreshPages();
+}
+function rowCard(z, P) {
+  const R = rowOf(z);
+  if (!R) return h("div", { class: "card-f row-f" }, h("small", {}, "позиція"));
+  const { sr } = R, open = ED.sel === z.id, tile = z.kind === "tile";
+  const card = h("div", { class: "card-f row-f" + (open ? " open" : "") });
+  const n = h("span", { class: "no" }, String(z.n + 1).padStart(2, "0"));
+  if (R.type === "fixed") { card.append(h("div", { class: "line" }, n, h("span", { class: "t" }, sr.title), h("small", {}, "змінюється у виборі комплекту"))); return card; }
+  if (R.type === "extra") {
+    const x = R.x, upd = (patch, label) => { Object.assign(x, patch); posChanged(label); };
+    card.append(h("div", { class: "line" }, n,
+      h("input", { class: "t", value: x.title, onchange: (e) => upd({ title: e.target.value }, `Своя позиція: назва «${e.target.value}»`) }),
+      h("input", { class: "p", type: "number", value: x.price_uah ?? "", placeholder: "ціна", onchange: (e) => upd({ price_uah: num(e.target.value) }, `Своя позиція «${x.title}»: ціна ${uah(num(e.target.value))}`) }),
+      h("button", { class: "sm ghost", title: "прибрати з КП", onclick: () => { S.extras.splice(R.i, 1); posChanged(`Прибрано: ${x.title}`); } }, "✕")));
+    if (open) card.append(h("textarea", { rows: 2, value: x.desc || "", placeholder: "опис", onchange: (e) => upd({ desc: e.target.value }, `Своя позиція «${x.title}»: опис`) }));
+    return card;
+  }
+  const id = sr.item_id, orig = R.type === "acc" ? R.qr : R.qr;
+  const ot = orig?.title ?? sr.title, od = orig?.desc ?? sr.desc;
+  const E = S.edits?.rows?.[id] || {};
+  const bundleIn = !R.acc && lastQuote.price_display === "bundle" && R.qr?.price_uah == null && R.qr?.price_text === "у комплекті";
+  let price = null;
+  if (R.type === "acc") price = h("input", { class: "p", type: "number", value: R.acc?.price_uah ?? "", placeholder: R.qr?.price_uah != null ? String(R.qr.price_uah) : "ціна",
+    onchange: (e) => { S.sel = { ...S.sel, accessories: S.sel.accessories.map((a) => (a.id === id ? { ...a, price_uah: num(e.target.value) } : a)) }; posChanged(`Ціна «${ot}» у цій КП: ${uah(num(e.target.value))}`); } });
+  else if (!bundleIn) price = h("input", { class: "p", type: "number", value: S.manual[id] ?? "", placeholder: R.qr?.price_uah != null ? String(R.qr.price_uah) : "ціна",
+    title: "ціна в цій КП (нову ціну для всіх КП — у конфігураторі, «Зберегти як нову ціну»)",
+    onchange: (e) => { S.manual[id] = num(e.target.value); edLog("price:" + id, `Ціна «${ot}» у цій КП: ${uah(num(e.target.value))}`, { tpl: false, base: false }); renderQuote(); refreshPages(true); } });
+  const canDrop = R.type === "acc" || (R.slot && !R.slot.required);
+  card.append(h("div", { class: "line" }, n,
+    h("input", { class: "t", value: E.title ?? ot, title: "назва в КП", onchange: (e) => rowEdit(id, "title", e.target.value, ot, `Назва «${ot}» → «${e.target.value}»`) }),
+    price || h("small", { class: "p" }, "у комплекті"),
+    h("button", { class: "sm ghost", title: open ? "згорнути" : "опис, варіант" + (tile ? ", фото" : ""), onclick: (e) => { e.stopPropagation(); ED.sel = open ? null : z.id; renderEditor(); } }, open ? "▴" : "⋯"),
+    h("button", { class: "sm ghost", disabled: !canDrop, title: canDrop ? "прибрати з КП" : "обов’язкова позиція: її можна замінити варіантом",
+      onclick: () => {
+        if (R.type === "acc") S.sel = { ...S.sel, accessories: S.sel.accessories.filter((a) => a.id !== id) };
+        else S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, slots: { ...S.sel.slots, [R.slot.id]: null } });
+        posChanged(`Прибрано: ${ot}`);
+      } }, "✕")));
+  if (!open) { card.title = "клік — опис, варіант" + (tile ? ", фото" : ""); return card; }
+  card.append(h("textarea", { rows: 2, value: E.desc ?? od ?? "", placeholder: "опис", onchange: (e) => rowEdit(id, "desc", e.target.value, od, `Опис «${ot}»`) }));
+  if (R.slot && R.slot.candidates.length > 1) {
+    card.append(h("label", { class: "inline" }, "Варіант", h("select", { value: id, onchange: (e) => {
+      S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, slots: { ...S.sel.slots, [R.slot.id]: e.target.value } }, R.slot.id);
+      posChanged(`${R.slot.title}: ${core.itemById(cat, e.target.value)?.title || e.target.value}`);
+    } }, R.slot.candidates.map((c) => h("option", { value: c }, core.itemById(cat, c)?.title || c)))));
+  }
+  if (R.slot) {
+    const items = core.selectedItems(cat, S.kt, S.sel).map((x) => x.item);
+    for (const ch of S.kt.choices.filter((c) => c.slot === R.slot.id && c.options.length > 1)) {
+      const v = S.sel.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
+      card.append(h("label", { class: "inline" }, ch.title, h("select", { value: v, onchange: (e) => {
+        S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, choices: { ...S.sel.choices, [ch.id]: e.target.value } });
+        posChanged(`${ch.title}: ${ch.options.find((o) => o.value === e.target.value)?.title || e.target.value}`);
+      } }, ch.options.map((o) => h("option", { value: o.value }, o.title + (o.price_uah ? ` (+${uah(o.price_uah)})` : ""))))));
+    }
+  }
+  if (tile) card.append(h("div", { class: "pic-row" }, h("small", {}, "Фото"), gallerySelect(E.photo, (p) => rowEdit(id, "photo", p, null, `Фото «${ot}» → ${p ? p.split("/").pop() : "як у каталозі"}`), "— як у каталозі —")));
+  card.append(scopeBox(`row:${id}:title`) || scopeBox(`row:${id}:desc`) || scopeBox(`row:${id}:photo`) || h("span"));
+  return card;
+}
+function addCard() {
+  const kt = S.kt, sel = S.sel;
+  const slots = kt.slots.filter((s) => !s.required && !sel.slots[s.id]);
+  const accs = core.kitAccessories(cat, kt.id, sel).filter((ka) => ka.status === "ok" && !sel.accessories.some((a) => a.id === ka.accessory.id));
+  const used = new Set(S.extras.map((x) => (x.title || "").trim().toLowerCase()));
+  const saved = admin.extras.filter((x) => !used.has(x.title.trim().toLowerCase()));
+  const s = h("select", { onchange: (e) => {
+    const v = e.target.value; if (!v) return;
+    if (v === "new") return newExtra();
+    const [kind, a, b] = v.split("|");
+    if (kind === "slot") { S.sel = core.reconcileSelection(cat, kt.id, { ...sel, slots: { ...sel.slots, [a]: b } }, a); posChanged(`Додано: ${core.itemById(cat, b)?.title || b}`); }
+    if (kind === "acc") {
+      const acc = cat.accessories.find((x) => x.id === a), title = acc?.title || a;
+      const put = (price) => { S.sel = { ...sel, accessories: [...sel.accessories, { id: a, variant: null, price_uah: price }] }; posChanged(`Додано опцію: ${title}`); };
+      if (acc?.price?.mode === "ref" && acc.price.uah) return put(null);
+      // an option without a price is not a row of the price table: ask for its price in this KP
+      const pin = h("input", { type: "number", placeholder: "ціна, ₴" });
+      modal(h("div", { class: "form" }, h("h2", {}, `${title}: ціна в цій КП`),
+        h("p", { class: "hint" }, "Без ціни опція не стає рядком у вартості (лише картка на сторінці «Додаткові опції», якщо її увімкнено)."), pin,
+        h("div", { class: "acts" }, h("button", { onclick: () => { closeModal(); put(null); } }, "Без ціни"),
+          h("button", { class: "primary", onclick: () => { closeModal(); put(num(pin.value)); } }, "Додати з ціною"))));
+      setTimeout(() => pin.focus(), 50);
+    }
+    if (kind === "ext") { const x = saved[Number(a)]; S.extras = [...S.extras, { title: x.title, desc: x.desc, price_uah: x.price_uah, qty: 1 }]; posChanged(`Додано: ${x.title}`); }
+  } }, h("option", { value: "" }, "+ Додати позицію…"),
+    slots.length ? h("optgroup", { label: "Позиції комплекту" }, slots.flatMap((sl) => sl.candidates.map((c) => h("option", { value: `slot|${sl.id}|${c}` }, `${sl.title}: ${core.itemById(cat, c)?.title || c}`)))) : null,
+    accs.length ? h("optgroup", { label: "Опції" }, accs.map((ka) => h("option", { value: `acc|${ka.accessory.id}` },
+      ka.accessory.title + (ka.accessory.price?.mode === "ref" && ka.accessory.price.uah ? " · " + uah(ka.accessory.price.uah) : " · ціна за запитом")))) : null,
+    h("optgroup", { label: "Свої позиції" }, saved.map((x, i) => h("option", { value: `ext|${i}` }, x.title + (x.price_uah != null ? " · " + uah(x.price_uah) : ""))),
+      h("option", { value: "new" }, "Нова своя позиція…")));
+  return h("div", { class: "card-f add-f" }, s);
+}
+function newExtra() {
+  const t = h("input", { placeholder: "назва, напр. Монтажні роботи" }), d = h("input", { placeholder: "опис (необов’язково)" }), p = h("input", { type: "number", placeholder: "ціна, ₴" });
+  modal(h("div", { class: "form" }, h("h2", {}, "Своя позиція в КП"), t, d, p, h("div", { class: "acts" }, h("button", { onclick: () => { closeModal(); renderEditor(); } }, "Скасувати"),
+    h("button", { class: "primary", onclick: () => {
+      if (!t.value.trim()) return toast("Вкажіть назву позиції");
+      const x = { title: t.value.trim(), desc: d.value.trim(), price_uah: num(p.value), qty: 1 };
+      S.extras = [...S.extras, x];
+      admin.extras = [{ ...x, at: core.todayIso() }, ...admin.extras.filter((y) => y.title.trim().toLowerCase() !== x.title.toLowerCase())].slice(0, 30); saveAdmin();
+      closeModal(); posChanged(`Додано: ${x.title}`);
+    } }, "Додати"))));
+  setTimeout(() => t.focus(), 50);
+}
+
+// ---- saving: this KP always; each change also into the style template and / or the base KP (ready kit), as ticked
+function copyChange(key, dst, tplStyle) {
+  const E = S.edits || EMPTY_EDITS(), set = (o, k, v) => { if (v === undefined) delete o[k]; else o[k] = structuredClone(v); };
+  if (key.startsWith("shape:")) { dst.shapes ??= {}; set(dst.shapes, key.slice(6), E.shapes[key.slice(6)]); }
+  else if (key.startsWith("page:")) { dst.pages ??= {}; set(dst.pages, key.slice(5), E.pages[key.slice(5)]); }
+  else if (key.startsWith("row:")) {
+    const [, id, f] = key.split(":"); dst.rows ??= {};
+    const r = { ...(dst.rows[id] || {}) }; set(r, f, E.rows[id]?.[f]);
+    if (Object.keys(r).length) dst.rows[id] = r; else delete dst.rows[id];
+  } else if (key.startsWith("hero:")) {
+    const k = key.slice(5), v = E.heroes[k];
+    if (tplStyle) {   // the style template's page photo is the settings' «Фото сторінок»
+      const st = ((admin.styles[tplStyle] ??= {}).bg ??= {});
+      if (v?.path) st[k] = { ...(st[k] || {}), path: v.path, fx: v.fx ?? 0.5, fy: v.fy ?? 0.45 }; else delete st[k];
+    } else { dst.heroes ??= {}; set(dst.heroes, k, v); }
+  }
+}
+function saveDialog() {
+  const keys = Object.keys(S.editLog);
+  if (!keys.length) return toast("Змін ще немає");
+  const base = S.basePreset && cat.presets.find((p) => p.id === S.basePreset);
+  const all = (f, v) => { for (const k of keys) if (S.editLog[k].can[f]) S.editLog[k][f] = v; saveDialog(); };
+  modal(h("div", { class: "form ed-save" }, h("h2", {}, "Зберегти зміни сторінок"),
+    h("p", { class: "hint" }, `Усі зміни вже в цій КП. Позначте, що піде також у шаблон стилю «${edStyleInfo()?.title || edStyle()}» для «${kitName(S.kt)}» (усі нові КП цього комплекту в цьому стилі)`
+      + ` і в базову КП ${base ? "«" + base.title + "»" : "(буде створено нову готову КП з цим складом)"}.`),
+    h("table", { class: "prices" }, h("thead", {}, h("tr", {}, h("th", {}, "Зміна"), h("th", {}, "Ця КП"),
+      h("th", {}, "Шаблон ", h("button", { class: "sm ghost", onclick: () => all("tpl", !keys.every((k) => !S.editLog[k].can.tpl || S.editLog[k].tpl)) }, "усі")),
+      h("th", {}, "Базова КП ", h("button", { class: "sm ghost", onclick: () => all("base", !keys.every((k) => !S.editLog[k].can.base || S.editLog[k].base)) }, "усі")))),
+      h("tbody", {}, keys.map((k) => { const L = S.editLog[k]; const c = (f) => L.can[f] ? h("input", { type: "checkbox", checked: L[f], onchange: (e) => { L[f] = e.target.checked; } }) : h("small", {}, "—");
+        return h("tr", {}, h("td", {}, L.label), h("td", {}, "✓"), h("td", {}, c("tpl")), h("td", {}, c("base"))); }))),
+    h("div", { class: "acts" }, h("button", { onclick: closeModal }, "Закрити"),
+      h("button", { onclick: () => commitEdits(false) }, "Зберегти"),
+      h("button", { class: "primary", onclick: () => commitEdits(true) }, S.historyId ? "Зберегти й оновити КП (PDF)" : "Зберегти й створити КП (PDF)"))));
+}
+async function commitEdits(andGenerate) {
+  const keys = Object.keys(S.editLog), style = edStyle(), kit = ED.spec?.kit_type || S.kt.extends || S.kt.id;
+  const tk = tplKey(style, kit), notes = [];
+  if (keys.some((k) => S.editLog[k].tpl)) {
+    const dst = (admin.page_edits.tpl[tk] ??= EMPTY_EDITS());
+    for (const k of keys.filter((k) => S.editLog[k].tpl)) copyChange(k, dst, k.startsWith("hero:") ? style : null);
+    notes.push("шаблон " + tk);
+  }
+  if (keys.some((k) => S.editLog[k].base)) {
+    let id = S.basePreset;
+    const orig = id && cat.presets.find((p) => p.id === id);
+    const posChange = keys.some((k) => k.startsWith("pos:") && S.editLog[k].base);
+    if (!orig || posChange) {   // the base KP keeps its composition unless positions were changed and ticked for it
+      id = orig ? id : "kp_" + Date.now().toString(36);
+      const p = { id, kit_type: S.kt.id, itemized: S.itemized, quantities: { ...S.qty }, extras: S.extras.filter((x) => x.title?.trim()).map((x) => ({ ...x })),
+        selection: structuredClone(S.sel), title: orig?.title || `${ED.spec?.title || kitName(S.kt)} (з редактора, ${core.formatDate(core.todayIso())})`,
+        source: { ...(orig?.source || {}), date: core.todayIso(), edited: "редактор сторінок", total_uah: lastQuote?.total_uah ?? null } };
+      admin.page_presets = [...admin.page_presets.filter((x) => x.id !== id), p];
+    }
+    const dst = (admin.page_edits.preset[id] ??= EMPTY_EDITS());
+    for (const k of keys.filter((k) => S.editLog[k].base && !k.startsWith("pos:"))) copyChange(k, dst, null);
+    S.basePreset = id; notes.push("базова КП " + id);
+  }
+  for (const k of keys) S.editLog[k].saved = { tpl: !!S.editLog[k].tpl, base: !!S.editLog[k].base };
+  if (notes.length) await saveAdmin(true, "редактор сторінок: " + notes.join(", "));
+  closeModal(); toast(notes.length ? "Збережено: ця КП, " + notes.join(", ") : "Збережено для цієї КП");
+  if (andGenerate) {
+    edStatus("Створюю КП (PPTX + PDF)…", "busy");
+    await generate(false);
+    const res = $("#genResult").cloneNode(true); res.id = "";
+    $("#edResult").replaceChildren(...res.childNodes);
+    edStatus("КП збережено в історії");
+  }
+}
+function resetEdits() {
+  confirmBox("Скинути всі правки сторінок цієї КП? Шаблон і базова КП не зміняться.", "Скинути", async () => {
+    S.edits = null; S.editLog = {}; editorBadge(); refreshPages(true);
+  });
+}
+function initEditor() {
+  $("#editPages").onclick = openEditor;
+  $("#edBack").onclick = () => tab("conf");
+  $("#edSave").onclick = saveDialog;
+  $("#edReset").onclick = resetEdits;
+  $("#edReload").onclick = () => refreshPages(true);
+  editorBadge();
+}
+async function showEditor() {
+  renderQuote();
+  if (!lastQuote) { edStatus("Спершу оберіть комплект у конфігураторі", "err"); return; }
+  if (edStyleInfo()?.engine === "d6") { edStatus("Редактор сторінок працює зі стилями KP_2_v3 і Ultra: оберіть один із них у картці «КП»", "err"); return; }
+  if (!ED.gallery) ED.gallery = await api("/api/gallery").catch(() => []);
+  ED.meta = null; ED.sel = null; $("#edResult").innerHTML = "";
+  renderEditor();
+  refreshPages(true);
 }
 
 boot().catch((e) => { document.body.prepend(h("div", { class: "result err" }, "Помилка запуску: " + e.message)); console.error(e); });
