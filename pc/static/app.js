@@ -766,8 +766,8 @@ const CHIP_TEXT = { brakes: "Гальма на вибір", wheels: "Колес�
   stakes_ext: "Нарощування коників", seat_pos: "Місце оператора", pump_flow: "Гідробак, насос 63 / 80" };
 /** KpSpec of a quote with the settings: KP photos and their framing, texts, generator layout of copied kits. */
 function specFrom(q, meta, style) {
-  const noClient = !meta.client?.name || meta.client.name === "Назва замовника";
-  const spec = core.buildKpSpec(cat, settings, q, { ...meta, client: { ...meta.client, name: noClient ? "Назва замовника" : meta.client.name } });
+  const noClient = !meta.client?.name || meta.client.name === "Назва замовника" || meta.show_client === false;
+  const spec = core.buildKpSpec(cat, settings, q, { ...meta, client: { ...meta.client, name: meta.client?.name || "Назва замовника" } });
   if (noClient) ((spec.overrides ??= {}).layout ??= { show: {} }).show = { ...(spec.overrides.layout.show || {}), client: false };
   // the options page only when asked: chosen options with a price are rows of the price table anyway (bundle kits keep their cards)
   if (!meta.offer_accessories && q.price_display === "itemized") spec.accessories = [];
@@ -802,11 +802,11 @@ async function generate(asNew) {
   let spec;
   try {
     spec = specFrom(lastQuote, { number: $("#kpNumber").value || "0001",
-      client: { name: $("#client").value.trim(), contact: $("#clientContact").value.trim() },
+      client: { name: $("#client").value.trim(), contact: $("#clientContact").value.trim() }, show_client: $("#clientShow").checked,
       offer_accessories: $("#offerAcc").checked }, $("#styleChips").dataset.v || "dark");
   } catch (e) { return toast((e.errors || [String(e)])[0]); }
   const state = { kit_type: S.kt.id, selection: S.sel, manual: S.manual, kitPrice: S.kitPrice, discount: S.discount, qty: S.qty, preset: S.preset,
-    number: $("#kpNumber").value, date: $("#kpDate").value, client: $("#client").value, contact: $("#clientContact").value, style: spec.style, offerAcc: $("#offerAcc").checked,
+    number: $("#kpNumber").value, date: $("#kpDate").value, client: $("#client").value, contact: $("#clientContact").value, style: spec.style, offerAcc: $("#offerAcc").checked, clientShow: $("#clientShow").checked,
     extras: S.extras.filter((x) => x.title?.trim()), itemized: S.itemized };
   const btn = $("#gen"), res = $("#genResult");
   btn.disabled = true; $("#genNew").disabled = true; btn.innerHTML = '<span class="spin"></span>Створюю КП… (PDF — до хвилини)'; res.innerHTML = "";
@@ -850,7 +850,7 @@ function loadState(entry) {
     extras: structuredClone(st.extras || []), itemized: !!st.itemized });
   $("#kpNumber").value = st.number || entry.number || ""; $("#kpDate").value = st.date || core.todayIso();
   $("#client").value = st.client || ""; $("#clientContact").value = st.contact || ""; $("#discount").value = S.discount;
-  $("#offerAcc").checked = st.offerAcc === true; $("#styleChips").dataset.v = st.style || entry.style; $("#genResult").innerHTML = "";
+  $("#offerAcc").checked = st.offerAcc === true; $("#clientShow").checked = st.clientShow !== false; $("#styleChips").dataset.v = st.style || entry.style; $("#genResult").innerHTML = "";
   tab("conf"); editBanner();
 }
 
@@ -1065,9 +1065,14 @@ async function renderLayout() {
   const sel = h("select", { id: "sightCover", onchange: (e) => { sightCover = e.target.value; drawSight(); } });
   const nums = h("div", { class: "sight-nums", id: "sightNums" });
   box.append(card("Титулка",
-    sws(sw("kp_no", "№ КП"), sw("kp_date", "Дата"), sw("frames", "Рамки по кутах"), sw("sight", "Приціл"), sw("client", "«Підготовлено для»")),
+    sws(sw("kp_no", "№ КП"), sw("kp_date", "Дата"), sw("frames", "Рамки по кутах"), sw("sight", "Приціл")),
     tx("kp_title", "Заголовок над номером"), tx("cover_kicker", "Мітка зверху (кран)"), tx("cover_kicker_trailer", "Мітка зверху (НПЛ-10, причепи)"),
-    tx("sight_title", "Напис прицілу"), tx("client_label", "Напис над замовником")));
+    tx("sight_title", "Напис прицілу")));
+  box.append(card("Замовник на титулці (усі стилі)",
+    h("p", { class: "hint" }, "Вимкнено — замовника немає в жодній КП. Увімкнено — він є лише тоді, коли в КП вписано назву замовника (порожнє поле в конфігураторі — рядка немає)."),
+    sws(sw("client", "Показувати замовника")),
+    h("label", {}, "Напис перед назвою", h("input", { value: L.text.client_label || "", placeholder: "як у стилі: «ПІДГОТОВЛЕНО ДЛЯ», в Ultra і Heavy Label — «ДЛЯ»",
+      oninput: (e) => { if (e.target.value.trim()) L.text.client_label = e.target.value; else delete L.text.client_label; saveAdmin(); } }))));
   box.append(card("Приціл на титулці",
     h("p", { class: "hint" }, "Тягніть рамку, щоб пересунути; тягніть край чи кут, щоб розтягнути. Помаранчевий круг у центрі лишається того ж розміру. Положення своє для кожного фото титулки."),
     h("label", {}, "Фото титулки", sel), h("div", { class: "sight-wrap" }, stage, h("div", {}, nums,
@@ -1804,7 +1809,7 @@ function recalcEntry(e) {
 async function regenerateEntry(e, q, sel) {
   const st = e.state;
   const spec = specFrom(q, { number: st.number || e.number || "0001", client: { name: st.client || e.client || "", contact: st.contact || e.contact || "" },
-    offer_accessories: st.offerAcc === true }, st.style || e.style || admin.style || "dark");
+    show_client: st.clientShow !== false, offer_accessories: st.offerAcc === true }, st.style || e.style || admin.style || "dark");
   const r = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spec, state: { ...st, selection: sel || st.selection }, history_id: e.id }) });
   if (!r.pptx) throw new Error((r.messages || ["КП не створено"]).slice(-1)[0]);
   return r;

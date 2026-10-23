@@ -18,7 +18,7 @@ from . import raster as R
 from .cache import Cache
 from .pptx_util import EMU, I, by_id, by_name
 from .profiles import PROFILES, DECAL_CONFIG, CARD_TWEAKS, OWN_PRODUCTION
-from .spec import SpecError
+from .spec import SpecError, client_line
 
 W, H = 8.27, 11.69
 BG, CARD, CARD2, LINE = (11, 12, 14), (23, 27, 33), (30, 34, 41), (44, 48, 56)
@@ -364,10 +364,15 @@ class Ultra:
         D.text(s, 3.5, 0.7, 4.27, 0.22, sp['date'], 8, DIM, True, 'r', track=2.0)
         if self.truck:
             D.rt(s, self.headline([[(self.truck_name + ' ', WHITE), ('+ ' + (self.no or self.m), OR)]], F_BLACK), 0.47, 1.4, 1.45, maxw=7.3)
-            D.text(s, 0.5, 3.2, 7.27, 0.4, [[('Лісовоз з краном ', {}), (self.m, dict(color=OR))]], 24, WHITE, True)
-            D.text(s, 0.5, 3.72, 7.27, 0.3, f"дообладнання вантажівки {self.truck_name} під ключ · ротатор {cs['rotator_t']} т і грейфер {cs['grapple_m2']} м² у комплекті", 12, MUTED)
+            t = self.truck_name   # headline and lead as in the approved ЗІЛ KP of 22.10.2026 (or the KP's own)
+            hl = (sp.get('cover_headline') or [f'Дообладнання автомобіля {t}', f'+ кран-маніпулятор {self.m}'])[:2]
+            lead = sp.get('cover_text') or (f"Лісовоз з краном {self.m} · ротатор {cs['rotator_t']} т і грейфер {cs['grapple_m2']} м² у комплекті: "
+                                            f"дообладнання вантажівки {t} в транспортний засіб (лісовоз-сортиментовоз), який призначений для перевезення колод, брусів під ключ.")
+            hs = 19 if max(len(x) for x in hl) <= 34 else max(14, int(19 * 34 / max(len(x) for x in hl)))
+            D.text(s, 0.5, 3.1, 7.27, 0.66, [[(hl[0], {})], [(hl[-1], dict(color=OR))]], hs, WHITE, True, spacing=1.0)
+            D.text(s, 0.5, 3.83, 7.27, 0.5, lead, 10.5 if len(lead) <= 200 else 9.5, MUTED, spacing=1.15)
             d = self.photo_of('truck', TRUCK_PH['photo'])
-            D.img(s, self.raster('photo', photo, d[0], 7.27, 4.25, d[1], d[2], assets=(d[0],)), 0.5, 4.2, 7.27, 4.25, r=0.22)
+            D.img(s, self.raster('photo', photo, d[0], 7.27, 4.0, d[1], d[2], assets=(d[0],)), 0.5, 4.47, 7.27, 4.0, r=0.22)
             kpis = [(self.truck_spec('stakes', '4'), 'шт', 'стійки платформи'), (cs['reach_m'], 'м', f'виліт крана {self.m}'),
                     (cs['torque_knm'], 'кНм', 'підйомний момент')]
         elif self.npl:
@@ -395,9 +400,9 @@ class Ultra:
             D.box(s, x, 8.65, cw, 1.2, CARD, LINE)
             D.text(s, x + 0.25, 8.83, cw - 0.4, 0.5, [[(v, dict(size=28)), (f'  {u}', dict(size=12, color=OR))]], 28, WHITE, True)
             D.text(s, x + 0.25, 9.43, cw - 0.4, 0.3, l, 9.5, MUTED)
-        client = sp['client']['name']
+        cl = client_line(sp, 'ДЛЯ')   # switched off in the settings or for this KP, or no name: nothing
         D.box(s, 0.5, 10.3, 7.27, 0.012, LINE, r=0)
-        D.text(s, 0.5, 10.45, 3.6, 0.5, [[('ДЛЯ  ', dict(color=DIM, size=7.5, track=2.0)), ((client or '—'), dict(size=11))]], 11, WHITE, True)
+        if cl: D.text(s, 0.5, 10.45, 3.6, 0.5, [[(cl[0].upper() + '  ', dict(color=DIM, size=7.5, track=2.0)), (cl[1], dict(size=11))]], 11, WHITE, True)
         ct = sp['contacts']
         D.text(s, 4.1, 10.45, 3.67, 0.6, [' · '.join(ct['phones'][:2]), ' · '.join(ct['sites'][:2])], 9, MUTED, True, 'r', spacing=1.25)
         D.text(s, 0.5, 11.2, 7.27, 0.2, sp['maker']['line'].upper(), 6.5, DIM, True, track=1.5)
@@ -484,19 +489,19 @@ class Ultra:
         self.pages.append((s, False))
         self.kicker(s, 0.5, 0.95, 'власне виробництво')
         a, b = O['headline']
-        facts = O['facts'] if not self.truck else [('до 60', 'ДНІВ ПІД ЗАМОВЛЕННЯ'), ('під ключ', 'ПЛАТФОРМА, ПІРАМІДА, ГІДРАВЛІКА'),
-                                                      ('монтаж', 'ВХОДИТЬ У ВАРТІСТЬ'), ('BMF', 'ОФІЦІЙНИЙ ДИСТРИБ’ЮТОР')]
+        facts = O['truck_facts'] if self.truck else O['facts']
         D.rt(s, self.headline([[(a.rstrip('.').capitalize(), WHITE)], [(b.rstrip('.').capitalize(), OR)]]), 0.48, 1.3, 0.42)
         D.text(s, 0.5, 2.5, 7.27, 0.75, O['quote'], 11, (214, 217, 222), spacing=1.25)
         n = len(facts); gap = 0.12; cw = (7.27 - gap * (n - 1)) / n
         for i, (v, cap) in enumerate(facts):
             x = 0.5 + i * (cw + gap)
             D.box(s, x, 3.45, cw, 1.15, CARD, LINE, r=0.14)
-            D.text(s, x + 0.15, 3.58, cw - 0.25, 0.45, v, 19, OR if i == 0 else WHITE, True)
+            D.text(s, x + 0.15, 3.58, cw - 0.25, 0.45, v, 19 if n <= 4 else 15, OR if i == 0 else WHITE, True)
             D.text(s, x + 0.15, 4.05, cw - 0.25, 0.5, cap.capitalize(), 8, MUTED, spacing=1.05)
         photos = [p_ for _, p_, _, _ in O['photos']][:6]
-        if self.truck: photos = sorted(photos, key=lambda p_: 'truck' not in p_)
-        foc = {p_: (fx, fy) for _, p_, fx, fy in O['photos']}
+        foc = {p_: (fx, fy) for _, p_, fx, fy in O['photos'] + O['truck_photos']}
+        if self.truck:   # the conversion and the user's photos of 22.10.2026 first
+            photos = (['prod/truck_conversion.png'] + [p_ for _, p_, _, _ in O['truck_photos']] + [p_ for p_ in photos if 'truck' not in p_])[:6]
         cw, ch, gap = (7.27 - 0.15) / 2, 1.95, 0.15
         for i, p_ in enumerate(photos):
             x, y = 0.5 + (i % 2) * (cw + gap), 4.85 + (i // 2) * (ch + gap)
@@ -584,7 +589,7 @@ class Ultra:
         self.pages.append((s, False))
         self.kicker(s, 0.5, 0.95, 'склад комплекту')
         D.rt(s, self.headline([[('Що входить', WHITE)], [('у комплект', OR)]]), 0.48, 1.3, 0.42)
-        rows = sp['rows']; n = len(rows)
+        rows = sp.get('config_rows') or sp['rows']; n = len(rows)   # configuration tiles (КВП + кардан share one) when the KP has them
         top, bottom, gap = 2.55, 9.35, 0.15
         ch = min(2.6 if n <= 2 else 1.55, (bottom - top - gap * (n - 1)) / n); big = n <= 2
         for i, r in enumerate(rows):
@@ -618,7 +623,8 @@ class Ultra:
             return self.raster('tile-npl', lambda p_, w_, h_: jpg(R.on_card(Image.open(R.asset(p_)).convert('RGBA'), w_, h_, 0.95)), NPL['cutout'], w, h, assets=(NPL['cutout'],))
         if r.get('kind') == 'crane':
             return self.raster('tile-crane', lambda c, w_, h_: jpg(R.on_card(Image.open(io.BytesIO(c)), w_, h_, 0.95)), self.cut, w, h)
-        path = next((v for k, v in TILES.items() if v and iid.startswith(k)), None) or r.get('photo')
+        forced = r.get('photo') if r.get('photo_force') and r.get('photo') and R.asset_ok(r['photo']) else None   # set in the settings
+        path = forced or next((v for k, v in TILES.items() if v and iid.startswith(k)), None) or r.get('photo')
         if not path or not R.asset_ok(path):
             m = re.search(r'(\d+)\s*(л|шт|т)\b', r.get('title') or '')
             return self.raster('tile-none', no_photo, m.group(0) if m else 'BMF', w, h)
@@ -661,28 +667,32 @@ class Ultra:
         rows = sp['rows']; n = len(rows)
         rh = 0.72 if n <= 5 else max(0.5, 3.9 / n) if n <= 8 else 0.46   # 9+ rows: compact rows, description runs under the price
         dense = n > 8; tfs = 12 if dense else 14
-        top = 2.55; th = n * rh + 0.3
+        # a description longer than one line (about 105 characters at 9.5 pt in 6.17") makes its row taller
+        hs = [rh + (0.17 if not dense and rh >= 0.6 and len(r['desc'] or '') > 105 else 0) for r in rows]
+        ys = [sum(hs[:i]) for i in range(n)]
+        top = 2.55; th = sum(hs) + 0.3
         note = [f"Станом на {sp.get('price_date') or sp['date']}."]
         if sp.get('valid_until'): note.append(f"Пропозиція дійсна до {sp['valid_until']}.")
         if sp.get('price_note'): note.append(sp['price_note'])
         pad = 0.12 if len(' '.join(note)) > 120 else 0   # a two-line note needs room above the card's bottom edge
         D.box(s, 0.5, top, 7.27, th + 1.55 + pad, CARD, LINE, r=0.2)
         for i, r in enumerate(rows):
-            y = top + 0.15 + i * rh
+            y = top + 0.15 + ys[i]
             if i: D.box(s, 0.8, y, 6.67, 0.01, LINE, r=0)
             D.text(s, 0.8, y + 0.12, 0.45, 0.3, f'{i + 1:02d}', 10, OR, True)
             D.text(s, 1.3, y + (0.06 if dense else 0.08), 4.6 if dense else 4.4, 0.3, r['title'], tfs, WHITE, True)
             if r['desc'] and dense: D.text(s, 1.3, y + 0.27, 6.17, 0.2, r['desc'], 7.5, MUTED)
-            elif r['desc'] and rh >= 0.6: D.text(s, 1.3, y + 0.38, 4.4, 0.28, r['desc'], 9.5, MUTED)
+            elif r['desc'] and rh >= 0.6: D.text(s, 1.3, y + 0.38, 6.17, hs[i] - 0.4, r['desc'], 9.5, MUTED, spacing=1.05)
             pt = r['price_text'] or 'у комплекті'
             D.text(s, 5.0, y + (0.06 if dense else 0.08), 2.47, 0.3, pt, tfs, WHITE if any(c.isdigit() for c in pt) else MUTED, True, 'r')
         y = top + th + 0.05
         D.box(s, 0.8, y, 6.67, 0.015, OR, r=0)
-        D.text(s, 0.8, y + 0.2, 3, 0.25, 'РАЗОМ, З ПДВ', 8.5, MUTED, True, track=2.0)
+        D.text(s, 4.47, y + 0.2, 3, 0.25, 'РАЗОМ, З ПДВ', 8.5, MUTED, True, 'r', track=2.0)   # total at the right edge
         total = sp['total_text'].replace(' ₴', '').replace(' ₴', '').strip()
         digits = any(c.isdigit() for c in total)
         hl = self.headline([[(total, WHITE), (' ₴' if digits else '', OR)]], F_BLACK)
-        D.rt(s, hl, 0.78, y + 0.52, 0.55 if digits else 0.4, maxw=6.7)
+        pic = D.rt(s, hl, 0.78, y + 0.52, 0.55 if digits else 0.4, maxw=6.7)
+        pic.left = I(7.47) - pic.width
         D.text(s, 0.8, y + 1.15, 6.67, 0.35, ' '.join(note), 8, DIM, spacing=1.15)
         terms = sp['terms'][:6]
         ty = top + th + pad + (1.66 if dense else 1.85)
@@ -728,7 +738,7 @@ class Ultra:
             x = 5.0 + i * 0.95
             D.box(s, x, y, 0.82, 0.82, WHITE, r=0.1)
             D.img(s, q, x + 0.06, y + 0.06, 0.7, 0.7)
-        D.text(s, 0.5, 10.95 - 0.02, 4, 0.2, sp['maker']['line'].upper(), 6.5, DIM, True, track=1.5)
+        D.text(s, 0.5, 10.72, 4.3, 0.2, sp['maker']['line'].upper(), 6.5, DIM, True, track=1.5)   # above the footer rule
 
 
 def main(argv=None):

@@ -864,12 +864,14 @@ class Engine:
         else:
             lead = self.spec.get('cover_text') or (self.truck_cover()[1] if self.truck else self.crane_cover_text())
             put(by_id(s, 22), lead)
-            if len(lead) > 140: by_id(s, 22).width = I(7.37)   # long lead: two full-width lines
+            if len(lead) > 140 and not self.panel: by_id(s, 22).width = I(7.37)   # long lead: two full-width lines (left of the panel otherwise)
             hl = self.spec.get('cover_headline') or (self.truck_cover()[0] if self.truck else None)
             if hl:   # two lines, white and orange; long ones get smaller type to stay on one line each
                 hs = by_id(s, 21); put(hs, *hl[:2])
-                longest = max(len(x) for x in hl[:2])   # ~0.0087" per character and point of the bold caps, 7.25" line
-                if longest > 16: set_size(hs, max(2200, min(3600, int(7.25 / (0.0087 * longest)) * 100)))
+                lw = 5.55 if self.panel else 7.25   # the light design's orange panel starts at 6.1"
+                if self.panel: hs.width = I(lw + 0.1)
+                longest = max(len(x) for x in hl[:2])   # ~0.0087" per character and point of the bold caps
+                if longest * 0.0087 * 36 > lw: set_size(hs, max(1600, min(3600, int(lw / (0.0087 * longest)) * 100)))
             for vid, v in ((26, cs['reach_m']), (30, cs['torque_knm']), (34, cs['lift_4m_kg']), (38, cs['turn_deg'])):
                 put(by_id(s, vid), [v, None])
             if not self.P.get('native'): self.outline(s, self.P['model_no'], 4.1 if self.panel else 7.35)
@@ -903,7 +905,7 @@ class Engine:
             data = R.png(R.alpha_crop(Image.open(io.BytesIO(self.crane_blob))))
         else:
             return
-        set_image(hero, data); fit(hero, Image.open(io.BytesIO(data)))
+        set_image(hero, data); fit(hero, Image.open(io.BytesIO(data)), (I(0.3), I(1.45), I(7.67), I(3.95)))   # inside the page, under the chips
 
     def crane_cover_text(self):
         parts = []

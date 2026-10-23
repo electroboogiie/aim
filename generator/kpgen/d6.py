@@ -14,7 +14,7 @@ from .cache import Cache
 from .pptx_util import EMU, I, by_id, by_name, put, set_lines, set_image, remove, prune_images
 from .styles import template_path
 from .profiles import PROFILES
-from .spec import SpecError
+from .spec import SpecError, client_line
 
 INK, OR = (13, 14, 16), (242, 83, 10)
 FONT_BLACK = next((f for f in (os.path.join(R.ASSETS, 'fonts', 'InterDisplay-Black.otf'),
@@ -60,8 +60,8 @@ class D6:
         s = S[0]
         remove(by_id(s, 5))   # «10т» outline behind the figures
         put(by_id(s, 6), f"КОМЕРЦІЙНА ПРОПОЗИЦІЯ № {sp['number']}")
-        client = sp['client']['name']
-        put(by_id(s, 7), f"{sp['date']}  ·  ДЛЯ: {client.upper()}" if client else f"ВЕРСІЯ {sp['date']}  ·  САРНИ, UA")
+        cl = client_line(sp, 'ДЛЯ')
+        put(by_id(s, 7), f"{sp['date']}  ·  {cl[0].upper()}: {cl[1].upper()}" if cl else f"ВЕРСІЯ {sp['date']}  ·  САРНИ, UA")
         put(by_id(s, 20), [cs['reach_m'], None]); put(by_id(s, 26), [npl.get('stakes') or '4', None])
         self.contacts(s, (31, 33, 35, 37))
         put(by_id(s, 47), sp['maker']['line'].upper())

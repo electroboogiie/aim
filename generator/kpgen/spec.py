@@ -124,6 +124,9 @@ def validate(spec):
         trailer = dict(trailer, model=_s(trailer.get('model')), title=_s(trailer.get('title')), short=_s(trailer.get('short')),
                        specs={k: _s(v) for k, v in (trailer.get('specs') or {}).items() if v not in (None, '')})
 
+    if spec.get('kit_type') == 'truck_crane':   # truck kits: the user's photo of the operator seat (ЗІЛ KP of 22.10.2026)
+        for r in rows + (cfg or []):
+            if (r.get('item_id') or '').startswith('seat') and not r.get('photo_force'): r['photo'] = 'prod/seat_photo.png'; r['photo_force'] = True
     client = spec['client'] if isinstance(spec['client'], dict) else {'name': _s(spec['client'])}
     contacts = spec['contacts']
     maker = spec['maker']
@@ -135,3 +138,13 @@ def validate(spec):
                 maker=dict(name=_s(maker.get('name')), line=_s(maker.get('line')) or f"Виробник: {_s(maker.get('name'))}"),
                 valid_until=_s(spec.get('valid_until')), price_note=_s(spec.get('price_note')),
                 photos=_photos(spec.get('photos') or {}))
+
+
+def client_line(spec, label):
+    """(label, name) of «Підготовлено для» for the styles with their own cover (Ultra, Heavy Label), or None when it is
+    switched off (settings or this KP) or there is no name. The settings' «Напис над замовником» replaces the style's label."""
+    lay = (spec.get('overrides') or {}).get('layout') or {}
+    name = ((spec.get('client') or {}).get('name') or '').strip()
+    if (lay.get('show') or {}).get('client') is False or not name or name == 'Назва замовника': return None
+    own = ((lay.get('text') or {}).get('client_label') or '').strip()
+    return own or label, name

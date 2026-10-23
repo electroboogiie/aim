@@ -1265,6 +1265,8 @@
      "id": "pump",
      "title": "Насос",
      "candidates": [
+      "pump_pbf63",
+      "pump_pbf80",
       "pump"
      ],
      "required": false,
