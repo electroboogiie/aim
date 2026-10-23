@@ -385,7 +385,7 @@ function presetTotal(p) {
   catch { return null; }
 }
 // ready kits: grouped by crane (and trailer), inside a group from the base kit to the fullest; marks show which positions each has
-const SLOT_SHORT = { base: "Основа", tank: "Бак", oil: "Олива", seat: "Місце", heat_exchanger: "Тепло", pump: "Насос", frame: "Рама", pto: "КВП", cardan: "Вал" };
+const SLOT_SHORT = { base: "База", tank: "Бак", oil: "Олива", seat: "Місце", heat_exchanger: "Тепло", pump: "Насос", frame: "Рама", pto: "КВП", cardan: "Вал" };
 const markSlots = (kt) => kt.slots.filter((s) => !s.required && !(kt.title_slots || []).includes(s.id));
 function presetExtras(p, kt) {
   const sel = p.selection, items = core.selectedItems(cat, kt, core.presetSelection(p, cat)).map((x) => x.item);
@@ -550,9 +550,25 @@ function posVariants(key) {
   }
   const sid = key.slice(5), cur = sel.slots[sid], slot = kt.slots.find((s) => s.id === sid);
   if (!slot || !cur) return out;
-  const cands = core.slotCandidates(cat, kt.id, sid, sel).filter((c) => c.allowed || c.id === cur);
+  let cands = core.slotCandidates(cat, kt.id, sid, sel).filter((c) => c.allowed || c.id === cur);
+  // a type choice of the position (насос: аксіально-поршневий / шестеренний): the models are variants of its base type,
+  // so one list: «аксіально-поршневий PBF20TH.63», «… PBF20TH.80», «шестеренний»
+  const typeCh = kt.choices.find((c) => c.slot === sid && /_type$/.test(c.id));
+  if (typeCh) {
+    const tv = sel.choices?.[typeCh.id] ?? core.choiceDefault(cat, typeCh, items), base = typeCh.options.find((o) => o.value === (typeCh.default || typeCh.options[0].value));
+    const models = cands.filter((c) => c.id === cur || !cands.some((x) => x !== c && x.item?.title.startsWith(c.item?.title + " ")));   // a generic «Насос аксіально-поршневий» gives way to its models
+    const name = (it) => { const t = (it?.title || "").replace(new RegExp(`^${slot.title}\\s*`, "i"), ""); const n = t.toLowerCase().startsWith(base.title.toLowerCase()) ? t : `${base.title} ${t}`.trim(); return n === base.title ? `${n}, модель у комплекті` : n; };
+    const opts = models.map((c) => ({ label: name(c.item), hint: itemPriceText(c.item),
+      on: c.id === cur && tv === base.value, pick: () => { S.sel = { ...S.sel, choices: { ...S.sel.choices, [typeCh.id]: base.value } }; setSlot(sid, c.id, true); } }));
+    for (const o of typeCh.options.filter((o) => o !== base && core.choiceOptionFits(cat, o, items))) {
+      const why = core.choiceOptionBlock(cat, kt, o, sel, items);
+      opts.push({ label: o.title, hint: choicePriceMark(o, items), on: tv === o.value, dis: !!why && tv !== o.value, why, pick: () => setChoice(typeCh.id, o.value, key) });
+    }
+    if (opts.length > 1) out.push({ title: typeCh.title, opts });
+    cands = [];
+  }
   if (cands.length > 1) out.push({ title: "Варіант", opts: cands.map((c) => ({ label: shortLabel(c.item, cands), hint: itemPriceText(c.item), on: c.id === cur, pick: () => setSlot(sid, c.id, true) })) });
-  for (const ch of kt.choices.filter((c) => c.slot === sid && !CONV_CHOICE(c))) {
+  for (const ch of kt.choices.filter((c) => c.slot === sid && !CONV_CHOICE(c) && c !== typeCh)) {
     const v = sel.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
     const opts = ch.options.filter((o) => core.choiceOptionFits(cat, o, items));
     if (opts.length < 2) continue;

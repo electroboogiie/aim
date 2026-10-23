@@ -85,9 +85,9 @@ button:disabled { opacity: .45; cursor: default; }
 .rg-head img { width: 54px; height: 36px; object-fit: cover; border-radius: 6px; cursor: zoom-in; background: #222; }
 .rg-head b { font-size: 14.5px; flex: 1; min-width: 0; } .rg-head .badge { white-space: nowrap; }
 .rg-rows { display: flex; flex-direction: column; }
-.rg-marks-h, .rg-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 10px; }
+.rg-marks-h, .rg-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) 92px; gap: 8px; align-items: center; padding: 6px 10px; }
 .rg-marks-h { padding-top: 6px; padding-bottom: 0; }
-.rg-marks-h .marks i { color: var(--mut); font-size: 9.5px; font-style: normal; background: none; height: auto; }
+.rg-marks-h .marks i { color: var(--mut); font-size: 9px; letter-spacing: -.2px; font-style: normal; background: none; height: auto; display: block; text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .rg-row { border: 0; border-top: 1px solid var(--line2); background: #fff; text-align: left; cursor: pointer; }
 .rg-row:hover { background: #FFF8F4; }
 .rg-row.on { background: var(--or-soft); box-shadow: inset 3px 0 0 var(--or); }
@@ -95,19 +95,19 @@ button:disabled { opacity: .45; cursor: default; }
 .rg-row.on .lvl { background: var(--or); color: #fff; }
 .rg-mid { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
 .rg-mid small { color: var(--mut); font-size: 11.5px; display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rg-row .price { font-weight: 700; color: var(--or-d); white-space: nowrap; font-size: 13.5px; text-align: right; }
-.marks { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; width: 100%; max-width: 240px; }
+.rg-row .price { font-weight: 700; color: var(--or-d); white-space: nowrap; font-size: 13px; text-align: right; }
+.marks { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; width: 100%; max-width: 300px; }
 .marks i { display: flex; align-items: center; justify-content: center; height: 20px; border-radius: 4px; background: var(--line2); color: var(--mut2); font-style: normal; font-size: 12px; }
 .marks i.y { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
 .rg-mid .meta { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 .rg-mid .tag { background: var(--or); color: #fff; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 99px; }
 .tree-scroll { overflow-x: auto; padding-bottom: 6px; }
-.tree { position: relative; display: flex; gap: 26px; min-width: max-content; padding: 2px; }
+.tree { position: relative; display: flex; gap: 22px; min-width: min-content; padding: 2px 4px 2px 2px; }
 .tree > svg { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 0; overflow: visible; }
 .tree svg path { fill: none; stroke-width: 1.5; }
 .tree svg path.off { stroke: #D5D9DE; stroke-dasharray: 3 4; }
 .tree svg path.on { stroke: var(--or); stroke-width: 2.5; }
-.tcol { width: 162px; position: relative; z-index: 1; }
+.tcol { flex: 1 1 0; min-width: 150px; max-width: 200px; position: relative; z-index: 1; }
 .tc-h { font-size: 11px; font-weight: 700; color: var(--mut); text-transform: uppercase; letter-spacing: .6px; margin: 0 0 8px 2px; }
 .tc-b { display: flex; flex-direction: column; gap: 7px; }
 .tnode { display: grid; grid-template-columns: 50px 1fr; gap: 8px; align-items: center; padding: 6px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; transition: border-color .12s, box-shadow .12s; }
@@ -117,7 +117,7 @@ button:disabled { opacity: .45; cursor: default; }
 .tnode img, .tnode .ph { width: 50px; height: 40px; object-fit: contain; background: #F1F2F4; border-radius: 6px; cursor: zoom-in; }
 .tnode .ph { display: flex; align-items: center; justify-content: center; color: var(--mut2); font-size: 10px; cursor: default; }
 .tnode .tt { min-width: 0; line-height: 1.25; }
-.tnode b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; }
+.tnode b { hyphens: auto; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; }
 .tnode small { display: block; color: var(--mut); font-size: 11px; }
 .tnode .mk { display: inline-block; margin-top: 2px; font-size: 10.5px; font-weight: 600; color: var(--ink2); }
 .tnode .mk.std { color: var(--ok); } .tnode .mk.req { color: var(--warn); font-weight: 500; }
@@ -136,7 +136,7 @@ button:disabled { opacity: .45; cursor: default; }
 .tc-sub { font-size: 10.5px; font-weight: 700; color: var(--mut); text-transform: uppercase; letter-spacing: .5px; margin: 6px 0 -2px 2px; }
 .tgrp.conv { border: 1.5px solid var(--or); border-radius: 10px; padding: 6px; background: var(--or-soft); gap: 6px; }
 .tgrp.conv .tg-t, .vcard .tg-t { font-size: 12px; font-weight: 700; color: var(--ink2); }
-.tcol.vars { width: 236px; }
+.tcol.vars { flex: 1.5 1 0; min-width: 210px; max-width: 300px; }
 .vcard { border: 1.5px solid var(--line); border-radius: 10px; padding: 6px 8px; background: #fff; display: flex; flex-direction: column; gap: 4px; }
 .vcard.ok { border-color: #2D6CDF; }
 .vcard .vg small { display: block; font-size: 10.5px; color: var(--mut); margin: 0 0 2px 4px; }
@@ -144,7 +144,7 @@ button:disabled { opacity: .45; cursor: default; }
 .marks i.ok { box-shadow: inset 0 0 0 2px #2D6CDF; }
 .marks i.open { outline: 2px solid #2D6CDF; outline-offset: 1px; }
 .marks i.no { opacity: .45; cursor: not-allowed; }
-.rg-row.live { grid-template-columns: 40px minmax(0, 1fr) auto; background: #F7FAFF; border-top: 1px solid var(--line2); cursor: default; }
+.rg-row.live { background: #F7FAFF; border-top: 1px solid var(--line2); cursor: default; }
 .rg-row.live .marks i { cursor: pointer; }
 .rg-row.live.on { box-shadow: inset 3px 0 0 #2D6CDF; }
 .rg-row.live .lvl { background: #2D6CDF; color: #fff; }
@@ -355,7 +355,7 @@ td input[type=number] { width: 120px; }
   .seg button { flex: none; white-space: nowrap; }
   .other-presets { flex-wrap: wrap; }
   .modal-box { padding: 14px; max-width: 100vw; max-height: 100vh; border-radius: 0; }
-  .tcol { width: 150px; }
+  .tcol { min-width: 140px; }
   .tree { gap: 18px; }
   .page-head input { width: 100% !important; }
   .page-head > .inline { width: 100%; }
