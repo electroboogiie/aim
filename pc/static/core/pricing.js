@@ -239,14 +239,41 @@ export function quote(c, settings, rate, input) {
             row.photo = item.photo;
         return row;
     });
-    const extras = rows.filter((_, i) => bundleKit && ownPrice(picked[i].slot.priced));
-    const kitRows = rows.filter((r) => !extras.includes(r));
-    const kitPrices = itemPrices.filter((_, i) => !extras.includes(rows[i]));
+    // truck kits: positions marked «у складі дообладнання» are one row with the conversion (its text names them, its price includes them)
+    const host = rows.find((r) => r.slot === "conversion");
+    const folded = new Set();
+    let foldedKit = 0, foldOpen = false; // bundle kits: priced positions folded into a conversion row that is «у комплекті» add to the kit price
+    if (host && sel.into?.length) {
+        for (const r of rows) {
+            if (r === host || !r.slot || !sel.into.includes(r.slot))
+                continue;
+            folded.add(r);
+            const t = r.title.charAt(0).toLowerCase() + r.title.slice(1);
+            host.desc = host.desc ? `${host.desc.replace(/[.;]\s*$/, "")}, ${t}` : t;
+            if (r.price_uah === null)
+                continue;
+            if (host.price_uah !== null) {
+                host.price_uah += r.price_uah;
+                host.price_text = formatUah(host.price_uah);
+                host.breakdown = `${host.breakdown} + ${r.title} ${formatUah(r.price_uah)}`;
+            }
+            else if (bundleKit)
+                foldedKit += r.price_uah;
+            else {
+                foldOpen = true;
+                itemAcc.warnings.push(`«${r.title}» у складі дообладнання: ціну дообладнання не визначено.`);
+            }
+        }
+    }
+    const extras = rows.filter((r, i) => !folded.has(r) && bundleKit && ownPrice(picked[i].slot.priced));
+    const inKit = (r, i) => !extras.includes(r) && !(folded.has(r) && ownPrice(picked[i].slot.priced));
+    const kitRows = rows.filter(inKit);
+    const kitPrices = itemPrices.filter((_, i) => inKit(rows[i], i));
     const acc = { warnings: [], noEurRef: [], noMetal: [], needsRate: false, usedRate: false };
     let kitPrice = null;
     let bundleId = null;
     let kitBreakdown = "";
-    let complete = true;
+    let complete = !foldOpen;
     if (bundleKit) {
         const bundleSlots = { ...sel.slots };
         for (const s of kt.slots)
@@ -276,6 +303,10 @@ export function quote(c, settings, rate, input) {
             const missing = kitRows.filter((_, i) => kitPrices[i] === null).map((r) => `«${r.title}»`);
             acc.warnings.push(`Ціну комплекту не визначено: немає ціни для ${joinUk(missing, "і")}. Вкажіть ціну комплекту вручну.`);
         }
+        if (kitPrice !== null && foldedKit) {
+            kitPrice += foldedKit;
+            kitBreakdown += ` + у складі дообладнання ${formatUah(foldedKit)}`;
+        }
         if (kitPrice === null)
             complete = false;
         merge(acc, extraAcc);
@@ -298,6 +329,11 @@ export function quote(c, settings, rate, input) {
         }
         return { id: ch.id, title: ch.title, value, value_title: o.title, price_uah: std || slotEmpty ? 0 : o.price_uah ?? 0 };
     });
+    if (folded.size) {
+        for (const r of folded)
+            rows.splice(rows.indexOf(r), 1);
+        rows.forEach((r, i) => { r.no = i + 1; });
+    }
     const onRequestAcc = [];
     const accessories = sel.accessories.map((a, i) => {
         const def = accessoryById(c, a.id);
@@ -372,6 +408,8 @@ export function quote(c, settings, rate, input) {
     }
     if (kitBreakdown)
         q.kit_breakdown = kitBreakdown;
+    if (folded.size)
+        q.folded = [...folded].map((r) => r.slot);
     return q;
 }
 /** Reference dates whose EUR rate is still unknown (the server may fetch them into RateInfo.ref_rates). */

@@ -4,6 +4,12 @@ from pptx.oxml.ns import qn
 
 EMU = 914400
 
+# A width or height computed below zero (a box squeezed by long texts, an admin's framing) is drawn as zero instead of
+# failing the whole KP with "value must be in range 0 to 27273042316900" (python-pptx validates every size it writes).
+from pptx.oxml.simpletypes import ST_PositiveCoordinate as _PC
+_pc_to_xml = _PC.to_xml.__func__
+_PC.to_xml = classmethod(lambda cls, v: _pc_to_xml(cls, max(0, v) if isinstance(v, int) else v))
+
 
 def I(v):
     """Inches -> EMU."""
@@ -59,12 +65,13 @@ def set_image(pic, data):
 def fit(pic, im, box=None):
     """Fit the picture into its current box (or box=(x,y,w,h) in EMU), aspect kept, centred."""
     x, y, w, h = box or (pic.left, pic.top, pic.width, pic.height)
+    w, h = max(1, w), max(1, h)   # a box squeezed to nothing (long texts in a small tile) never gives a negative size
     ar = im.height / im.width
     nw, nh = (w, int(w * ar)) if w * ar <= h else (int(h / ar), h)
     pic.left, pic.top, pic.width, pic.height = x + (w - nw) // 2, y + (h - nh) // 2, nw, nh
 
 
-def geom(sh, x, y, w, h): sh.left, sh.top, sh.width, sh.height = I(x), I(y), I(w), I(h)
+def geom(sh, x, y, w, h): sh.left, sh.top, sh.width, sh.height = I(x), I(y), max(0, I(w)), max(0, I(h))
 
 
 def next_id(slide): return max(x.shape_id for x in slide.shapes) + 1

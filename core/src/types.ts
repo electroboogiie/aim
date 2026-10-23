@@ -214,6 +214,7 @@ export interface Selection {
   slots: Record<string, string | null>;
   choices: Record<string, string>;
   accessories: SelectionAccessory[];
+  into?: string[];                      // truck kits: slots whose position goes inside the conversion row (price and text)
 }
 
 /** A position typed in by hand on the configurator page (e.g. «Монтажні роботи»): not in the catalog. */
@@ -277,6 +278,7 @@ export interface Quote {
   kit_breakdown?: string;               // how the kit price was found (bundle, manual or sum of items)
   complete?: boolean;                   // false: some price is missing, the total is partial
   eur_applied?: boolean;                // the current EUR rate entered at least one counted price
+  folded?: string[];                    // truck kits: slots that went inside the conversion row
 }
 
 export interface KpSpecRow {
@@ -326,7 +328,9 @@ export interface KpMeta {
   terms?: (string | { title: string; text: string })[];   // Term ids or literal terms; default KitType.terms
   photos?: KpSpec["photos"];
   accessories_note?: string;
-  offer_accessories?: boolean;          // options page also lists compatible accessories not chosen ("ціна за запитом")
+  offer_accessories?: boolean;          // options page also lists compatible accessories and kit positions not chosen
+  offer_prices?: boolean;               // their cards with catalog prices; default «ціна за запитом» (to choose from)
+  offer_hidden?: string[];              // not offered: accessory ids and "slot:<id>" of kit positions
   cover_text?: string;
   file?: string;
 }

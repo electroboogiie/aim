@@ -124,7 +124,9 @@ test("offer_accessories: chosen options first, then compatible ones on request, 
   const spec = buildKpSpec(c, s, quote(c, s, noRate, input), { ...meta, offer_accessories: true });
   assert.ok(spec.accessories.length > 1 && spec.accessories.length <= 9);
   const groups = spec.accessories.map((a) => a.group);
-  assert.deepEqual(groups, [...groups].sort((a, b) => (a === "crane" ? 0 : 1) - (b === "crane" ? 0 : 1)));
+  const order = (g: string) => (g === "kit" ? 0 : g === "crane" ? 1 : 2);   // kit positions not chosen, then crane, then trailer options
+  assert.deepEqual(groups, [...groups].sort((a, b) => order(a) - order(b)));
+  assert.ok(spec.accessories.some((a) => a.group === "kit" && /бак/i.test(a.title)), "the tank (not chosen) is offered");
   const poles = spec.accessories.find((a) => a.title === c.accessories.find((x) => x.id === "rv_poles")!.title)!;
   assert.match(poles.price_text, /12\s000/);
   assert.equal(spec.accessories.filter((a) => a.title === poles.title).length, 1);
@@ -173,4 +175,43 @@ test("ЗІЛ KP of 22.10.2026: 10 price rows, КВП and кардан share one 
   // without the кардан the tiles are the rows
   const q2 = quote(c, s, noRate, { kit_type: p.kit_type, selection: { ...presetSelection(p, c), slots: { ...presetSelection(p, c).slots, cardan: null } }, itemized: true, date: "2026-10-22" });
   assert.equal(buildKpSpec(c, s, q2, meta).config_rows, undefined);
+});
+
+test("options page: prices on request by default, catalog prices when asked, hidden ones left out", () => {
+  const input: QuoteInput = { kit_type: "crane_kit", date: "2026-10-18", selection: { slots: { crane: "bmf720" }, choices: {}, accessories: [] } };
+  const q = quote(c, s, noRate, input);
+  const ask = buildKpSpec(c, s, q, { ...meta, offer_accessories: true });
+  assert.ok(ask.accessories.length > 0 && ask.accessories.every((a) => a.price_text === "ціна за запитом"));
+  const priced = buildKpSpec(c, s, q, { ...meta, offer_accessories: true, offer_prices: true });
+  assert.ok(priced.accessories.some((a) => a.price_text.endsWith("₴")));
+  const first = ask.accessories[0]!;
+  const slot = first.group === "kit" ? c.kit_types.find((k) => k.id === "crane_kit")!.slots.find((sl) => [sl.default, ...sl.candidates].some((id) => c.items.find((i) => i.id === id)?.title === first.title))!.id : null;
+  const hid = slot ? `slot:${slot}` : c.accessories.find((a) => a.title === first.title)!.id;
+  const hidden = buildKpSpec(c, s, q, { ...meta, offer_accessories: true, offer_hidden: [hid] });
+  assert.ok(!hidden.accessories.some((a) => a.title === first.title));
+});
+
+test("truck kits: a position marked «у складі дообладнання» joins the conversion row, the total stays", () => {
+  const p = presetById(c, "zil_bmf650_2026-10-22")!;
+  const base = presetSelection(p, c);
+  const run = (into?: string[]) => quote(c, s, noRate, { kit_type: p.kit_type, selection: { ...base, ...(into ? { into } : {}) }, itemized: p.itemized, quantities: p.quantities, extras: p.extras, date: "2026-10-22" });
+  const q0 = run(), q1 = run(["pump", "seat"]);
+  assert.equal(q1.total_uah, q0.total_uah);
+  assert.equal(q1.rows.length, q0.rows.length - 2);
+  assert.deepEqual(q1.folded, ["seat", "pump"]);
+  const conv0 = q0.rows.find((r) => r.slot === "conversion")!, conv1 = q1.rows.find((r) => r.slot === "conversion")!;
+  const pump = q0.rows.find((r) => r.slot === "pump")!, seat = q0.rows.find((r) => r.slot === "seat")!;
+  assert.equal(conv1.price_uah, conv0.price_uah! + pump.price_uah! + seat.price_uah!);
+  assert.match(conv1.desc, /місце оператора/i);
+  assert.ok(!q1.rows.some((r) => r.slot === "pump"));
+  // not offered on the options page: they are in the kit
+  const spec = buildKpSpec(c, s, q1, { ...meta, offer_accessories: true });
+  assert.ok(!spec.accessories.some((a) => a.title === pump.title || a.title === seat.title));
+  // the bundle price of a truck kit grows by the priced positions folded into its «у комплекті» conversion
+  const k = presetById(c, "kamaz_bmf750_2026-02-26")!;
+  const ks = presetSelection(k, c);
+  const b0 = quote(c, s, noRate, { kit_type: k.kit_type, selection: { ...ks, slots: { ...ks.slots, pto: "pto_kvp" } }, date: k.source.date });
+  const b1 = quote(c, s, noRate, { kit_type: k.kit_type, selection: { ...ks, slots: { ...ks.slots, pto: "pto_kvp" }, into: ["pto", "tank"] }, date: k.source.date });
+  assert.equal(b1.total_uah, b0.total_uah);
+  assert.ok(!b1.rows.some((r) => r.slot === "pto" || r.slot === "tank"));
 });

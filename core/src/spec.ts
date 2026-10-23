@@ -1,6 +1,6 @@
 // KP spec (docs/CONTRACTS.md §5): the generator input built from a quote.
 import type { Catalog, Item, KitType, KpMeta, KpSpec, KpSpecRow, Quote, Settings } from "./types.js";
-import { SUPPORTED_PROFILES, SUPPORTED_TRAILER_PROFILES, accessoryDesc, choiceIsStandard, accessoryStatus, companyById, itemById, kitTitle, kitTypeById, modelName, termById } from "./catalog.js";
+import { SUPPORTED_PROFILES, SUPPORTED_TRAILER_PROFILES, accessoryDesc, choiceIsStandard, accessoryStatus, companyById, itemById, itemFits, kitTitle, kitTypeById, modelName, termById } from "./catalog.js";
 import { fillTemplate, formatDate, formatPct, formatRate, formatUah, joinUk } from "./format.js";
 import { TEXT_ON_REQUEST, eurRate, priceRule } from "./pricing.js";
 
@@ -77,7 +77,7 @@ function configTiles(c: Catalog, rows: KpSpecRow[], q: Quote): KpSpecRow[] | nul
  * Options page cards: the chosen accessories, then (offer) the kit's other compatible accessories that have a photo,
  * with their catalog price (else on request), bmf.rv.ua first, up to MAX_KP_CARDS.
  */
-function kpCards(c: Catalog, settings: Settings, kt: KitType, q: Quote, offer: boolean): KpSpec["accessories"] {
+function kpCards(c: Catalog, settings: Settings, kt: KitType, q: Quote, offer: boolean, prices = false, hidden: string[] = []): KpSpec["accessories"] {
   const cards: KpSpec["accessories"] = q.accessories.map((a) => ({
     group: a.group ?? "crane", title: a.qty > 1 ? `${a.title} — ${a.qty} шт` : a.title, desc: a.desc, photo: a.photo ?? "",
     price_text: a.price_uah === null ? TEXT_ON_REQUEST : a.price_text,
@@ -88,15 +88,23 @@ function kpCards(c: Catalog, settings: Settings, kt: KitType, q: Quote, offer: b
   const rank = (a: Catalog["accessories"][number]) => (a.origin === "bmf.ee" ? 1 : 0);
   const ctx = { settings, eur: eurRate(settings, { eur: q.eur_rate, source: q.eur_rate_source }), rate: null, date: q.date };
   const offerPrice = (a: Catalog["accessories"][number]) => priceRule(a.price, ctx, a.title).price;
+  const priceText = (p: number | null) => (p === null || !prices ? TEXT_ON_REQUEST : formatUah(p));
+  // kit positions not chosen (nor inside the conversion): offered first, with the item that fits the kit
+  const inKit = new Set([...q.rows.map((r) => r.slot), ...(q.folded ?? [])]);
+  const slotCards = kt.slots
+    .filter((sl) => !sl.required && !inKit.has(sl.id) && !hidden.includes(`slot:${sl.id}`))
+    .map((sl) => [sl.default, ...sl.candidates].map((id) => (id ? itemById(c, id) : undefined))
+      .find((it): it is Item => !!it && !!it.photo && it.kind !== "crane" && itemFits(c, it, items)))
+    .filter((it): it is Item => !!it)
+    .map((it) => ({ group: "kit", title: it.title, desc: it.short, photo: it.photo ?? "", price_text: priceText(priceRule(it.price, ctx, it.title).price) }));
   const extra = c.accessories
     .map((a, i) => ({ a, i }))
-    .filter(({ a }) => !a.disabled && kt.accessory_groups.includes(a.group) && !chosen.has(a.id) && !!a.photo && accessoryStatus(c, a, items) === "ok")
+    .filter(({ a }) => !a.disabled && kt.accessory_groups.includes(a.group) && !chosen.has(a.id) && !hidden.includes(a.id) && !!a.photo && accessoryStatus(c, a, items) === "ok")
     .sort((x, y) => rank(x.a) - rank(y.a) || x.i - y.i)
-    .slice(0, Math.max(0, MAX_KP_CARDS - cards.length))
-    .map(({ a }) => ({ group: a.group, title: a.title, desc: accessoryDesc(c, a, items), photo: a.photo ?? "",
-      price_text: ((p) => (p === null ? TEXT_ON_REQUEST : formatUah(p)))(offerPrice(a)) }));
-  const order = (g: string) => (g === "crane" ? 0 : 1);
-  return [...cards, ...extra].sort((x, y) => order(x.group) - order(y.group));
+    .map(({ a }) => ({ group: a.group, title: a.title, desc: accessoryDesc(c, a, items), photo: a.photo ?? "", price_text: priceText(offerPrice(a)) }));
+  const offered = [...slotCards, ...extra].slice(0, Math.max(0, MAX_KP_CARDS - cards.length));
+  const order = (g: string) => (g === "kit" ? 0 : g === "crane" ? 1 : 2);
+  return [...cards, ...offered].sort((x, y) => order(x.group) - order(y.group));
 }
 
 /** Why the KP_2_v3 generator cannot build a KP for this quote (empty = it can). */
@@ -223,7 +231,7 @@ export function buildKpSpec(c: Catalog, settings: Settings, q: Quote, meta: KpMe
     npl: nplBlock(c, q),
     trailer: trailerBlock(c, q),
     rows,
-    accessories: kpCards(c, settings, kt, q, meta.offer_accessories === true),
+    accessories: kpCards(c, settings, kt, q, meta.offer_accessories === true, meta.offer_prices === true, meta.offer_hidden ?? []),
     total_text: unpriced ? TEXT_ON_REQUEST : formatUah(q.total_uah),
     price_note: notes.join(" "),
     price_date: formatDate(q.date),

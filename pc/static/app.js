@@ -360,7 +360,7 @@ function renderKitTabs() {
 }
 function setKit(id) {
   S.kt = core.kitTypeById(cat, id); S.sel = core.defaultSelection(S.kt, cat); S.manual = {}; S.kitPrice = null; S.qty = {}; S.preset = null;
-  S.extras = []; S.itemized = false; S.edits = null; S.editLog = {}; S.basePreset = null; editorBadge();
+  S.extras = []; S.itemized = false; S.edits = null; S.editLog = {}; S.basePreset = null; S.confirmed = new Set(); S.cellOpen = null; editorBadge();
   S.sel = core.reconcileSelection(cat, id, S.sel);
   S.sel.accessories = baseAccessories();
   renderKitTabs(); renderFeatured(); renderConf();
@@ -373,7 +373,8 @@ function applyPreset(p) {
   S.kt = core.kitTypeById(cat, p.kit_type);
   S.sel = core.reconcileSelection(cat, p.kit_type, core.presetSelection(p, cat));
   S.manual = {}; S.kitPrice = null; S.qty = { ...(p.quantities || {}) }; S.preset = p.id;
-  S.extras = structuredClone(p.extras || []); S.itemized = !!p.itemized; S.edits = null; S.editLog = {}; S.basePreset = p.id; editorBadge();
+  S.extras = structuredClone(p.extras || []); S.itemized = !!p.itemized; S.edits = null; S.editLog = {}; S.basePreset = p.id; S.cellOpen = null; editorBadge();
+  confirmAll();   // a kit from a KP: its positions were chosen there
   renderKitTabs(); renderFeatured(); renderConf();
 }
 function presetKey(p) { const sl = p.selection.slots; return [sl.crane, sl.trailer, sl.conversion].join("|"); }
@@ -384,7 +385,7 @@ function presetTotal(p) {
   catch { return null; }
 }
 // ready kits: grouped by crane (and trailer), inside a group from the base kit to the fullest; marks show which positions each has
-const SLOT_SHORT = { base: "Основа", tank: "Бак", oil: "Олива", seat: "Місце", heat_exchanger: "Тепло", pump: "Насос" };
+const SLOT_SHORT = { base: "Основа", tank: "Бак", oil: "Олива", seat: "Місце", heat_exchanger: "Тепло", pump: "Насос", frame: "Рама", pto: "КВП", cardan: "Вал" };
 const markSlots = (kt) => kt.slots.filter((s) => !s.required && !(kt.title_slots || []).includes(s.id));
 function presetExtras(p, kt) {
   const sel = p.selection, items = core.selectedItems(cat, kt, core.presetSelection(p, cat)).map((x) => x.item);
@@ -400,6 +401,37 @@ function choiceMarks(p, kt) {
     return o && v !== core.choiceDefault(cat, ch, items) ? o.title : null;
   }).filter(Boolean);
 }
+/** Cells of the kit being built: ticked as positions are chosen anywhere, the price on the right; a position with
+ *  variants opens its picks under the cells, a confirmed pick (or a position with one variant) gets the other frame. */
+function liveRow(marks) {
+  const sel = S.sel, keyOf = (s) => "slot:" + s.id, open = S.cellOpen && marks.some((s) => keyOf(s) === S.cellOpen) ? S.cellOpen : null;
+  const cell = (s) => {
+    const k = keyOf(s), on = !!sel.slots[s.id], many = on && hasVariants(k), ok = on && (!many || S.confirmed?.has(k)), inn = intoOf().includes(s.id);
+    const pick = slotPick(s);
+    return h("i", { class: [on ? "y" : "", ok ? "ok" : on ? "ask" : "", open === k ? "open" : "", !on && !pick ? "no" : ""].join(" "),
+      title: `${s.title}: ` + (on ? (inn ? "у складі дообладнання" : "є") + (many ? (ok ? " · вибір підтверджено" : " · оберіть варіант") : "") : pick ? "немає — клік додає" : "не підходить до комплекту"),
+      onclick: () => {
+        if (!on) { if (!pick) return; S.cellOpen = hasVariantsAfter(s, pick) ? k : null; setSlot(s.id, pick, false); return; }
+        if (many) { S.cellOpen = open === k ? null : k; renderFeatured(); return; }
+        setSlot(s.id, null);
+      } }, on ? "✓" : "·");
+  };
+  const total = lastQuote ? (lastQuote.total_uah ? uah(lastQuote.total_uah) + (lastQuote.complete === false ? " *" : "") : "за запитом") : "—";
+  const slot = open && marks.find((s) => keyOf(s) === open);
+  const panel = slot ? h("div", { class: "cell-pick" }, h("div", { class: "cp-h" }, h("b", {}, slot.title),
+    h("button", { class: "sm", onclick: () => { S.cellOpen = null; setSlot(slot.id, null); } }, "прибрати"),
+    h("button", { class: "sm", onclick: () => { S.cellOpen = null; confirmPos(open); renderFeatured(); renderTree(); } }, "так, як є")),
+    variantGroups(posVariants(open), () => { S.cellOpen = null; renderFeatured(); })) : null;
+  return h("div", { class: "rg-row live" + (S.preset ? "" : " on") },
+    h("span", { class: "lvl", title: "комплект, який ви зараз збираєте" }, "зараз"),
+    h("div", { class: "rg-mid" }, h("div", { class: "marks" }, marks.map(cell)),
+      h("div", { class: "meta" }, h("small", {}, S.preset ? "як у вибраному КП" : "поточний вибір · клік по клітинці — додати, варіант або прибрати"))),
+    h("b", { class: "price", title: lastQuote?.complete === false ? "частина позицій — за запитом" : "" }, total), panel);
+}
+function hasVariantsAfter(s, pick) {   // would the position, once added, have something to choose
+  const was = S.sel; S.sel = core.reconcileSelection(cat, S.kt.id, { ...was, slots: { ...was.slots, [s.id]: pick } }, s.id);
+  try { return hasVariants("slot:" + s.id); } finally { S.sel = was; }
+}
 function renderFeatured() {
   const box = $("#ready"); box.innerHTML = "";
   const kt = S.kt;
@@ -410,20 +442,26 @@ function renderFeatured() {
   const crOf = (p) => core.itemById(cat, p.selection.slots.crane);
   const gl = [...groups.values()].sort((a, b) => (crOf(b[0])?.featured ? 1 : 0) - (crOf(a[0])?.featured ? 1 : 0)
     || (crOf(a[0])?.model || "").localeCompare(crOf(b[0])?.model || "") || (a[0].selection.slots.trailer || "").localeCompare(b[0].selection.slots.trailer || ""));
+  // the current kit: a live row of cells at the top of its group (a group of its own when no KP has this crane and base)
+  const curKey = [S.sel.slots.crane, S.sel.slots.trailer, S.sel.slots.conversion].join("|");
+  if (!groups.has(curKey)) gl.unshift([{ _live: true, selection: { slots: { ...S.sel.slots } }, source: {} }]);
+  else gl.sort((a, b) => (presetKey(b[0]) === curKey ? 1 : 0) - (presetKey(a[0]) === curKey ? 1 : 0));
   for (const g of gl) {
+    const ref = g[0], live = ref._live ? !!g.splice(0, 1) : presetKey(ref) === curKey;
     g.forEach((p) => (p._n = presetExtras(p, kt)));
     g.sort((a, b) => a._n - b._n || (b.source.date || "").localeCompare(a.source.date || ""));
     const latest = [...g].sort((a, b) => (b.source.date || "").localeCompare(a.source.date || ""))[0];
-    const cr = crOf(g[0]), tr = core.itemById(cat, g[0].selection.slots.trailer || g[0].selection.slots.conversion || "");
+    const cr = crOf(ref), tr = core.itemById(cat, ref.selection.slots.trailer || ref.selection.slots.conversion || "");
     const photo = kt.id === "crane_kit" ? cr?.photo : tr?.photo || cr?.photo;
     const head = h("div", { class: "rg-head" + (cr?.featured ? " main" : "") }, photo ? lbImg(asset(photo), null, { alt: cr?.model || "" }) : h("span"),
-      h("b", {}, [tr?.model, cr?.model].filter(Boolean).join(" + ") || "без крана"), cr?.featured ? h("span", { class: "badge" }, "основний кран") : null);
+      h("b", {}, [tr?.model, cr?.model].filter(Boolean).join(" + ") || "без крана"), live && !g.length ? h("span", { class: "badge gray" }, "ще немає КП") : cr?.featured ? h("span", { class: "badge" }, "основний кран") : null);
     const rows = h("div", { class: "rg-rows" });
     if (marks.length) rows.append(h("div", { class: "rg-marks-h" }, h("span"), h("div", { class: "marks" }, marks.map((s) => h("i", { title: s.title }, SLOT_SHORT[s.id] || s.title.split(" ")[0]))), h("span")));
+    if (live) rows.append(liveRow(marks));
     for (const p of g) {
       const t = presetTotal(p), cm = choiceMarks(p, kt);
       rows.append(h("button", { class: "rg-row" + (S.preset === p.id ? " on" : ""), onclick: () => applyPreset(p) },
-        h("span", { class: "lvl", title: "кількість допів" }, p._n ? "+" + p._n : "база"),
+        h("span", { class: "lvl", title: "кількість опцій" }, p._n ? "+" + p._n : "база"),
         h("div", { class: "rg-mid" },
           marks.length ? h("div", { class: "marks" }, marks.map((s) => h("i", { class: p.selection.slots[s.id] ? "y" : "", title: s.title + (p.selection.slots[s.id] ? ": є" : ": немає") }, p.selection.slots[s.id] ? "✓" : "·"))) : null,
           h("div", { class: "meta" }, h("small", {}, (p.source.date ? "КП " + core.formatDate(p.source.date) : "без дати") + (cm.length ? " · " + cm.join(", ") : "")),
@@ -439,7 +477,6 @@ function renderFeatured() {
   ps.parentElement.hidden = ps.options.length < 2;
 }
 
-// ------------------------------------------------------------------ branch tree: base -> crane -> grapple -> valve -> extras
 function itemPriceText(it) {
   if (!it) return "";
   if (it.price?.mode !== "ref") return "за запитом";
@@ -466,6 +503,94 @@ function tnode({ photo, title, sub, mark, markCls = "", on, dis, why, onclick, c
     photo ? lbImg(asset(photo), null, { alt: title }) : h("div", { class: "ph" }, "фото"),
     h("div", { class: "tt" }, h("b", {}, title), sub ? h("small", {}, sub) : null, mark ? h("span", { class: "mk " + markCls }, mark) : null));
 }
+// variants of the chosen positions: the tree's «Варіанти» column and the cells of the current kit offer the same picks
+const CONV_CHOICE = (ch) => ch.slot === "conversion" && ch.options.some((o) => o.value === "conv");   // old per-position «у складі» switches: S.sel.into now
+const UNIT_PRESETS = { oil_90l: [90, 80] };
+const intoOf = () => S.sel.into || [];
+function confirmPos(key) { if (key) (S.confirmed ??= new Set()).add(key); }
+function confirmAll() {
+  S.confirmed = new Set([...markSlots(S.kt).filter((s) => S.sel.slots[s.id]).map((s) => "slot:" + s.id), ...S.sel.accessories.map((a) => "acc:" + a.id)]);
+}
+function changed() { S.preset = null; renderConf(); renderFeatured(); }
+function setSlot(slotId, val, conf) {
+  S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, slots: { ...S.sel.slots, [slotId]: val || null } }, slotId);
+  if (!val) S.confirmed?.delete("slot:" + slotId); else if (conf) confirmPos("slot:" + slotId);
+  changed();
+}
+function setChoice(id, v, key) { S.sel = { ...S.sel, choices: { ...S.sel.choices, [id]: v } }; confirmPos(key); changed(); }
+function setQty(itemId, v, key) { S.qty[itemId] = v; confirmPos(key); changed(); }
+function setInto(slotId, inside) {
+  const into = intoOf().filter((x) => x !== slotId);
+  if (inside) into.push(slotId);
+  const choices = { ...S.sel.choices };   // an old switch of this position back to «окремим рядком»: its price is not counted twice
+  for (const ch of S.kt.choices) if (CONV_CHOICE(ch) && choices[ch.id] === "conv" && ch.options.find((o) => o.value === "conv")?.excludes?.includes("slot:" + slotId)) choices[ch.id] = "row";
+  S.sel = { ...S.sel, choices, into }; confirmPos("slot:" + slotId); changed();
+}
+function setAcc(id, patch) {
+  const list = S.sel.accessories.filter((x) => x.id !== id), cur = S.sel.accessories.find((x) => x.id === id);
+  if (patch) list.push({ id, variant: null, price_uah: null, ...(cur || {}), ...patch });
+  S.sel = { ...S.sel, accessories: list };
+  if (patch) confirmPos("acc:" + id); else S.confirmed?.delete("acc:" + id);
+  changed();
+}
+const slotPick = (s) => { const cands = core.slotCandidates(cat, S.kt.id, s.id, S.sel); return (cands.find((c) => c.allowed && c.id === s.default) || cands.find((c) => c.allowed))?.id; };
+const shortLabel = (it, all) => { const t = it?.title || ""; const common = all.length > 1 ? commonPrefix(all.map((c) => c.item?.title || "")) : ""; return (common.length > 6 && t.length > common.length ? t.slice(common.length).trim() : itemLabel(it, all.map((c) => c.item))) || t; };
+function commonPrefix(list) { let p = list[0] || ""; for (const s of list) while (!s.startsWith(p)) p = p.slice(0, p.lastIndexOf(" ") > 0 ? p.lastIndexOf(" ") : p.length - 1); return p; }
+function choicePriceMark(o, items) { return core.choiceIsStandard(o, items) ? "базовий" : o.price_uah ? "+" + uah(o.price_uah) : o.on_request ? "доплата за запитом" : ""; }
+/** Groups of picks of a position ("slot:<id>" or "acc:<id>"): its variants, its choices, quantity, inside the conversion or separate. */
+function posVariants(key) {
+  const kt = S.kt, sel = S.sel, items = core.selectedItems(cat, kt, sel).map((x) => x.item), out = [];
+  if (key.startsWith("acc:")) {
+    const id = key.slice(4), a = core.accessoryById(cat, id), cur = sel.accessories.find((x) => x.id === id);
+    if (!a || !cur) return out;
+    const vs = core.accessoryVariants(cat, a, items);
+    if (vs.length > 1) out.push({ title: "Варіант", opts: vs.map((v) => ({ label: v.title, on: cur.variant === v.id, pick: () => setAcc(id, { variant: v.id }) })) });
+    if (a.max_qty > 1) out.push({ title: "Кількість", opts: Array.from({ length: a.max_qty }, (_, i) => ({ label: `${i + 1} шт`, on: (cur.qty || 1) === i + 1, pick: () => setAcc(id, { qty: i + 1 }) })) });
+    return out;
+  }
+  const sid = key.slice(5), cur = sel.slots[sid], slot = kt.slots.find((s) => s.id === sid);
+  if (!slot || !cur) return out;
+  const cands = core.slotCandidates(cat, kt.id, sid, sel).filter((c) => c.allowed || c.id === cur);
+  if (cands.length > 1) out.push({ title: "Варіант", opts: cands.map((c) => ({ label: shortLabel(c.item, cands), hint: itemPriceText(c.item), on: c.id === cur, pick: () => setSlot(sid, c.id, true) })) });
+  for (const ch of kt.choices.filter((c) => c.slot === sid && !CONV_CHOICE(c))) {
+    const v = sel.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
+    const opts = ch.options.filter((o) => core.choiceOptionFits(cat, o, items));
+    if (opts.length < 2) continue;
+    out.push({ title: ch.title, opts: opts.map((o) => { const why = core.choiceOptionBlock(cat, kt, o, sel, items);
+      return { label: o.title, hint: choicePriceMark(o, items), on: v === o.value, dis: !!why && v !== o.value, why, pick: () => setChoice(ch.id, o.value, key) }; }) });
+  }
+  const it = core.itemById(cat, cur);
+  if (it?.unit) {
+    const q = S.qty[it.id] ?? it.unit.default, pre = [...new Set([it.unit.default, ...(UNIT_PRESETS[it.id] || [])])];
+    out.push({ title: "Кількість", opts: pre.map((v) => ({ label: `${v} ${it.unit.name}`, on: q === v, pick: () => setQty(it.id, v, key) })),
+      input: { value: pre.includes(q) ? "" : q, unit: it.unit, set: (v) => setQty(it.id, v, key) } });
+  }
+  if (core.intoSlots(kt).includes(sid) && sel.slots.conversion) {
+    const inn = intoOf().includes(sid);
+    out.push({ title: "Як у КП", opts: [{ label: "окремо", on: !inn, pick: () => setInto(sid, false) }, { label: "у складі дообладнання", on: inn, pick: () => setInto(sid, true) }] });
+  }
+  return out;
+}
+/** Kit-level choices (brakes, wheels, drawbar…) and choices of required positions other than the crane. */
+function kitChoices() {
+  const kt = S.kt, items = core.selectedItems(cat, kt, S.sel).map((x) => x.item);
+  const opt = new Set(markSlots(kt).map((s) => s.id));
+  return kt.choices.filter((ch) => ch.slot !== "crane" && !CONV_CHOICE(ch) && !(ch.slot && opt.has(ch.slot)) && (!ch.slot || S.sel.slots[ch.slot])).map((ch) => {
+    const v = S.sel.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
+    return { title: ch.title, opts: ch.options.filter((o) => core.choiceOptionFits(cat, o, items)).map((o) => { const why = core.choiceOptionBlock(cat, kt, o, S.sel, items);
+      return { label: o.title, hint: choicePriceMark(o, items), on: v === o.value, dis: !!why && v !== o.value, why, pick: () => setChoice(ch.id, o.value) }; }) };
+  }).filter((g) => g.opts.length > 1);
+}
+const hasVariants = (key) => posVariants(key).some((g) => g.opts.length > 1 || g.input);
+function variantGroups(groups, after) {
+  return groups.map((g) => h("div", { class: "vg" }, h("small", {}, g.title),
+    h("div", { class: "mini" }, g.opts.map((o) => h("button", { class: o.on ? "on" : "", disabled: o.dis, title: o.why || o.hint || "",
+      onclick: (e) => { e.stopPropagation(); o.pick(); after?.(); } }, o.label)),
+      g.input ? h("label", { class: "own", onclick: (e) => e.stopPropagation() }, h("input", { type: "number", min: g.input.unit.min || 1, max: g.input.unit.max || "", placeholder: "своє", value: g.input.value,
+        onchange: (e) => { const v = num(e.target.value); if (v) { g.input.set(v); after?.(); } } }), g.input.unit.name) : null)));
+}
+
+// ------------------------------------------------------------------ branch tree: base -> crane -> grapple and valve -> options -> variants
 function renderTree() {
   const box = $("#tree"); if (!box) return; box.innerHTML = "";
   const kt = S.kt, sel = S.sel;
@@ -496,46 +621,56 @@ function renderTree() {
     if (!cs.required) nodes.push(tnode({ title: "без крана", on: !sel.slots.crane, onclick: () => setSlot("crane", null) }));
     cols.push(["Кран", nodes]);
   }
-  // 3. crane-bound choices (захват, розподільник)
-  const setChoice = (id, v) => { S.sel = { ...S.sel, choices: { ...S.sel.choices, [id]: v } }; S.preset = null; renderConf(); renderFeatured(); };
+  // 3. crane-bound choices in one column: захват, under it розподільник
   const optMark = (o) => core.choiceIsStandard(o, items) ? ["★ базовий", "std"] : o.price_uah ? ["+" + uah(o.price_uah), ""] : o.on_request ? ["доплата за запитом", "req"] : ["без доплати", ""];
-  const restChoices = [];
-  for (const ch of kt.choices) {
-    if (ch.slot && !sel.slots[ch.slot]) continue;
-    if (ch.slot !== "crane") { restChoices.push(ch); continue; }
-    const cur = sel.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
-    const nodes = ch.options.filter((o) => core.choiceOptionFits(cat, o, items)).map((o) => { const [m, mc] = optMark(o);
-      const why = core.choiceOptionBlock(cat, kt, o, sel, items);
-      return tnode({ photo: o.photo, title: o.title.replace(/ — .*$/, ""), sub: o.title.includes(" — ") ? o.title.replace(/^.*? — /, "") : "", mark: m, markCls: mc, on: cur === o.value,
-        dis: !!why && cur !== o.value, why, onclick: () => setChoice(ch.id, o.value) }); });
-    cols.push([ch.title.replace(/ \(.*\)$/, "").replace(/ крана$/, ""), nodes]);
+  const craneCh = kt.choices.filter((ch) => ch.slot === "crane" && sel.slots.crane);
+  if (craneCh.length) {
+    const nodes = [];
+    craneCh.forEach((ch, i) => {
+      if (i) nodes.push(h("div", { class: "tc-sub" }, ch.title.replace(/ \(.*\)$/, "").replace(/ крана$/, "")));
+      const cur = sel.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
+      for (const o of ch.options.filter((o) => core.choiceOptionFits(cat, o, items))) {
+        const [m, mc] = optMark(o), why = core.choiceOptionBlock(cat, kt, o, sel, items);
+        nodes.push(tnode({ photo: o.photo, title: o.title.replace(/ — .*$/, ""), sub: o.title.includes(" — ") ? o.title.replace(/^.*? — /, "") : "", mark: m, markCls: mc, on: cur === o.value,
+          dis: !!why && cur !== o.value, why, onclick: () => setChoice(ch.id, o.value) }));
+      }
+    });
+    cols.push([craneCh.map((ch) => ch.title.replace(/ \(.*\)$/, "").replace(/ крана$/, "")).join(" · "), nodes]);
   }
-  // 4. extras: optional positions (toggle) with their own choices under them, then the kit's other choices
-  const extras = [];
-  for (const s of markSlots(kt)) {
-    const cur = sel.slots[s.id];
-    const it = core.itemById(cat, cur || s.default || s.candidates[0]);
-    const cands = core.slotCandidates(cat, kt.id, s.id, sel);
-    const pick = (cands.find((c) => c.allowed && c.id === s.default) || cands.find((c) => c.allowed))?.id;
-    const node = tnode({ photo: it?.photo, title: s.title, mark: cur ? (s.priced ? "✓ " + itemPriceText(it) + " окремо" : "✓ в комплекті") : "+ " + itemPriceText(it), markCls: cur ? "std" : "",
-      on: !!cur, dis: !pick && !cur, cls: "tog", onclick: () => setSlot(s.id, cur ? null : pick) });
-    if (it?.unit) node.querySelector(".tt").append(h("label", { class: "tq", onclick: (e) => e.stopPropagation() }, h("input", { type: "number", min: it.unit.min || 1, max: it.unit.max || "", value: S.qty[it.id] ?? it.unit.default,
-      onchange: (e) => { S.qty[it.id] = num(e.target.value); if (!cur) setSlot(s.id, it.id); else { renderConf(); } } }), it.unit.name));
-    const subs = restChoices.filter((ch) => ch.slot === s.id);
-    extras.push(subs.length && cur ? h("div", { class: "tgrp" }, node, subs.map((ch) => miniChoice(ch, items, setChoice))) : node);
+  // 4. options: optional positions (toggle) and chosen accessories; in truck kits the ones «у складі дообладнання» in its group on top
+  const opts = [], keys = [], into = intoOf(), conv = core.itemById(cat, sel.slots.conversion || "");
+  const optNode = (s) => {
+    const cur = sel.slots[s.id], it = core.itemById(cat, cur || s.default || s.candidates[0]), pick = slotPick(s), inn = into.includes(s.id);
+    const node = tnode({ photo: it?.photo, title: s.title, mark: inn ? "✓ у складі дообладнання" : cur ? (s.priced ? "✓ " + itemPriceText(it) + " окремо" : "✓ в комплекті") : "+ " + itemPriceText(it),
+      markCls: cur ? "std" : "", on: !!cur, dis: !pick && !cur, cls: "tog", onclick: () => setSlot(s.id, cur ? null : pick, true) });
+    node.dataset.key = "slot:" + s.id;
+    if (cur) keys.push("slot:" + s.id);
+    return node;
+  };
+  if (conv && into.length) {
+    const inside = markSlots(kt).filter((s) => into.includes(s.id) && sel.slots[s.id]);
+    opts.push(h("div", { class: "tgrp conv" }, h("div", { class: "tg-t" }, "Дообладнання: " + (conv.model || conv.title)), inside.map(optNode)));
   }
-  for (const ch of restChoices.filter((c) => !c.slot || !markSlots(kt).some((s) => s.id === c.slot))) extras.push(h("div", { class: "tgrp solo" }, h("div", { class: "tg-t" }, ch.title), miniChoice(ch, items, setChoice)));
-  if (extras.length) cols.push(["Допи", extras]);
-  for (const [title, nodes] of cols) box.append(h("div", { class: "tcol" }, h("div", { class: "tc-h" }, title), h("div", { class: "tc-b" }, nodes)));
+  for (const s of markSlots(kt).filter((s) => !into.includes(s.id) || !sel.slots[s.id])) opts.push(optNode(s));
+  for (const a of sel.accessories) {
+    const def = core.accessoryById(cat, a.id); if (!def) continue;
+    const node = tnode({ photo: def.photo, title: def.title, mark: "✓ " + (a.price_uah ? uah(a.price_uah) : def.price?.mode === "ref" ? uah(def.price.uah) : "за запитом"), markCls: "std", on: true, cls: "tog",
+      why: "опція: клік — прибрати", onclick: () => setAcc(a.id, null) });
+    node.dataset.key = "acc:" + a.id; keys.push("acc:" + a.id); opts.push(node);
+  }
+  if (opts.length) cols.push(["Опції", opts]);
+  // 5. variants of what is chosen in the options, then the kit's own choices
+  const vars = [];
+  for (const k of keys) {
+    const g = posVariants(k); if (!g.length) continue;
+    const title = k.startsWith("acc:") ? core.accessoryById(cat, k.slice(4))?.title : kt.slots.find((s) => "slot:" + s.id === k)?.title;
+    vars.push(h("div", { class: "vcard" + (S.confirmed?.has(k) ? " ok" : ""), "data-for": k }, h("div", { class: "tg-t" }, title), variantGroups(g)));
+  }
+  const kc = kitChoices();
+  if (kc.length) vars.push(h("div", { class: "vcard kit" }, h("div", { class: "tg-t" }, "Комплект"), variantGroups(kc)));
+  if (vars.length) cols.push(["Варіанти", vars]);
+  for (const [title, nodes] of cols) box.append(h("div", { class: "tcol" + (title === "Варіанти" ? " vars" : "") }, h("div", { class: "tc-h" }, title), h("div", { class: "tc-b" }, nodes)));
   requestAnimationFrame(drawTreeLinks);
-}
-function miniChoice(ch, items, setChoice) {
-  const cur = S.sel.choices?.[ch.id] ?? core.choiceDefault(cat, ch, items);
-  return h("div", { class: "mini" }, ch.options.filter((o) => core.choiceOptionFits(cat, o, items)).map((o) => {
-    const why = core.choiceOptionBlock(cat, S.kt, o, S.sel, items);
-    return h("button", { class: cur === o.value ? "on" : "", disabled: !!why && cur !== o.value,
-      title: why || (o.price_uah ? "+" + uah(o.price_uah) : o.on_request && !core.choiceIsStandard(o, items) ? "доплата за запитом" : ""),
-      onclick: (e) => { e.stopPropagation(); setChoice(ch.id, o.value); } }, o.photo ? h("img", { src: asset(o.photo), alt: "" }) : null, o.title); }));
 }
 function drawTreeLinks() {
   const box = $("#tree"); if (!box) return;
@@ -546,26 +681,27 @@ function drawTreeLinks() {
   const r0 = box.getBoundingClientRect();
   const cols = $$(".tcol", box);
   const anchor = (el, side) => { const r = el.getBoundingClientRect(); return [side === "r" ? r.right - r0.left : r.left - r0.left, r.top - r0.top + Math.min(r.height / 2, 28)]; };
+  const link = (a, b, on) => {
+    const [x1, y1] = anchor(a, "r"), [x2, y2] = anchor(b, "l"), mx = (x1 + x2) / 2;
+    const p = document.createElementNS(NS, "path");
+    p.setAttribute("d", `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`); p.setAttribute("class", on ? "on" : "off"); svg.append(p);
+  };
   for (let i = 0; i < cols.length - 1; i++) {
-    const from = $(".tc-b > .tnode.on", cols[i]); if (!from) continue;
-    const [x1, y1] = anchor(from, "r");
+    if (cols[i + 1].classList.contains("vars")) {   // each chosen option to its own variants
+      for (const v of $$(".vcard[data-for]", cols[i + 1])) { const n = $(`.tnode[data-key="${v.dataset.for}"]`, cols[i]); if (n) link(n, v, true); }
+      const kit = $(".vcard.kit", cols[i + 1]), last = $$(".tc-b .tnode.on", cols[i]).pop();
+      if (kit && last && !$$(".vcard[data-for]", cols[i + 1]).length) link(last, kit, true);
+      continue;
+    }
+    const from = $$(".tc-b > .tnode.on", cols[i]).pop(); if (!from) continue;
     for (const to of $$(".tc-b > .tnode, .tc-b > .tgrp", cols[i + 1])) {
       if (to.classList.contains("dis")) continue;
-      const on = to.classList.contains("on") || to.classList.contains("solo") || !!to.querySelector(":scope > .tnode.on");
-      const [x2, y2] = anchor(to, "l"), mx = (x1 + x2) / 2;
-      const p = document.createElementNS(NS, "path");
-      p.setAttribute("d", `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`);
-      p.setAttribute("class", on ? "on" : "off");
-      svg.append(p);
+      link(from, to, to.classList.contains("on") || to.classList.contains("conv") || !!to.querySelector(":scope > .tnode.on"));
     }
   }
   box.append(svg);
 }
 window.addEventListener("resize", () => requestAnimationFrame(drawTreeLinks));
-function setSlot(slotId, val) {
-  S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, slots: { ...S.sel.slots, [slotId]: val || null } }, slotId);
-  S.preset = null; renderConf(); renderFeatured();
-}
 function renderConf() {
   if (!S.kt) return;
   S.kt = core.kitTypeById(cat, S.kt.id);
@@ -595,13 +731,13 @@ function renderConf() {
     const on = !!cur;
     const cbx = h("input", { type: "checkbox", checked: on, disabled: slot.required, onchange: (e) => setSlot(slot.id, e.target.checked ? (cands.find((c) => c.allowed && c.id === slot.default) || cands.find((c) => c.allowed))?.id : null) });
     const ok = cands.filter((c) => c.allowed || c.id === cur);   // incompatible variants (e.g. a base for another crane) are not offered
-    const sel = ok.length > 1 ? h("select", { onchange: (e) => setSlot(slot.id, e.target.value) },
+    const sel = ok.length > 1 ? h("select", { onchange: (e) => setSlot(slot.id, e.target.value, true) },
       ok.map((c) => h("option", { value: c.id }, itemLabel(c.item, ok.map((x) => x.item)) || c.id))) : null;
     if (sel) sel.value = cur || "";
     const unit = it?.unit;
     // litres (or other units) are always editable; typing a quantity also adds the position
     const qty = unit ? h("label", { class: "inline", style: "margin:0", title: "кількість, " + unit.name }, h("input", { type: "number", class: "qty", min: unit.min || 1, max: unit.max || "", step: 1, value: S.qty[it.id] ?? unit.default,
-      onchange: (e) => { S.qty[it.id] = num(e.target.value); if (!on) setSlot(slot.id, it.id); else { renderQuote(); renderTree(); } } }), unit.name) : null;
+      onchange: (e) => { S.qty[it.id] = num(e.target.value); confirmPos("slot:" + slot.id); if (!on) setSlot(slot.id, it.id); else changed(); } }), unit.name) : null;
     box.append(h("div", { class: "slot" + (on ? " on" : "") }, cbx,
       it?.photo ? lbImg(asset(it.photo), null, { alt: it.title }) : h("span"),
       h("div", {}, h("div", { class: "t" }, slot.title, slot.priced ? h("span", { class: "badge gray" }, "ціна окремо") : null), h("small", {}, it ? core.itemDesc(S.kt, it, S.sel) : "")),
@@ -611,9 +747,9 @@ function renderConf() {
   const chb = $("#choices"); chb.innerHTML = "";
   const items = core.selectedItems(cat, S.kt, S.sel).map((x) => x.item);
   for (const ch of S.kt.choices) {
-    if (ch.slot && !S.sel.slots[ch.slot]) continue;
+    if ((ch.slot && !S.sel.slots[ch.slot]) || CONV_CHOICE(ch)) continue;   // «у складі дообладнання»: the switch of each position
     const opts = ch.options.filter((o) => core.choiceOptionFits(cat, o, items));
-    const sel = h("select", { onchange: (e) => { S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, choices: { ...S.sel.choices, [ch.id]: e.target.value } }); S.preset = null; renderConf(); renderFeatured(); } },
+    const sel = h("select", { onchange: (e) => { S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, choices: { ...S.sel.choices, [ch.id]: e.target.value } }); if (ch.slot) confirmPos("slot:" + ch.slot); changed(); } },
       opts.map((o) => { const why = core.choiceOptionBlock(cat, S.kt, o, S.sel, items);
         return h("option", { value: o.value, disabled: !!why && (S.sel.choices?.[ch.id] ?? ch.default) !== o.value },
           o.title + (core.choiceIsStandard(o, items) ? " — базовий" : o.price_uah ? ` (+${core.formatUah(o.price_uah)})` : o.on_request ? " — доплата за запитом" : "") + (why ? ` (${why})` : "")); }));
@@ -626,8 +762,23 @@ function renderAccs() {
   const box = $("#accs"); box.innerHTML = "";
   const chosen = new Map(S.sel.accessories.map((a) => [a.id, a]));
   const all = core.kitAccessories(cat, S.kt.id, S.sel);
+  const hid = hiddenOpts(S.kt.id), hidden = [];
+  const hideBtn = (key) => h("button", { class: "sm ghost hide-opt", title: "сховати зі списку й зі сторінки «Додаткові опції» в КП (можна повернути внизу)", onclick: () => hideOpt(key, true) }, "сховати");
+  // positions of the kit not chosen in the branches or the kit card: offered here too (and on the KP options page)
+  const into = intoOf();
+  const free = markSlots(S.kt).filter((sl) => !S.sel.slots[sl.id] && !into.includes(sl.id));
+  const shown = free.filter((sl) => !hid.includes("slot:" + sl.id));
+  free.filter((sl) => hid.includes("slot:" + sl.id)).forEach((sl) => hidden.push({ key: "slot:" + sl.id, title: sl.title }));
+  if (shown.length) box.append(h("div", { class: "acc-grp" }, "Позиції комплекту (не обрані)"));
+  for (const sl of shown) {
+    const pick = slotPick(sl), it = core.itemById(cat, pick || sl.default || sl.candidates[0]);
+    box.append(h("div", { class: "acc" + (pick ? "" : " bad") }, h("input", { type: "checkbox", disabled: !pick, onchange: () => setSlot(sl.id, pick, true) }),
+      it?.photo ? lbImg(asset(it.photo), null, { alt: sl.title }) : h("span"),
+      h("div", {}, h("b", {}, sl.title), h("small", {}, it ? core.itemDesc(S.kt, it, S.sel) || it.title : ""), pick ? null : h("small", {}, "не підходить до цього комплекту")),
+      h("div", { class: "num" }, h("small", {}, itemPriceText(it)), hideBtn("slot:" + sl.id))));
+  }
   for (const g of Object.keys(GROUPS)) {
-    const list = all.filter((x) => x.accessory.group === g);
+    const list = all.filter((x) => x.accessory.group === g && !(hid.includes(x.accessory.id) && !chosen.has(x.accessory.id) && hidden.push({ key: x.accessory.id, title: x.accessory.title })));
     if (!list.length) continue;
     box.append(h("div", { class: "acc-grp" }, GROUPS[g]));
     for (const ka of list) {
@@ -637,7 +788,7 @@ function renderAccs() {
         const list2 = S.sel.accessories.filter((x) => x.id !== a.id);
         const cur = { id: a.id, ...(on || {}), ...patch };
         if (cur.on !== false) list2.push({ id: cur.id, variant: cur.variant ?? null, price_uah: cur.price_uah ?? null, ...(cur.qty > 1 ? { qty: cur.qty } : {}) });
-        S.sel = { ...S.sel, accessories: list2 }; renderAccs(); renderQuote();
+        S.sel = { ...S.sel, accessories: list2 }; if (cur.on !== false) confirmPos("acc:" + a.id); renderAccs(); renderQuote(); renderTree();
       };
       const vs = ka.variants.length ? h("select", { onchange: (e) => upd({ variant: e.target.value || null }) },
         h("option", { value: "" }, "варіант…"), ka.variants.map((v) => h("option", { value: v.id }, v.title))) : null;
@@ -650,9 +801,20 @@ function renderAccs() {
         a.photo ? lbImg(asset(a.photo), null, { alt: a.title }) : h("span"),
         h("div", {}, h("b", {}, a.title), (a.base_for || []).includes(S.kt.id) ? h("span", { class: "badge" }, "базова") : null, a.kp_uses ? h("span", { class: "badge gray", title: "скільки ваших КП згадують цю опцію" }, `у ${a.kp_uses} КП`) : null, h("small", {}, ka.desc), on && vs ? vs : null, on && qs ? qs : null,
           ka.status === "unconfirmed" ? h("small", {}, "сумісність не підтверджена") : null),
-        h("div", { class: "num" }, on ? pin : h("small", {}, p ? uah(p) + (a.max_qty > 1 ? " / шт" : "") : "за запитом"))));
+        h("div", { class: "num" }, on ? pin : h("small", {}, p ? uah(p) + (a.max_qty > 1 ? " / шт" : "") : "за запитом"), on ? null : hideBtn(a.id))));
     }
   }
+  if (hidden.length) box.append(h("details", { class: "acc-hidden" }, h("summary", {}, `Приховані опції (${hidden.length})`),
+    hidden.map((x) => h("div", { class: "acc-h" }, h("span", {}, x.title), h("button", { class: "sm", onclick: () => hideOpt(x.key, false) }, "повернути")))));
+}
+/** Options page of the KP: on or off, prices or «за запитом» (to choose from), without the options hidden for this kit. */
+function offerMeta(on, prices, ktId) { return { offer_accessories: on, offer_prices: prices, offer_hidden: hiddenOpts(ktId) }; }
+const hiddenOpts = (ktId) => admin.hidden_opts?.[ktId] || [];
+async function hideOpt(key, hide) {
+  const H = (admin.hidden_opts ??= {}), list = (H[S.kt.id] || []).filter((x) => x !== key);
+  if (hide) list.push(key);
+  H[S.kt.id] = list; renderAccs();
+  await saveAdmin(true, (hide ? "сховано опцію: " : "повернуто опцію: ") + key);
 }
 function quoteInput() {
   const manual = Object.fromEntries(Object.entries(S.manual).filter(([, v]) => v != null));
@@ -681,6 +843,7 @@ function renderQuote() {
   try { q = core.quote(cat, settings, { eur: null, source: "none" }, quoteInput()); }
   catch (e) { lastQuote = null; $("#total").textContent = "—"; for (const m of e.errors || [String(e)]) warn.append(h("li", {}, m)); return; }
   lastQuote = q;
+  const lp = $(".rg-row.live .price"); if (lp) lp.textContent = q.total_uah ? uah(q.total_uah) + (q.complete === false ? " *" : "") : "за запитом";
   const bundle = q.price_display === "bundle";
   for (const r of q.rows) {
     if (r.kind === "extra") {   // own positions: edited in their block under the options
@@ -843,10 +1006,10 @@ async function generate(asNew) {
   try {
     spec = specFrom(lastQuote, { number: $("#kpNumber").value || "0001",
       client: { name: $("#client").value.trim(), contact: $("#clientContact").value.trim() }, show_client: $("#clientShow").checked,
-      offer_accessories: $("#offerAcc").checked, edits: S.edits, base: S.basePreset }, $("#styleChips").dataset.v || "dark");
+      ...offerMeta($("#offerAcc").checked, !!$("#offerPrices").value, S.kt.id), edits: S.edits, base: S.basePreset }, $("#styleChips").dataset.v || "dark");
   } catch (e) { return toast((e.errors || [String(e)])[0]); }
   const state = { kit_type: S.kt.id, selection: S.sel, manual: S.manual, kitPrice: S.kitPrice, discount: S.discount, qty: S.qty, preset: S.preset,
-    number: $("#kpNumber").value, date: $("#kpDate").value, client: $("#client").value, contact: $("#clientContact").value, style: spec.style, offerAcc: $("#offerAcc").checked, clientShow: $("#clientShow").checked,
+    number: $("#kpNumber").value, date: $("#kpDate").value, client: $("#client").value, contact: $("#clientContact").value, style: spec.style, offerAcc: $("#offerAcc").checked, offerPrices: !!$("#offerPrices").value, clientShow: $("#clientShow").checked,
     extras: S.extras.filter((x) => x.title?.trim()), itemized: S.itemized, edits: S.edits, editLog: S.editLog, basePreset: S.basePreset };
   const btn = $("#gen"), res = $("#genResult");
   btn.disabled = true; $("#genNew").disabled = true; btn.innerHTML = '<span class="spin"></span>Створюю КП… (PDF — до хвилини)'; res.innerHTML = "";
@@ -888,10 +1051,11 @@ function loadState(entry) {
   S.sel = core.reconcileSelection(cat, st.kit_type, st.selection);
   Object.assign(S, { manual: st.manual || {}, kitPrice: st.kitPrice ?? null, discount: st.discount || 0, qty: st.qty || {}, preset: st.preset || null, historyId: entry.id,
     extras: structuredClone(st.extras || []), itemized: !!st.itemized, edits: structuredClone(st.edits || null), editLog: structuredClone(st.editLog || {}),
-    basePreset: st.basePreset || st.preset || null });
+    basePreset: st.basePreset || st.preset || null, cellOpen: null });
+  confirmAll();
   $("#kpNumber").value = st.number || entry.number || ""; $("#kpDate").value = st.date || core.todayIso();
   $("#client").value = st.client || ""; $("#clientContact").value = st.contact || ""; $("#discount").value = S.discount;
-  $("#offerAcc").checked = st.offerAcc === true; $("#clientShow").checked = st.clientShow !== false; $("#styleChips").dataset.v = st.style || entry.style; $("#genResult").innerHTML = "";
+  $("#offerAcc").checked = st.offerAcc === true; $("#offerPrices").value = st.offerPrices ? "1" : ""; $("#clientShow").checked = st.clientShow !== false; $("#styleChips").dataset.v = st.style || entry.style; $("#genResult").innerHTML = "";
   tab("conf"); editBanner(); editorBadge();
 }
 
@@ -1850,7 +2014,7 @@ function recalcEntry(e) {
 async function regenerateEntry(e, q, sel) {
   const st = e.state;
   const spec = specFrom(q, { number: st.number || e.number || "0001", client: { name: st.client || e.client || "", contact: st.contact || e.contact || "" },
-    show_client: st.clientShow !== false, offer_accessories: st.offerAcc === true, edits: st.edits || null, base: st.basePreset || null }, st.style || e.style || admin.style || "dark");
+    show_client: st.clientShow !== false, ...offerMeta(st.offerAcc === true, !!st.offerPrices, st.kit_type), edits: st.edits || null, base: st.basePreset || null }, st.style || e.style || admin.style || "dark");
   const r = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spec, state: { ...st, selection: sel || st.selection }, history_id: e.id }) });
   if (!r.pptx) throw new Error((r.messages || ["КП не створено"]).slice(-1)[0]);
   return r;
@@ -2547,7 +2711,7 @@ const edStyle = () => $("#styleChips").dataset.v || admin.style || "dark";
 const edStyleInfo = () => B.styles.find((s) => s.id === edStyle());
 function edMeta() {
   return { number: $("#kpNumber").value || "0001", client: { name: $("#client").value.trim(), contact: $("#clientContact").value.trim() },
-    show_client: $("#clientShow").checked, offer_accessories: $("#offerAcc").checked, edits: S.edits, base: S.basePreset };
+    show_client: $("#clientShow").checked, ...offerMeta($("#offerAcc").checked, !!$("#offerPrices").value, S.kt.id), edits: S.edits, base: S.basePreset };
 }
 function edCount() { return Object.keys(S.editLog || {}).length; }
 function editorBadge() {

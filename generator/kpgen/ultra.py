@@ -235,8 +235,8 @@ class Deck:
 
     @staticmethod
     def box(s, x, y, w, h, fill=CARD, line=None, r=0.16, lw=0.75):
-        sh = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE if r else MSO_SHAPE.RECTANGLE, I(x), I(y), I(w), I(h))
-        if r: sh.adjustments[0] = min(0.5, r / min(w, h))
+        sh = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE if r else MSO_SHAPE.RECTANGLE, I(x), I(y), I(max(0, w)), I(max(0, h)))
+        if r and min(w, h) > 0: sh.adjustments[0] = min(0.5, r / min(w, h))
         if fill is None: sh.fill.background()
         else: sh.fill.solid(); sh.fill.fore_color.rgb = rgb(fill)
         if line: sh.line.color.rgb = rgb(line); sh.line.width = Pt(lw)
@@ -246,7 +246,7 @@ class Deck:
 
     @staticmethod
     def text(s, x, y, w, h, paras, size=11, color=WHITE, bold=False, align='l', anchor='t', spacing=1.1, font='Arial', track=None):
-        tb = s.shapes.add_textbox(I(x), I(y), I(w), I(h)); tf = tb.text_frame; tf.word_wrap = True
+        tb = s.shapes.add_textbox(I(x), I(y), I(max(0, w)), I(max(0, h))); tf = tb.text_frame; tf.word_wrap = True
         tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
         tf.vertical_anchor = {'t': MSO_ANCHOR.TOP, 'm': MSO_ANCHOR.MIDDLE, 'b': MSO_ANCHOR.BOTTOM}[anchor]
         if isinstance(paras, str): paras = [paras]
@@ -263,7 +263,7 @@ class Deck:
 
     @staticmethod
     def img(s, data, x, y, w=None, h=None, r=None):
-        pic = s.shapes.add_picture(io.BytesIO(data), I(x), I(y), I(w) if w else None, I(h) if h else None)
+        pic = s.shapes.add_picture(io.BytesIO(data), I(x), I(y), I(max(0.01, w)) if w else None, I(max(0.01, h)) if h else None)
         if r:
             geom = pic._element.spPr.find(qn('a:prstGeom')); geom.set('prst', 'roundRect')
             av = geom.find(qn('a:avLst'))

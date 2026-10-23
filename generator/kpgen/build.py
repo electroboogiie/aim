@@ -22,7 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.normpath(os.path.join(HERE, '..', 'templates', 'KP_2_v3.pptx'))
 CM = 1 / 2.54
 
-GROUPS = {'crane': 'ДЛЯ КРАНА', 'trailer': 'ДЛЯ ПРИЧЕПА'}
+GROUPS = {'kit': 'ДО КОМПЛЕКТУ', 'crane': 'ДЛЯ КРАНА', 'trailer': 'ДЛЯ ПРИЧЕПА', 'truck': 'ДЛЯ ВАНТАЖІВКИ'}
 NPL_CHIPS = ['Гальма на вибір', 'Колеса 400/60-15.5', 'Колеса 500/50-17', 'Колеса 550/45-22.5',
              'Кількість коників', 'Колір на замовлення', 'Опції для крана: с. {opt}', 'Опції для причепа: с. {opt}']
 OPT_TITLE_CHARS = 22
@@ -626,7 +626,7 @@ class Engine:
                 geom(title, x + 0.16, y + th - 1.06, tw - 0.32, 0.36); put(title, row['title']); set_size(title, 850 if len(row['title']) <= 40 else 750)
                 geom(desc, x + 0.16, y + th - 0.68, tw - 0.32, 0.38); put(desc, row['desc']); set_size(desc, 600)
             geom(price, x + 0.16, y + th - 0.30, tw - 0.32, 0.24); put(price, row['price_text']); set_size(price, 1100)
-            if im is None: remove(pic)
+            if im is None or ph - 0.1 < 0.25: remove(pic)   # 13+ positions: the photo gives way to the texts in low tiles
             else:
                 if keep != proto[1].shape_id: set_image(pic, self.encoded(im, data))
                 fit(pic, im, (I(x + 0.16), I(y + 0.36), I(tw - 0.32), I(ph - 0.1)))
@@ -671,6 +671,8 @@ class Engine:
                     continue
                 wide = len(group) < 4   # title in up to two lines, description in up to three (wide) or five (quarter) lines
                 lh = (0.86 if tight else 1.02 + 0.12 * max(0, dl - 2)) if wide else 1.28
+                top = 0.36 if mod else 0.18
+                lh = max(0.86 if wide else 1.0, min(lh, h - top - 0.1 - 0.45))   # long descriptions never squeeze the photo below 0.45"
                 geom(line, x + 0.16, y + h - lh, w - 0.32, 0)
                 geom(title, x + 0.16, y + h - lh + 0.06, w - 0.32, 0.38)
                 if wide: set_size(title, 950 if len(row['title']) <= 30 else 850)
@@ -679,8 +681,9 @@ class Engine:
                 set_size(desc, 700 if wide else 600)
                 geom(price, x + 0.16, y + h - 0.30, w - 0.32, 0.24); set_size(price, 1100)
                 if keep != proto[1].shape_id: set_image(pic, self.encoded(im, data))
-                top = 0.36 if mod else 0.18
-                fit(pic, im, (I(x + 0.16), I(y + top), I(w - 0.32), I(h - lh - top - 0.1)))
+                ph = h - lh - top - 0.1
+                if ph < 0.25: remove(pic); continue   # no room left for a photo in such a low tile
+                fit(pic, im, (I(x + 0.16), I(y + top), I(w - 0.32), I(ph)))
             y += h + gap
         for slot in slots.values():
             for i in slot: remove(by_id(s, i))
@@ -739,6 +742,8 @@ class Engine:
             dd = clone(s, P['desc']); geom(dd, x + 0.14, y + 2.14, cw - 0.28, 0.45); put(dd, a['desc'])
         note = clone(s, P['desc']); geom(note, 0.45, 10.74, 7.37, 0.4)
         text = self.spec.get('accessories_note') or (NOTE_NPL if self.npl else NOTE_TRL if self.trl else NOTE_CRANE)
+        if any(a['price_text'] != 'ціна за запитом' for a in accs):   # cards with prices: the note says what the prices are
+            text = text.replace('Ціни — за запитом', 'Ціни — станом на дату КП (без ціни — за запитом)')
         if len(accs) > 9:
             text += ' Також на замовлення: ' + ', '.join(a['title'] for a in accs[9:]) + '.'
         put(note, text)

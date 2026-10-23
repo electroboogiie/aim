@@ -102,7 +102,14 @@ function cloneSelection(s) {
         slots: { ...(s.slots ?? {}) },
         choices: { ...(s.choices ?? {}) },
         accessories: (s.accessories ?? []).map((a) => ({ ...a })),
+        ...(Array.isArray(s.into) && s.into.length ? { into: [...s.into] } : {}),
     };
+}
+/** Slots that can go inside the conversion row: optional positions of a kit that has one (not the crane). */
+export function intoSlots(kitType) {
+    if (!kitType.slots.some((x) => x.id === "conversion"))
+        return [];
+    return kitType.slots.filter((x) => !x.required && x.id !== "crane" && x.id !== "conversion").map((x) => x.id);
 }
 /** Every slot present (missing ones are empty), missing choices get their default (with the catalog: for the items). */
 export function normalizeSelection(kitType, selection, catalog) {
@@ -114,7 +121,9 @@ export function normalizeSelection(kitType, selection, catalog) {
     const choices = {};
     for (const ch of kitType.choices)
         choices[ch.id] = s.choices[ch.id] ?? (catalog ? choiceDefault(catalog, ch, items) : ch.default);
-    return { slots, choices, accessories: s.accessories };
+    const ok = intoSlots(kitType);
+    const into = (s.into ?? []).filter((x, i, a) => ok.includes(x) && !!slots[x] && a.indexOf(x) === i);
+    return { slots, choices, accessories: s.accessories, ...(into.length ? { into } : {}) };
 }
 /** A copy of the preset's selection; with the catalog it is also normalized for its kit type. */
 export function presetSelection(preset, catalog) {

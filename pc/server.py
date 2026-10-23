@@ -250,6 +250,7 @@ def generate(body):
     rel = lambda p: '/out/' + os.path.relpath(p, OUT).replace(os.sep, '/') if p else None
     res.update(pptx=rel(last.get('pptx')), pdf=rel(last.get('pdf')), pages=last.get('pages'))
     if r.returncode not in (0, 3) and not lines: res['messages'] = r.stderr.splitlines()[-6:]
+    if r.returncode not in (0, 3): log_failure(spec, r.stderr)
     if not res['pptx']: return res
     entry = dict(id=os.path.basename(out), time=time.strftime('%d.%m.%Y %H:%M'), date=spec.get('date'), number=spec.get('number'),
                  title=spec.get('title'), kit=[r_.get('title') for r_ in spec.get('rows') or []],
@@ -268,6 +269,17 @@ def generate(body):
     res['history_id'] = entry['id']
     threading.Thread(target=cover_png, args=(entry['id'], last['pptx']), daemon=True).start()
     return res
+
+
+def log_failure(spec, stderr):
+    """A KP that did not build: its spec and the generator's full error go to data/errors (to send for a fix)."""
+    try:
+        d = os.path.join(DATA, 'errors'); os.makedirs(d, exist_ok=True)
+        files = sorted(os.listdir(d))
+        for f in files[:-30]: os.remove(os.path.join(d, f))   # the last 30 kept
+        with open(os.path.join(d, time.strftime('%Y%m%d-%H%M%S') + '.txt'), 'w', encoding='utf-8') as f:
+            f.write(stderr + '\n\n' + json.dumps(spec, ensure_ascii=False, indent=1))
+    except OSError: pass
 
 
 PAGES_LOCK = threading.Lock()   # one page preview at a time: each runs LibreOffice over every page
@@ -306,7 +318,7 @@ def page_preview(body):
         except (ValueError, IndexError): last = {}
         if r.returncode or not last.get('pptx'):
             msgs = [l.replace('kpgen: ', '') for l in r.stderr.splitlines() if l.startswith('kpgen:')] or r.stderr.splitlines()[-3:]
-            shutil.rmtree(out, ignore_errors=True)
+            shutil.rmtree(out, ignore_errors=True); log_failure(spec, r.stderr)
             raise ValueError(msgs[-1] if msgs else 'КП не зібрано')
         zones = read_json(os.path.splitext(last['pptx'])[0] + '.zones.json', {'pages': []})
         from kpgen.pdf import pages_png, PdfError

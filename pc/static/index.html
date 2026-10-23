@@ -31,7 +31,7 @@
         <label class="inline other-presets">Архів КП <select id="preset"><option value="">— обрати —</option></select></label>
       </div>
       <div class="card tree-card">
-        <div class="card-head"><h2>Збірка гілками</h2><span class="hint">основа → кран → захват → розподільник → допи · клік по фото — перегляд</span></div>
+        <div class="card-head"><h2>Збірка гілками</h2><span class="hint">основа → кран → захват і розподільник → опції → варіанти · клік по фото — перегляд</span></div>
         <div class="tree-scroll"><div id="tree" class="tree"></div></div>
       </div>
     </div>
@@ -46,8 +46,9 @@
         </div>
         <div class="card">
           <div class="card-head"><h2><span class="step">2</span>Додаткові опції</h2>
-            <label class="chk" title="окрема сторінка з картками опцій; без неї обрані опції й так ідуть рядками у вартість"><input type="checkbox" id="offerAcc"> сторінка «Додаткові опції» в КП</label></div>
-          <p class="hint">Позначені опції з ціною додаються рядком у вартість. Без ціни — «ціна за запитом».</p>
+            <div class="offer"><label class="chk" title="окрема сторінка з картками опцій; без неї обрані опції й так ідуть рядками у вартість"><input type="checkbox" id="offerAcc"> сторінка «Додаткові опції» в КП</label>
+            <select id="offerPrices" class="sm" title="як показати на сторінці опції, які не обрано"><option value="">на вибір, ціна за запитом</option><option value="1">з цінами</option></select></div></div>
+          <p class="hint">Позначені опції з ціною додаються рядком у вартість. Без ціни — «ціна за запитом». Усе, що не обрано в гілках чи комплекті, є в цьому списку і йде на сторінку «Додаткові опції» в КП. Непотрібне зараз — «сховати», повертається внизу списку.</p>
           <div id="accs" class="accs"></div>
           <div class="sub-head"><h3>Свої позиції (не з каталогу)</h3>
             <span class="hint">напр. «Монтажні роботи»: назва, опис, ціна — рядок у вартості й плитка в КП</span></div>
