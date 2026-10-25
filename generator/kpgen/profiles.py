@@ -121,7 +121,7 @@ NPL10 = dict(
                ('Аутригери V-типу, підсилений балансир', 'так', ''), ('Поворотний причіпний механізм, автономна гідравліка', 'так', ''),
                ('Решітка огорожі, освітлення, номерна рамка, місце оператора', 'так', '')],
     drawing_note='* Креслення відповідають стандартному розміру. Габаритні та конструктивні розміри можуть змінюватися за погодженням із замовником.',
-    side='npl/npl10_side.png', front='npl/npl10_front.png', cutout='npl/npl10_cutout.png',
+    side='npl/npl10_side.png', front='npl/npl10_front.png', cutout='npl/npl10_render.png',
     p2_photo=('bmf/forest_trailer_work.jpg', 0.55, 0.5),   # bmf.ee, loaded trailer in a pine forest
 )
 

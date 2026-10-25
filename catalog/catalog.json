@@ -389,7 +389,7 @@
    "price": {
     "mode": "on_request"
    },
-   "photo": "npl/npl10_cutout.png",
+   "photo": "npl/npl10_render.png",
    "kp_profile": null,
    "source": "Таблиця «Технічні характеристики» і опис: drive_kp/КП НПЛ-10+750 (18.05.2026).pptx, reference/kp/kp_text.md: CP/READY/КП НПЛ-10+650.pptx (18.05.2026) і CP/READY/КП НПЛ-10+720 2909.pptx (29.09.2026). Сумісні крани — з опису НПЛ-10 у тих самих КП. Окремо НПЛ-10 у КП не продавали: ціна лише комплекту з краном (bundles).",
    "needs_confirmation": [

@@ -38,7 +38,7 @@ PHOTOS = {
 }
 # НПЛ-10 kits: the user's photos and drawings (from their «НПЛ-10 Heavy Label» design and KPs)
 NPL = dict(photo=('prod/npl10_tractor.png', 0.5, 0.55), end=('npl/npl10_workshop_hd.jpg', 0.45, 0.3),
-           cutout='npl/npl10_crane_cutout.png', side='npl/npl10_dwg_side.png', rear='npl/npl10_dwg_rear.png')
+           cutout='npl/npl10_render.png', side='npl/npl10_dwg_side.png', rear='npl/npl10_dwg_rear.png')
 # truck kits: the user's photos of the conversion (КП «КАМАЗ + 750») and what it includes
 TRUCK_PH = dict(photo=('prod/truck_conversion.png', 0.5, 0.5), end=('prod/truck_conversion.png', 0.55, 0.5))
 TRUCK_TILES = [('Бортова платформа', '{stakes} стійки під сортименти'), ('Рама {wall} мм', 'довжина {length} м'),
