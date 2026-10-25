@@ -39,6 +39,8 @@ from kpgen.profiles import PROFILES, NPL10, TRAILERS         # noqa: E402
 
 LOCK = threading.Lock()          # admin.json writes and in-process introspection (the engine has global state)
 IMG_EXT = {'.jpg', '.jpeg', '.png', '.webp'}
+mimetypes.add_type('application/manifest+json', '.webmanifest')
+PHONE_OPEN = ('/login', '/login.html', '/manifest.webmanifest', '/sw.js')   # served on the phone entrance before the PIN
 
 
 def read_json(path, default):
@@ -363,6 +365,7 @@ def xls_to_xlsx(name, data):
 
 class H(BaseHTTPRequestHandler):
     server_version = 'KP-PC/1'
+    need_pin = False      # the PC's own entrance (127.0.0.1); PhoneH below is the one for phones
 
     def log_message(self, fmt, *a): sys.stderr.write('%s %s\n' % (self.command, self.path))
 
@@ -377,7 +380,7 @@ class H(BaseHTTPRequestHandler):
     def file(self, path, cache=False, download=False):
         if not path or not os.path.isfile(path): return self.send(404, {'error': 'Файл не знайдено'})
         ctype = mimetypes.guess_type(path)[0] or 'application/octet-stream'
-        if path.endswith('.js'): ctype = 'text/javascript; charset=utf-8'
+        if path.endswith(('.js', '.mjs')): ctype = 'text/javascript; charset=utf-8'
         with open(path, 'rb') as f: data = f.read()
         self.send_response(200); self.send_header('Content-Type', ctype); self.send_header('Content-Length', str(len(data)))
         self.send_header('Cache-Control', 'max-age=3600' if cache else 'no-store')
@@ -388,9 +391,42 @@ class H(BaseHTTPRequestHandler):
         n = int(self.headers.get('Content-Length') or 0)
         return self.rfile.read(n) if n else b''
 
+    def client_ip(self):
+        ip = self.client_address[0]
+        return (self.headers.get('Cf-Connecting-Ip') or ip) if ip in ('127.0.0.1', '::1') else ip
+
+    def gate(self):
+        """Phone entrance: the PIN page and the PWA files are open, everything else needs the PIN cookie. True = answered here."""
+        if not self.need_pin: return False
+        p = unquote(urlparse(self.path).path)
+        if p == '/api/login' and self.command == 'POST':
+            try: pin = json.loads(self.body() or b'{}').get('pin')
+            except ValueError: pin = None
+            ok, err = PHONE.login(self.client_ip(), pin)
+            if not ok: return self.send(403, {'error': err}) or True
+            body = json.dumps({'ok': True}).encode()
+            secure = '; Secure' if 'https' in (self.headers.get('Cf-Visitor') or '') else ''
+            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.send_header('Content-Length', str(len(body)))
+            self.send_header('Set-Cookie', f'kp_auth={PHONE.token()}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax{secure}')
+            self.end_headers(); self.wfile.write(body); return True
+        if PHONE.authorized(self.headers.get('Cookie')):
+            if p in ('/login', '/login.html') and self.command == 'GET':
+                self.send_response(302); self.send_header('Location', '/'); self.send_header('Content-Length', '0'); self.end_headers(); return True
+            return False
+        if self.command == 'GET' and (p in PHONE_OPEN or p.startswith('/icons/')):
+            if p in ('/login', '/login.html'): p = '/login.html'
+            self.file(safe_join(STATIC, p.lstrip('/'))); return True
+        if self.command == 'GET' and p in ('/', '/index.html', '/admin'):
+            self.file(safe_join(STATIC, 'login.html')); return True
+        self.send(401, {'error': 'Потрібен PIN: відкрийте програму заново і введіть PIN з екрана комп’ютера'}); return True
+
     def do_GET(self):
+        if self.gate(): return
         u = urlparse(self.path); p = unquote(u.path); q = parse_qs(u.query)
         try:
+            if p == '/api/phone':
+                if self.need_pin: return self.send(403, {'error': 'Лише на комп’ютері'})
+                return self.send(200, PHONE.info())
             if p == '/api/bootstrap':
                 return self.send(200, dict(catalog=read_json(os.path.join(ROOT, 'catalog', 'catalog.json'), {}),
                                            settings=read_json(os.path.join(ROOT, 'catalog', 'settings.default.json'), {}),
@@ -426,6 +462,7 @@ class H(BaseHTTPRequestHandler):
             return self.send(500, {'error': str(e)})
 
     def do_PUT(self):
+        if self.gate(): return
         p = urlparse(self.path).path
         try: data = json.loads(self.body())
         except ValueError: return self.send(400, {'error': 'Неправильний JSON'})
@@ -447,6 +484,7 @@ class H(BaseHTTPRequestHandler):
         return self.send(404, {'error': 'немає'})
 
     def do_DELETE(self):
+        if self.gate(): return
         m = re.match(r'^/api/history/([\w.-]+)$', urlparse(self.path).path)
         if not m: return self.send(404, {'error': 'немає'})
         h = history()
@@ -458,7 +496,14 @@ class H(BaseHTTPRequestHandler):
         return self.send(200, {'ok': True})
 
     def do_POST(self):
+        if self.gate(): return
         p = urlparse(self.path).path
+        if p == '/api/phone':
+            if self.need_pin: return self.send(403, {'error': 'Лише на комп’ютері'})
+            try: body = json.loads(self.body() or b'{}')
+            except ValueError: return self.send(400, {'error': 'Неправильний JSON'})
+            PHONE.apply(body)
+            return self.send(200, PHONE.info())
         if p == '/api/upload':
             name = unquote(self.headers.get('X-Filename') or 'photo.jpg')
             ext = os.path.splitext(name)[1].lower()
@@ -503,16 +548,31 @@ class H(BaseHTTPRequestHandler):
         return self.send(404, {'error': 'немає'})
 
 
+class PhoneH(H):
+    need_pin = True
+
+
+from phone import Phone   # noqa: E402
+PHONE = Phone(DATA, PhoneH)
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--port', type=int, default=8765); ap.add_argument('--no-browser', action='store_true')
+    ap.add_argument('--phone', action='store_true', help='увімкнути доступ з телефону в Wi‑Fi (порт 8766, з PIN)')
     a = ap.parse_args()
     sync_uploads()
     srv = ThreadingHTTPServer(('127.0.0.1', a.port), H)
     url = f'http://127.0.0.1:{a.port}/'
     print(f'Конфігуратор КП: {url}  (зупинити: Ctrl+C)')
+    if a.phone: PHONE.cfg['lan'] = True
+    PHONE.sync()
+    if PHONE.srv:
+        info = PHONE.info()
+        print('З телефону (та сама Wi‑Fi): ' + (', '.join(info['urls']) or f'порт {info["port"]}') + f'  PIN {info["pin"]}')
     if not a.no_browser: threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     try: srv.serve_forever()
     except KeyboardInterrupt: pass
+    finally: PHONE.shutdown()
 
 
 if __name__ == '__main__':

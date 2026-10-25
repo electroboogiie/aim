@@ -2,8 +2,16 @@
 <html lang="uk">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Конфігуратор КП</title>
+<meta name="theme-color" content="#161A1F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="КП BMF">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="style.css">
 <script>/* theme before the first paint: «світла», «темна» or as the system */
 (function () { var t = "auto"; try { t = localStorage.getItem("kp_theme") || "auto"; } catch (e) {}
@@ -20,6 +28,9 @@
     <button data-tab="admin">Налаштування</button>
   </nav>
   <span class="saved" id="savedMark"></span>
+  <span class="net-off" id="netOff" hidden title="Показано останні збережені дані; КП створюється, коли є зв’язок з ПК"><span class="long">Немає зв’язку з ПК</span><span class="short">Офлайн</span></span>
+  <button id="installBtn" class="top-btn" hidden title="Поставити програму як застосунок">Встановити</button>
+  <button id="phoneBtn" class="top-btn" hidden title="Відкрити програму на телефоні">Телефон</button>
   <button id="themeBtn" class="theme-btn" title="Тема: світла, темна або як у системі"></button>
 </header>
 
@@ -243,6 +254,7 @@
 
 <div id="modal" class="modal" hidden><div class="modal-box"><button class="x" id="modalX" title="Закрити">×</button><div id="modalBody"></div></div></div>
 <div id="toast"></div>
+<script src="vendor/qrcode.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

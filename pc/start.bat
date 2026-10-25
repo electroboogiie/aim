@@ -87,7 +87,7 @@ echo LibreOffice: %LO%
 echo.
 echo Запускаю конфігуратор. Браузер відкриється сам: http://127.0.0.1:8765
 echo Щоб закрити програму, закрийте це вікно.
-%PY% server.py
+%PY% server.py %*
 pause
 exit /b 0
 

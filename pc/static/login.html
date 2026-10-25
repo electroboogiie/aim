@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Вхід · КП BMF</title>
+<meta name="theme-color" content="#161A1F">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<style>
+  :root { color-scheme: light dark; --bg: #F3F4F6; --card: #fff; --ink: #161A1F; --mut: #5B636D; --line: #E2E5E9; --or: #D24305; --bad: #B42318; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0F1216; --card: #171B21; --ink: #E8EBEE; --mut: #9AA3AD; --line: #2A3038; --bad: #FF8A7A; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .box { width: 100%; max-width: 360px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+  .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .logo img { width: 48px; height: 48px; border-radius: 11px; }
+  h1 { font-size: 20px; margin: 0; } p { color: var(--mut); margin: 0 0 16px; font-size: 14.5px; }
+  label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  input { width: 100%; font: 600 28px/1 ui-monospace, monospace; letter-spacing: 8px; text-align: center; padding: 12px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  input:focus { outline: 2px solid var(--or); outline-offset: 1px; }
+  button { width: 100%; margin-top: 14px; min-height: 48px; border: 0; border-radius: 12px; background: var(--or); color: #fff; font: 600 16px system-ui, sans-serif; cursor: pointer; }
+  .err { color: var(--bad); min-height: 1.4em; margin-top: 10px; font-size: 14px; }
+</style>
+</head>
+<body>
+<form class="box" id="f">
+  <div class="logo"><img src="/icons/icon-192.png" alt=""><h1>Конфігуратор КП</h1></div>
+  <p>Введіть PIN, який показує програма на комп’ютері: «Телефон» угорі сторінки. Телефон запам’ятає вхід.</p>
+  <label for="pin">PIN</label>
+  <input id="pin" name="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" required autofocus>
+  <button type="submit">Увійти</button>
+  <div class="err" id="err" role="alert"></div>
+</form>
+<script>
+const f = document.getElementById("f"), pin = document.getElementById("pin"), err = document.getElementById("err");
+async function go(v) {
+  err.textContent = "";
+  try {
+    const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: v }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) { history.replaceState(null, "", "/"); location.href = "/"; return; }
+    err.textContent = j.error || "Не вдалося увійти";
+  } catch (e) { err.textContent = "Немає зв’язку з комп’ютером. Перевірте, що програма на ПК запущена."; }
+}
+f.onsubmit = (e) => { e.preventDefault(); go(pin.value); };
+const q = new URLSearchParams(location.search).get("pin");   // QR code from the PC screen carries the PIN
+if (q) { pin.value = q; go(q); }
+</script>
+</body>
+</html>

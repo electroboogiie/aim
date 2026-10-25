@@ -42,13 +42,42 @@ function modal(...content) {
 /** A KP's PDF inside the app: the browser's own viewer in a large window, with the PPTX and a new tab one click away. */
 function pdfViewer(pdf, title, pptx) {
   const name = decodeURIComponent(pdf.split("/").pop() || "KP.pdf");
+  // phones (Android Chrome, the installed app) have no PDF viewer inside a page: pages are drawn by pdf.js
+  const own = navigator.pdfViewerEnabled === false || matchMedia("(pointer: coarse) and (max-width: 900px)").matches;
+  const pages = own ? h("div", { class: "pdfv-pages" }, h("div", { class: "hint" }, "Відкриваю PDF…")) : null;
   modal(h("div", { class: "pdfv" },
     h("div", { class: "pdfv-h" }, h("h2", {}, title || "КП"),
-      h("a", { class: "btn sm", href: pdf, target: "_blank" }, "У новому вікні"),
+      canShareFiles() ? h("button", { class: "sm primary", onclick: () => sharePdf(pdf, name, title) }, "Надіслати") : null,
+      own ? null : h("a", { class: "btn sm", href: pdf, target: "_blank" }, "У новому вікні"),
       h("a", { class: "btn sm", href: pdf, download: name }, "Завантажити PDF"),
-      pptx ? h("a", { class: "btn sm", href: pptx }, "PPTX") : null),
-    h("iframe", { src: pdf + "#view=FitH", title: "PDF: " + (title || name) })));
+      pptx && !IS_PHONE ? h("a", { class: "btn sm", href: pptx }, "PPTX") : null),
+    own ? pages : h("iframe", { src: pdf + "#view=FitH", title: "PDF: " + (title || name) })));
   $(".modal-box").classList.add("wide");
+  if (own) drawPdf(pdf, pages);
+}
+async function drawPdf(url, box) {
+  try {
+    const pdfjs = await import("./vendor/pdfjs/pdf.min.mjs");
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL("./vendor/pdfjs/pdf.worker.min.mjs", import.meta.url).href;
+    const doc = await pdfjs.getDocument({ url, isEvalSupported: false }).promise;
+    box.innerHTML = "";
+    const w = Math.min(box.clientWidth || innerWidth, 1100) * Math.min(devicePixelRatio || 1, 2);
+    for (let i = 1; i <= doc.numPages; i++) {
+      if (!box.isConnected) return;   // the window was closed
+      const page = await doc.getPage(i), vp0 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: w / vp0.width });
+      const c = h("canvas", { width: Math.round(vp.width), height: Math.round(vp.height), "aria-label": `Сторінка ${i}` });
+      box.append(c);
+      await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    }
+  } catch (e) { box.innerHTML = ""; box.append(h("div", { class: "hint" }, "Не вдалося показати PDF: " + e.message + ". Натисніть «Завантажити PDF».")); }
+}
+const canShareFiles = () => !!(navigator.canShare && window.File && navigator.canShare({ files: [new File([""], "x.pdf", { type: "application/pdf" })] }));
+/** Viber, Telegram, пошта…: the phone's own «Надіслати» with the KP's PDF attached. */
+async function sharePdf(url, name, title) {
+  try {
+    const blob = await (await fetch(url)).blob();
+    await navigator.share({ files: [new File([blob], name, { type: "application/pdf" })], title: title || name });
+  } catch (e) { if (e.name !== "AbortError") toast("Не вдалося надіслати: " + e.message); }
 }
 function closeModal() { $("#modal").hidden = true; $("#modalBody").innerHTML = ""; }
 function lightbox(views, caption) {
@@ -292,7 +321,11 @@ function effChoice(ch, keepOff = false) {
 
 // ------------------------------------------------------------------ boot
 async function api(path, opts = {}) {
-  const r = await fetch(path, opts);
+  let r;
+  try { r = await fetch(path, opts); }
+  catch (e) { netState(false); throw new Error("Немає зв’язку з комп’ютером: програма на ПК має бути запущена, а телефон — у тій самій Wi‑Fi або з інтернетом."); }
+  netState(!r.headers.get("X-Kp-Offline"));
+  if (r.status === 401 && IS_PHONE) { location.href = "/login"; throw new Error("Потрібен PIN"); }
   const j = r.headers.get("content-type")?.includes("json") ? await r.json() : null;
   if (!r.ok) throw new Error(j?.error || r.statusText);
   return j;
@@ -341,7 +374,75 @@ async function boot() {
   cat = effCatalog();
   $$(".main-nav button").forEach((b) => b.onclick = () => tab(b.dataset.tab));
   $$("#adminNav button").forEach((b) => b.onclick = () => sub(b.dataset.sub));
-  initTheme(); initConf(); initAdmin(); initEditor(); renderHist();
+  initTheme(); initConf(); initAdmin(); initEditor(); renderHist(); initPwa();
+}
+
+// ------------------------------------------------------------------ phone: PWA, access from the phone
+/** Opened from a phone (the Wi‑Fi entrance or the internet address), not on the PC itself. */
+const IS_PHONE = !["127.0.0.1", "localhost", "[::1]"].includes(location.hostname);
+function netState(ok) { const el = $("#netOff"); if (el) el.hidden = ok; }
+let installEvt = null;
+function initPwa() {
+  if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch((e) => console.warn("sw", e));
+  addEventListener("online", () => netState(true)); addEventListener("offline", () => netState(false));
+  if (!navigator.onLine) netState(false);
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; $("#installBtn").hidden = false; });
+  addEventListener("appinstalled", () => { installEvt = null; $("#installBtn").hidden = true; toast("Програму встановлено: шукайте значок «КП BMF»"); });
+  $("#installBtn").onclick = async () => { if (!installEvt) return; installEvt.prompt(); await installEvt.userChoice; installEvt = null; $("#installBtn").hidden = true; };
+  if (!IS_PHONE) { $("#phoneBtn").hidden = false; $("#phoneBtn").onclick = phoneDialog; }
+}
+function qrSvg(text) {
+  const q = window.qrcode(0, "M"); q.addData(text); q.make();
+  return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+}
+async function phoneDialog() {
+  let info;
+  try { info = await api("/api/phone"); } catch (e) { return toast(e.message); }
+  const set = async (body) => { try { info = await api("/api/phone", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); draw(); } catch (e) { toast(e.message); } };
+  let mode = info.tunnel.want ? "net" : "wifi";
+  const box = h("div", { class: "phone" });
+  let poll = null;
+  const draw = () => {
+    clearTimeout(poll);
+    const T = info.tunnel, wifiUrl = info.urls[0] ? info.urls[0] : "", netUrl = T.state === "on" ? T.url + "/" : "";
+    const url = mode === "net" ? netUrl : (info.lan ? wifiUrl : "");
+    const qr = h("div", { class: "qr" + (url ? "" : " off") });
+    if (url) qr.innerHTML = qrSvg(url + "login?pin=" + info.pin);
+    else qr.append(mode === "net" ? (T.state === "download" ? "Завантажую cloudflared (≈ 20 МБ, лише раз)…" : T.state === "start" ? "Отримую адресу в Cloudflare…" : "Інтернет-адресу вимкнено")
+      : info.lan ? "Не знайдено адресу комп’ютера в мережі: чи під’єднано його до Wi‑Fi або кабелю?" : "Доступ з телефону вимкнено");
+    const seg = h("div", { class: "seg" },
+      h("button", { class: mode === "wifi" ? "on" : "", onclick: () => { mode = "wifi"; draw(); } }, "Wi‑Fi в офісі"),
+      h("button", { class: mode === "net" ? "on" : "", onclick: () => { mode = "net"; draw(); } }, "Через інтернет (HTTPS)"));
+    const side = mode === "wifi" ? [
+      h("p", { class: "hint" }, "Телефон у тій самій Wi‑Fi, що й комп’ютер. Комп’ютер і програма на ньому мають бути ввімкнені."),
+      h("div", { class: "acts" }, info.lan ? h("button", { onclick: () => set({ lan: false, tunnel: false }) }, "Вимкнути доступ з телефону")
+        : h("button", { class: "primary", onclick: () => set({ lan: true }) }, "Увімкнути доступ з телефону")),
+      info.lan_error ? h("p", { class: "result err" }, info.lan_error) : null,
+      info.lan ? [h("h3", {}, "Адреса"), h("div", { class: "url" }, info.urls.join("  ·  ") || `порт ${info.port}`)] : null,
+      h("h3", {}, "Як відкрити"),
+      h("ol", {}, h("li", {}, "Наведіть камеру телефону на QR-код і відкрийте посилання."),
+        h("li", {}, "Вхід відбудеться сам (PIN є в QR-коді); телефон запам’ятає його."),
+        h("li", {}, "Chrome: меню ⋮ → «Додати на головний екран». iPhone: «Поділитися» → «На початковий екран»."),
+        h("li", {}, "Якщо Windows спитає про брандмауер для Python — дозвольте для приватних мереж.")),
+      h("p", { class: "hint" }, "У Wi‑Fi адреса без HTTPS: значок на екрані є, але без роботи офлайн і кнопки «Надіслати». Повний застосунок — вкладка «Через інтернет»."),
+    ] : [
+      h("p", { class: "hint" }, "Захищена адреса https://…trycloudflare.com: телефон працює з програмою на ПК звідусіль (мобільний інтернет, у клієнта), ставить її як застосунок, відкриває останні дані без зв’язку і надсилає PDF у Viber/Telegram."),
+      h("div", { class: "acts" }, T.want ? h("button", { onclick: () => set({ tunnel: false }) }, "Вимкнути інтернет-адресу")
+        : h("button", { class: "primary", onclick: () => set({ tunnel: true }) }, "Увімкнути інтернет-адресу")),
+      T.error ? h("p", { class: "result err" }, T.error) : null,
+      netUrl ? [h("h3", {}, "Адреса"), h("div", { class: "url" }, netUrl)] : null,
+      h("h3", {}, "Як встановити"),
+      h("ol", {}, h("li", {}, "Скануйте QR-код телефоном, вхід відбудеться сам."),
+        h("li", {}, "Угорі натисніть «Встановити» (або меню ⋮ → «Встановити застосунок»; iPhone: «Поділитися» → «На початковий екран»).")),
+      h("p", { class: "hint" }, "Ця адреса діє, доки програма на ПК запущена. Після перезапуску ПК адреса нова: скануйте QR ще раз і встановіть заново (стара іконка перестане відкриватися). Постійну адресу можна зробити на вашому акаунті Cloudflare з власним доменом."),
+    ];
+    box.innerHTML = "";
+    box.append(h("div", {}, qr, h("div", { class: "hint" }, "PIN для входу"), h("div", { class: "pin" }, info.pin),
+      h("button", { class: "sm", onclick: () => confirmBox("Новий PIN: усі телефони вийдуть і ввійдуть з новим PIN. Продовжити?", "Змінити PIN", () => set({ new_pin: true }).then(phoneDialog)) }, "Змінити PIN")),
+      h("div", {}, h("h2", {}, "Програма на телефоні"), seg, side));
+    if (mode === "net" && T.want && T.state !== "on" && !T.error) poll = setTimeout(async () => { if (!box.isConnected) return; try { info = await api("/api/phone"); } catch (e) { return; } draw(); }, 1500);
+  };
+  modal(box); draw();
 }
 // ------------------------------------------------------------------ theme: light, dark or as the system (remembered on this PC)
 const ICO = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
