@@ -102,7 +102,6 @@ class D6:
         self.contacts(s, (34, 37, 40, 43))
         for i in (34, 37, 40, 43): by_id(s, i).width = I(2.75)
         self.npl_photo(by_id(s, 31), 3.45, 4.55, 4.6, 4.65)
-        self.npl_photo(by_name(S[0], 'hero_cutout')[0], -0.05, 3.85, 5.29, 5.35)
         put(by_id(s, 57), sp['maker']['line'].upper())
         self.crane_art(S)
         self.overrides()
@@ -194,7 +193,8 @@ class D6:
         put(by_id(s, 53), sp['title'].upper())
 
     def npl_photo(self, pic, x, y, w, h):
-        """The НПЛ-10 cut-out (25.10.2026: the user's render) fitted into the template's box, standing on its bottom edge."""
+        """The НПЛ-10 cut-out (25.10.2026: the user's render) fitted into the template's box, standing on its bottom edge;
+        the cover keeps the template's НПЛ-10 with the crane."""
         path = NPL10['cutout']
         data = self.cache.get('d6-npl', lambda p_: png(R.cutout_glow(R.alpha_crop(Image.open(R.asset(p_))), a=55)), (path,), (path,))
         im = Image.open(io.BytesIO(data)); k = min(w / im.width, h / im.height); pw, ph = im.width * k, im.height * k

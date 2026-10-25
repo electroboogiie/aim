@@ -38,7 +38,7 @@ PHOTOS = {
 }
 # НПЛ-10 kits: the user's photos and drawings (from their «НПЛ-10 Heavy Label» design and KPs)
 NPL = dict(photo=('prod/npl10_tractor.png', 0.5, 0.55), end=('npl/npl10_workshop_hd.jpg', 0.45, 0.3),
-           cutout='npl/npl10_render.png', side='npl/npl10_dwg_side.png', rear='npl/npl10_dwg_rear.png')
+           cutout='npl/npl10_render.png', cover_cut='npl/npl10_crane_cutout.png', side='npl/npl10_dwg_side.png', rear='npl/npl10_dwg_rear.png')
 # truck kits: the user's photos of the conversion (КП «КАМАЗ + 750») and what it includes
 TRUCK_PH = dict(photo=('prod/truck_conversion.png', 0.5, 0.5), end=('prod/truck_conversion.png', 0.55, 0.5))
 TRUCK_TILES = [('Бортова платформа', '{stakes} стійки під сортименти'), ('Рама {wall} мм', 'довжина {length} м'),
@@ -408,7 +408,7 @@ class Ultra:
             D.text(s, 0.5, 3.2, 7.27, 0.4, [[('Лісовоз з краном ', {}), (self.m, dict(color=OR))]], 24, WHITE, True)
             D.text(s, 0.5, 3.72, 7.27, 0.3, f"напівпричіп власного виробництва · ротатор {cs['rotator_t']} т і грейфер {cs['grapple_m2']} м² у комплекті", 12, MUTED)
             D.img(s, self.raster('floor', floor_glow, 8.0, 2.8), 0.13, 6.1, 8.0, 2.8)
-            cut = self.raster('npl-cut', lambda p_: png(R.alpha_crop(Image.open(R.asset(p_)).convert('RGBA'))), NPL['cutout'], assets=(NPL['cutout'],))
+            cut = self.raster('npl-cut', lambda p_: png(R.alpha_crop(Image.open(R.asset(p_)).convert('RGBA'))), NPL['cover_cut'], assets=(NPL['cover_cut'],))
             im = Image.open(io.BytesIO(cut)); h = 4.95; w = h * im.width / im.height
             D.img(s, cut, (W - w) / 2 + 0.2, 9.0 - h, w, h)
             kpis = [('10 000', 'кг', 'вантажопідйомність НПЛ-10'), (cs['reach_m'], 'м', f'виліт крана {self.m}'),
