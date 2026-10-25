@@ -36,7 +36,19 @@ const GROUPS = { crane: "Для крана", trailer: "Для причепа", t
 
 // ------------------------------------------------------------------ modal and lightbox
 function modal(...content) {
+  $(".modal-box").classList.remove("wide");
   $("#modalBody").innerHTML = ""; $("#modalBody").append(...content); $("#modal").hidden = false;
+}
+/** A KP's PDF inside the app: the browser's own viewer in a large window, with the PPTX and a new tab one click away. */
+function pdfViewer(pdf, title, pptx) {
+  const name = decodeURIComponent(pdf.split("/").pop() || "KP.pdf");
+  modal(h("div", { class: "pdfv" },
+    h("div", { class: "pdfv-h" }, h("h2", {}, title || "КП"),
+      h("a", { class: "btn sm", href: pdf, target: "_blank" }, "У новому вікні"),
+      h("a", { class: "btn sm", href: pdf, download: name }, "Завантажити PDF"),
+      pptx ? h("a", { class: "btn sm", href: pptx }, "PPTX") : null),
+    h("iframe", { src: pdf + "#view=FitH", title: "PDF: " + (title || name) })));
+  $(".modal-box").classList.add("wide");
 }
 function closeModal() { $("#modal").hidden = true; $("#modalBody").innerHTML = ""; }
 function lightbox(views, caption) {
@@ -1062,13 +1074,15 @@ async function generate(asNew) {
     extras: S.extras.filter((x) => x.title?.trim()), itemized: S.itemized, edits: S.edits, editLog: S.editLog, basePreset: S.basePreset };
   const btn = $("#gen"), res = $("#genResult");
   btn.disabled = true; $("#genNew").disabled = true; btn.innerHTML = '<span class="spin"></span>Створюю КП… (PDF — до хвилини)'; res.innerHTML = "";
+  const ttl = `КП № ${$("#kpNumber").value || "—"}` + ($("#client").value.trim() ? " · " + $("#client").value.trim() : "");
   renderSumBar(lastQuote); $("#sbGen").innerHTML = '<span class="spin"></span>Створюю КП…';
   try {
     const r = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ spec, state, history_id: asNew ? null : S.historyId }) });
     const ok = r.pptx;
     res.append(h("div", { class: "result" + (ok ? "" : " err") },
-      ok ? h("div", {}, r.pdf ? h("a", { href: r.pdf, target: "_blank" }, "Відкрити PDF") : "PDF не створено (немає LibreOffice?)",
+      ok ? h("div", {}, r.pdf ? h("button", { class: "sm primary", onclick: () => pdfViewer(r.pdf, ttl, r.pptx) }, "Переглянути PDF") : "PDF не створено (немає LibreOffice?)",
+        r.pdf ? h("a", { href: r.pdf, target: "_blank" }, "Відкрити в новому вікні") : null,
         h("a", { href: r.pptx }, "Завантажити PPTX"), h("small", {}, `${r.pages} стор.`)) : h("b", {}, "КП не створено"),
       ...(r.messages || []).map((m) => h("div", {}, h("small", {}, m.replace(/^kpgen: /, ""))))));
     if (ok) {
@@ -1081,6 +1095,7 @@ async function generate(asNew) {
     }
   } catch (e) { res.append(h("div", { class: "result err" }, e.message)); }
   btn.disabled = false; $("#genNew").disabled = false; editBanner();
+  const pv = $("#genResult .result button.primary"); if (pv) pv.click();   // the new KP opens in the viewer at once
 }
 function editBanner() {
   const b = $("#editBanner");
@@ -1131,7 +1146,7 @@ async function renderHist() {
         h("div", { class: "meta" }, `${st[x.style] || x.style} · створено ${x.time}` + (x.edited_from ? ` (оновлено)` : "")),
         h("div", { class: "sum" }, x.total || ""),
         h("div", { class: "acts" },
-          x.pdf ? h("a", { href: x.pdf, target: "_blank" }, h("button", { class: "sm primary" }, "PDF")) : null,
+          x.pdf ? h("button", { class: "sm primary", onclick: () => pdfViewer(x.pdf, `КП № ${x.number || "—"}` + (x.client ? " · " + x.client : ""), x.pptx) }, "Переглянути PDF") : null,
           x.pptx ? h("a", { href: x.pptx }, h("button", { class: "sm" }, "PPTX")) : null,
           h("button", { class: "sm", disabled: !x.state, title: x.state ? "" : "КП з першої версії програми: відкрити для редагування не можна", onclick: () => loadState(x) }, "Редагувати"),
           h("button", { class: "sm", disabled: !x.state, onclick: () => recalcDialog(x) }, "Перерахувати"),
