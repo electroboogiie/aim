@@ -9,7 +9,7 @@
 <body>
 <header class="top">
   <div class="brand"><span class="logo">BMF</span><div><b>Конфігуратор КП</b><small>тестова модель для ПК</small></div></div>
-  <nav class="main-nav">
+  <nav class="main-nav" aria-label="Розділи">
     <button data-tab="conf" class="on">Конфігуратор</button>
     <button data-tab="edit">Редактор КП</button>
     <button data-tab="hist">Історія КП</button>
@@ -21,6 +21,7 @@
 <main>
   <!-- ======================= CONFIGURATOR ======================= -->
   <section id="tab-conf" class="tab on">
+    <h1 class="sr-only">Конфігуратор КП</h1>
     <div id="editBanner" class="banner" hidden></div>
     <div class="kit-tabs" id="kitTabs"></div>
 
@@ -70,7 +71,7 @@
             <label>Номер КП <input id="kpNumber"></label>
             <label>Дата <input type="date" id="kpDate"></label>
             <label>Замовник <input id="client" placeholder="Назва замовника">
-              <span class="chk sub" title="порожнє поле — замовника на титулці немає"><input type="checkbox" id="clientShow" checked> на титулці</span></label>
+              <span class="chk sub" title="порожнє поле — замовника на титулці немає"><input type="checkbox" id="clientShow" checked aria-label="Замовник на титулці"> на титулці</span></label>
             <label>Контакт замовника <input id="clientContact" placeholder="необов’язково"></label>
           </div>
           <div class="label">Стиль КП</div>
@@ -83,6 +84,12 @@
           <div id="genResult"></div>
         </div>
       </div>
+    </div>
+    <div id="sumBar" class="sum-bar" role="region" aria-label="Разом">
+      <div class="sb-l"><b id="sbKit"></b><small id="sbNote"></small></div>
+      <div class="sb-t"><small>Разом</small><b id="sbTotal" aria-live="polite">—</b></div>
+      <button id="sbCost" class="ghost">Вартість</button>
+      <button id="sbGen" class="primary">Створити КП</button>
     </div>
   </section>
 

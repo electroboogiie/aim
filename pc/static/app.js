@@ -4,6 +4,7 @@
 import * as core from "./core/index.js";
 
 const $ = (s, el = document) => el.querySelector(s);
+const KB_NATIVE = new Set(["button", "a", "input", "select", "textarea", "label", "summary", "option"]);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const h = (tag, attrs = {}, ...kids) => {
   const el = document.createElement(tag);
@@ -13,6 +14,8 @@ const h = (tag, attrs = {}, ...kids) => {
     else if (v !== false && v != null) el.setAttribute(k, v === true ? "" : v);
   }
   for (const c of kids.flat(Infinity)) if (c != null && c !== false) el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  // clickable non-controls (tree nodes, cells) are reachable by keyboard: Tab to them, Enter or Space clicks
+  if (attrs?.onclick && !KB_NATIVE.has(tag) && !el.hasAttribute("tabindex")) { el.tabIndex = 0; if (!el.hasAttribute("role")) el.setAttribute("role", "button"); }
   if ("value" in (attrs || {})) el.value = attrs.value ?? "";   // after the options of a select exist
   if ("checked" in (attrs || {})) el.checked = !!attrs.checked;
   return el;
@@ -37,7 +40,7 @@ function modal(...content) {
 }
 function closeModal() { $("#modal").hidden = true; $("#modalBody").innerHTML = ""; }
 function lightbox(views, caption) {
-  const img = h("img", { src: views[0].src });
+  const img = h("img", { src: views[0].src, alt: caption || "фото" });
   const seg = views.length > 1 ? h("div", { class: "seg" }, views.map((v, i) => h("button", { class: i ? "" : "on", onclick: (e) => {
     img.src = v.src; $$("button", seg).forEach((b) => b.classList.toggle("on", b === e.target)); } }, v.label))) : null;
   modal(h("div", { class: "lb" }, seg, img, caption ? h("div", { class: "cap" }, caption) : null));
@@ -51,7 +54,11 @@ document.addEventListener("click", (e) => {
     lightbox(views, t.dataset.cap || t.alt || "");
   }
 }, true);
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+  const t = e.target;
+  if ((e.key === "Enter" || e.key === " ") && t.getAttribute?.("role") === "button" && !KB_NATIVE.has(t.tagName.toLowerCase())) { e.preventDefault(); t.click(); }
+});
 const lbImg = (src, views, attrs = {}) => h("img", { src, loading: "lazy", "data-lb": views ? JSON.stringify(views) : "", ...attrs });
 function confirmBox(text, okText, onOk) {
   modal(h("div", { class: "form" }, h("h2", {}, text), h("div", { class: "acts" },
@@ -345,6 +352,7 @@ function kitTypes() { return cat.kit_types.filter((k) => k.id !== "part" && !k.d
 function allKitTypes() { return cat.kit_types.filter((k) => k.id !== "part"); }
 const craneSlot = () => S.kt.slots.find((s) => s.id === "crane");
 function initConf() {
+  initSumBar();
   $("#preset").onchange = (e) => { const p = cat.presets.find((x) => x.id === e.target.value); if (p) applyPreset(p); };
   $("#discount").oninput = (e) => { S.discount = num(e.target.value) || 0; renderQuote(); };
   $("#kpDate").value = core.todayIso();
@@ -499,7 +507,8 @@ function switchBase(ktId, slotId, itemId) {
   renderKitTabs(); renderFeatured(); renderConf();
 }
 function tnode({ photo, title, sub, mark, markCls = "", on, dis, why, onclick, cls = "" }) {
-  return h("div", { class: `tnode ${cls}` + (on ? " on" : "") + (dis ? " dis" : ""), title: why || title, onclick: dis ? null : onclick },
+  return h("div", { class: `tnode ${cls}` + (on ? " on" : "") + (dis ? " dis" : ""), title: why || title, onclick: dis ? null : onclick,
+    "aria-pressed": onclick && !dis ? String(!!on) : null, "aria-disabled": dis ? "true" : null },
     photo ? lbImg(asset(photo), null, { alt: title }) : h("div", { class: "ph" }, "фото"),
     h("div", { class: "tt" }, h("b", {}, title), sub ? h("small", {}, sub) : null, mark ? h("span", { class: "mk " + markCls }, mark) : null));
 }
@@ -608,7 +617,9 @@ function variantGroups(groups, after) {
 
 // ------------------------------------------------------------------ branch tree: base -> crane -> grapple and valve -> options -> variants
 function renderTree() {
-  const box = $("#tree"); if (!box) return; box.innerHTML = "";
+  const box = $("#tree"); if (!box) return;
+  const fa = document.activeElement, fk = box.contains(fa) && fa.classList.contains("tnode") ? fa.textContent : null;   // keyboard focus survives the redraw
+  box.innerHTML = "";
   const kt = S.kt, sel = S.sel;
   const items = core.selectedItems(cat, kt, sel).map((x) => x.item);
   const cols = [];
@@ -686,6 +697,7 @@ function renderTree() {
   if (kc.length) vars.push(h("div", { class: "vcard kit" }, h("div", { class: "tg-t" }, "Комплект"), variantGroups(kc)));
   if (vars.length) cols.push(["Варіанти", vars]);
   for (const [title, nodes] of cols) box.append(h("div", { class: "tcol" + (title === "Варіанти" ? " vars" : "") }, h("div", { class: "tc-h" }, title), h("div", { class: "tc-b" }, nodes)));
+  if (fk != null) $$(".tnode", box).find((n) => n.textContent === fk)?.focus({ preventScroll: true });
   requestAnimationFrame(drawTreeLinks);
 }
 function drawTreeLinks() {
@@ -733,7 +745,7 @@ function renderConf() {
     const main = cands.filter((c) => c.item?.featured), other = cands.filter((c) => !c.item?.featured);
     cb.append(h("div", { class: "label" }, cs.title + (cs.required ? "" : " (необов’язково)")),
       h("div", { class: "cranes" }, main.map((c) => h("button", { class: "crane" + (S.sel.slots.crane === c.id ? " on" : ""), disabled: !c.allowed, title: c.reason || "", onclick: () => setSlot("crane", c.id) },
-        c.item.photo ? h("img", { src: asset(c.item.photo), loading: "lazy" }) : h("div", { style: "height:86px;background:#222" }),
+        c.item.photo ? h("img", { src: asset(c.item.photo), loading: "lazy", alt: "" }) : h("div", { style: "height:86px;background:#222" }),
         h("div", { class: "cb" }, h("b", {}, c.item.model || c.item.title), h("small", {}, c.item.short))))),
       h("div", { class: "cranes-other" }, "Інші:", other.map((c) => h("button", { class: "sm" + (S.sel.slots.crane === c.id ? " primary" : ""), disabled: !c.allowed, title: c.reason || "", onclick: () => setSlot("crane", c.id) }, c.item?.model || c.id)),
         cs.required ? null : h("button", { class: "sm" + (!S.sel.slots.crane ? " primary" : ""), onclick: () => setSlot("crane", null) }, "без крана")));
@@ -745,9 +757,9 @@ function renderConf() {
     const cands = core.slotCandidates(cat, S.kt.id, slot.id, S.sel);
     const it = core.itemById(cat, cur || slot.default || slot.candidates[0]);
     const on = !!cur;
-    const cbx = h("input", { type: "checkbox", checked: on, disabled: slot.required, onchange: (e) => setSlot(slot.id, e.target.checked ? (cands.find((c) => c.allowed && c.id === slot.default) || cands.find((c) => c.allowed))?.id : null) });
+    const cbx = h("input", { type: "checkbox", "aria-label": slot.title, checked: on, disabled: slot.required, onchange: (e) => setSlot(slot.id, e.target.checked ? (cands.find((c) => c.allowed && c.id === slot.default) || cands.find((c) => c.allowed))?.id : null) });
     const ok = cands.filter((c) => c.allowed || c.id === cur);   // incompatible variants (e.g. a base for another crane) are not offered
-    const sel = ok.length > 1 ? h("select", { onchange: (e) => setSlot(slot.id, e.target.value, true) },
+    const sel = ok.length > 1 ? h("select", { "aria-label": slot.title + ": варіант", onchange: (e) => setSlot(slot.id, e.target.value, true) },
       ok.map((c) => h("option", { value: c.id }, itemLabel(c.item, ok.map((x) => x.item)) || c.id))) : null;
     if (sel) sel.value = cur || "";
     const unit = it?.unit;
@@ -788,7 +800,7 @@ function renderAccs() {
   if (shown.length) box.append(h("div", { class: "acc-grp" }, "Позиції комплекту (не обрані)"));
   for (const sl of shown) {
     const pick = slotPick(sl), it = core.itemById(cat, pick || sl.default || sl.candidates[0]);
-    box.append(h("div", { class: "acc" + (pick ? "" : " bad") }, h("input", { type: "checkbox", disabled: !pick, onchange: () => setSlot(sl.id, pick, true) }),
+    box.append(h("div", { class: "acc" + (pick ? "" : " bad") }, h("input", { type: "checkbox", "aria-label": sl.title, disabled: !pick, onchange: () => setSlot(sl.id, pick, true) }),
       it?.photo ? lbImg(asset(it.photo), null, { alt: sl.title }) : h("span"),
       h("div", {}, h("b", {}, sl.title), h("small", {}, it ? core.itemDesc(S.kt, it, S.sel) || it.title : ""), pick ? null : h("small", {}, "не підходить до цього комплекту")),
       h("div", { class: "num" }, h("small", {}, itemPriceText(it)), hideBtn("slot:" + sl.id))));
@@ -812,8 +824,8 @@ function renderAccs() {
       const qs = a.max_qty > 1 ? h("label", { class: "inline", style: "margin:4px 0 0" }, "Кількість",
         h("select", { class: "sm", onchange: (e) => upd({ qty: Number(e.target.value) }) }, Array.from({ length: a.max_qty }, (_, i) => h("option", { value: i + 1 }, `${i + 1} шт`)))) : null;
       if (qs) qs.querySelector("select").value = String(on?.qty || 1);
-      const pin = h("input", { type: "number", placeholder: p ? String(p) : "ціна, ₴", value: on?.price_uah ?? "", onchange: (e) => upd({ price_uah: num(e.target.value) }) });
-      box.append(h("div", { class: "acc" + (bad ? " bad" : "") }, h("input", { type: "checkbox", disabled: bad, checked: !!on, onchange: (e) => upd({ on: e.target.checked }) }),
+      const pin = h("input", { type: "number", "aria-label": "Ціна, ₴: " + a.title, placeholder: p ? String(p) : "ціна, ₴", value: on?.price_uah ?? "", onchange: (e) => upd({ price_uah: num(e.target.value) }) });
+      box.append(h("div", { class: "acc" + (bad ? " bad" : "") }, h("input", { type: "checkbox", "aria-label": a.title, disabled: bad, checked: !!on, onchange: (e) => upd({ on: e.target.checked }) }),
         a.photo ? lbImg(asset(a.photo), null, { alt: a.title }) : h("span"),
         h("div", {}, h("b", {}, a.title), (a.base_for || []).includes(S.kt.id) ? h("span", { class: "badge" }, "базова") : null, a.kp_uses ? h("span", { class: "badge gray", title: "скільки ваших КП згадують цю опцію" }, `у ${a.kp_uses} КП`) : null, h("small", {}, ka.desc), on && vs ? vs : null, on && qs ? qs : null,
           ka.status === "unconfirmed" ? h("small", {}, "сумісність не підтверджена") : null),
@@ -857,7 +869,7 @@ function renderQuote() {
   const tb = $("#rows"); tb.innerHTML = ""; const warn = $("#warnings"); warn.innerHTML = ""; $("#kitPriceBox").innerHTML = "";
   let q;
   try { q = core.quote(cat, settings, { eur: null, source: "none" }, quoteInput()); }
-  catch (e) { lastQuote = null; $("#total").textContent = "—"; for (const m of e.errors || [String(e)]) warn.append(h("li", {}, m)); return; }
+  catch (e) { lastQuote = null; $("#total").textContent = "—"; for (const m of e.errors || [String(e)]) warn.append(h("li", {}, m)); renderSumBar(null); return; }
   lastQuote = q;
   const lp = $(".rg-row.live .price"); if (lp) lp.textContent = q.total_uah ? uah(q.total_uah) + (q.complete === false ? " *" : "") : "за запитом";
   const bundle = q.price_display === "bundle";
@@ -868,7 +880,7 @@ function renderQuote() {
     }
     const inKit = bundle && r.price_uah == null && r.price_text === "у комплекті";
     const it = core.itemById(cat, r.item_id), unit = it?.unit, qty = unit ? (S.qty[it.id] ?? unit.default) : 1;
-    const inp = inKit ? h("small", {}, "у комплекті") : h("input", { type: "number", placeholder: "нова ціна, ₴", value: S.manual[r.item_id] ?? "",
+    const inp = inKit ? h("small", {}, "у комплекті") : h("input", { type: "number", "aria-label": "Нова ціна, ₴: " + r.title, placeholder: "нова ціна, ₴", value: S.manual[r.item_id] ?? "",
       onchange: (e) => { S.manual[r.item_id] = num(e.target.value); renderQuote(); } });
     const tools = inKit ? null : priceTools("items", r.item_id, S.manual[r.item_id], unit ? (v) => v * unit.per / qty : undefined, unit ? ` за ${unit.per} ${unit.name}` : "");
     tb.append(h("tr", {}, h("td", {}, h("b", {}, r.title), h("small", {}, r.desc), inKit ? null : priceInfo("items", r.item_id, S.manual[r.item_id])),
@@ -894,6 +906,27 @@ function renderQuote() {
   $("#total").textContent = !q.total_uah ? "за запитом" : q.complete === false ? uah(q.total_uah) + " *" : uah(q.total_uah);
   if (q.complete === false) warn.append(h("li", {}, "* не всі позиції мають ціну — сума неповна"));
   for (const w of q.warnings.filter((w) => !/Курс EUR|індекс металу|опорн/i.test(w))) warn.append(h("li", {}, w));
+  renderSumBar(q);
+}
+/** The «Разом» bar pinned to the bottom of the configurator: what is being built, the total and «Створити КП», wherever the page is scrolled. */
+function renderSumBar(q) {
+  const bar = $("#sumBar"); if (!bar) return;
+  const cr = core.itemById(cat, S.sel?.slots.crane || ""), n = q ? q.rows.length + q.accessories.length : 0;
+  const notes = [n ? `${n} ${n === 1 ? "позиція" : n < 5 ? "позиції" : "позицій"}` : null, S.discount ? `знижка ${S.discount}%` : null,
+    q?.complete === false ? "* частина — за запитом" : null, !q ? "комплект не зібрано" : null].filter(Boolean);
+  $("#sbKit").textContent = [cr?.model, KIT_SHORT[S.kt?.id] || S.kt?.title].filter(Boolean).join(" · ");
+  $("#sbNote").textContent = notes.join(" · ");
+  $("#sbTotal").textContent = $("#total").textContent;
+  $("#sbGen").textContent = S.historyId ? "Оновити КП" : "Створити КП";
+  $("#sbGen").disabled = !q || $("#gen").disabled;
+}
+function initSumBar() {
+  $("#sbCost").onclick = () => $("#total").closest(".card").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("#sbGen").onclick = () => { $("#gen").click(); $(".gen-row").scrollIntoView({ behavior: "smooth", block: "center" }); };
+  // the bar steps aside while the cost card's own total or the create button is on screen
+  const seen = new Set(), bar = $("#sumBar");
+  const io = new IntersectionObserver((es) => { for (const e of es) e.isIntersecting ? seen.add(e.target) : seen.delete(e.target); bar.classList.toggle("away", seen.size > 0); }, { threshold: 0.6 });
+  io.observe($("#tab-conf .total")); io.observe($(".gen-row"));
 }
 /** Own positions (not in the catalog) under the options: name, description, price, pieces; remembered ones are one click away. */
 function renderExtras() {
@@ -906,12 +939,12 @@ function renderExtras() {
   };
   const upd = (i, patch, keep = true) => { S.extras = S.extras.map((x, j) => (j === i ? { ...x, ...patch } : x)); if (keep) remember(S.extras[i]); renderQuote(); renderExtras(); };
   S.extras.forEach((x, i) => box.append(h("div", { class: "extra-row" },
-    h("input", { value: x.title || "", placeholder: "назва, напр. Монтажні роботи", onchange: (e) => upd(i, { title: e.target.value }) }),
-    h("input", { value: x.desc || "", placeholder: "опис (необов’язково)", onchange: (e) => upd(i, { desc: e.target.value }) }),
-    h("input", { type: "number", value: x.price_uah ?? "", placeholder: "ціна, ₴", onchange: (e) => upd(i, { price_uah: num(e.target.value) }) }),
+    h("input", { "aria-label": "Назва позиції", value: x.title || "", placeholder: "назва, напр. Монтажні роботи", onchange: (e) => upd(i, { title: e.target.value }) }),
+    h("input", { "aria-label": "Опис позиції", value: x.desc || "", placeholder: "опис (необов’язково)", onchange: (e) => upd(i, { desc: e.target.value }) }),
+    h("input", { type: "number", "aria-label": "Ціна, ₴", value: x.price_uah ?? "", placeholder: "ціна, ₴", onchange: (e) => upd(i, { price_uah: num(e.target.value) }) }),
     h("input", { type: "number", class: "qty", min: 1, value: x.qty || 1, title: "кількість, шт", onchange: (e) => upd(i, { qty: Math.max(1, num(e.target.value) || 1) }, false) }),
     h("button", { class: "sm ghost", title: "прибрати з цієї КП", onclick: () => { S.extras = S.extras.filter((_, j) => j !== i); renderQuote(); renderExtras(); } }, "✕"))));
-  const t = h("input", { placeholder: "назва, напр. Монтажні роботи" }), d = h("input", { placeholder: "опис (необов’язково)" }), p = h("input", { type: "number", placeholder: "ціна, ₴" });
+  const t = h("input", { "aria-label": "Назва нової позиції", placeholder: "назва, напр. Монтажні роботи" }), d = h("input", { "aria-label": "Опис нової позиції", placeholder: "опис (необов’язково)" }), p = h("input", { type: "number", "aria-label": "Ціна нової позиції, ₴", placeholder: "ціна, ₴" });
   const add = () => {
     if (!t.value.trim()) return toast("Вкажіть назву позиції");
     const x = { title: t.value.trim(), desc: d.value.trim(), price_uah: num(p.value), qty: 1 };
@@ -946,7 +979,7 @@ function renderStyleChips() {
   const pick = B.styles.find((s) => s.id === cur && ok(s)) ? cur : (ok(B.styles.find((s) => s.id === admin.style) || {}) ? admin.style : "dark");
   box.dataset.v = pick;
   for (const s of B.styles) box.append(h("button", { class: "style-chip" + (s.id === pick ? " on" : ""), disabled: !ok(s), title: ok(s) ? s.title : "лише для: " + (s.kits_title || s.kits.join(", ")),
-    onclick: () => { box.dataset.v = s.id; renderStyleChips(); } }, h("img", { src: `previews/${s.id}.jpg` }), s.title));
+    onclick: () => { box.dataset.v = s.id; renderStyleChips(); } }, h("img", { src: `previews/${s.id}.jpg`, alt: "" }), s.title));
 }
 
 const CHIP_TEXT = { brakes: "Гальма на вибір", wheels: "Колеса на вибір", drawbar: "Дишло на вибір", pump_type: "Насос на вибір", stakes: "Кількість коників",
@@ -1029,6 +1062,7 @@ async function generate(asNew) {
     extras: S.extras.filter((x) => x.title?.trim()), itemized: S.itemized, edits: S.edits, editLog: S.editLog, basePreset: S.basePreset };
   const btn = $("#gen"), res = $("#genResult");
   btn.disabled = true; $("#genNew").disabled = true; btn.innerHTML = '<span class="spin"></span>Створюю КП… (PDF — до хвилини)'; res.innerHTML = "";
+  renderSumBar(lastQuote); $("#sbGen").innerHTML = '<span class="spin"></span>Створюю КП…';
   try {
     const r = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ spec, state, history_id: asNew ? null : S.historyId }) });
@@ -1052,6 +1086,7 @@ function editBanner() {
   const b = $("#editBanner");
   b.hidden = !S.historyId; $("#genNew").hidden = !S.historyId;
   $("#gen").textContent = S.historyId ? "Оновити цю КП (PPTX + PDF)" : "Створити КП (PPTX + PDF)";
+  renderSumBar(lastQuote);
   if (S.historyId) { b.innerHTML = ""; b.append(h("span", {}, `Редагуєте КП № ${$("#kpNumber").value}. «Оновити» замінить її в історії, «Зберегти як нову» — створить окрему.`), h("button", { class: "sm", onclick: () => endEdit(false) }, "Скасувати редагування")); }
 }
 function endEdit(keepForm) {
@@ -3061,7 +3096,7 @@ function addCard() {
   return h("div", { class: "card-f add-f" }, s);
 }
 function newExtra() {
-  const t = h("input", { placeholder: "назва, напр. Монтажні роботи" }), d = h("input", { placeholder: "опис (необов’язково)" }), p = h("input", { type: "number", placeholder: "ціна, ₴" });
+  const t = h("input", { "aria-label": "Назва нової позиції", placeholder: "назва, напр. Монтажні роботи" }), d = h("input", { "aria-label": "Опис нової позиції", placeholder: "опис (необов’язково)" }), p = h("input", { type: "number", "aria-label": "Ціна нової позиції, ₴", placeholder: "ціна, ₴" });
   modal(h("div", { class: "form" }, h("h2", {}, "Своя позиція в КП"), t, d, p, h("div", { class: "acts" }, h("button", { onclick: () => { closeModal(); renderEditor(); } }, "Скасувати"),
     h("button", { class: "primary", onclick: () => {
       if (!t.value.trim()) return toast("Вкажіть назву позиції");
