@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Конфігуратор КП</title>
 <link rel="stylesheet" href="style.css">
+<script>/* theme before the first paint: «світла», «темна» or as the system */
+(function () { var t = "auto"; try { t = localStorage.getItem("kp_theme") || "auto"; } catch (e) {}
+  var dark = t === "dark" || (t === "auto" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light"; document.documentElement.dataset.themePick = t; })();</script>
 </head>
 <body>
 <header class="top">
@@ -16,6 +20,7 @@
     <button data-tab="admin">Налаштування</button>
   </nav>
   <span class="saved" id="savedMark"></span>
+  <button id="themeBtn" class="theme-btn" title="Тема: світла, темна або як у системі"></button>
 </header>
 
 <main>

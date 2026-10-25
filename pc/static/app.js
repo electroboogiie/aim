@@ -341,7 +341,26 @@ async function boot() {
   cat = effCatalog();
   $$(".main-nav button").forEach((b) => b.onclick = () => tab(b.dataset.tab));
   $$("#adminNav button").forEach((b) => b.onclick = () => sub(b.dataset.sub));
-  initConf(); initAdmin(); initEditor(); renderHist();
+  initTheme(); initConf(); initAdmin(); initEditor(); renderHist();
+}
+// ------------------------------------------------------------------ theme: light, dark or as the system (remembered on this PC)
+const ICO = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const THEMES = [["light", ICO('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'), "Світла тема"],
+  ["dark", ICO('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'), "Темна тема"],
+  ["auto", ICO('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>'), "Тема як у системі"]];
+function applyTheme(pick) {
+  try { localStorage.setItem("kp_theme", pick); } catch (e) {}
+  const dark = pick === "dark" || (pick === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light"; document.documentElement.dataset.themePick = pick;
+  const t = THEMES.find((x) => x[0] === pick) || THEMES[2], b = $("#themeBtn");
+  if (b) { b.innerHTML = t[1]; b.title = t[2] + " · клік — наступна"; b.setAttribute("aria-label", t[2]); }
+  requestAnimationFrame(() => typeof drawTreeLinks === "function" && drawTreeLinks());
+}
+function initTheme() {
+  const cur = () => document.documentElement.dataset.themePick || "auto";
+  $("#themeBtn").onclick = () => applyTheme(THEMES[(THEMES.findIndex((x) => x[0] === cur()) + 1) % THEMES.length][0]);
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => cur() === "auto" && applyTheme("auto"));
+  applyTheme(cur());
 }
 function tab(id) {
   $$(".main-nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id));
@@ -757,7 +776,7 @@ function renderConf() {
     const main = cands.filter((c) => c.item?.featured), other = cands.filter((c) => !c.item?.featured);
     cb.append(h("div", { class: "label" }, cs.title + (cs.required ? "" : " (необов’язково)")),
       h("div", { class: "cranes" }, main.map((c) => h("button", { class: "crane" + (S.sel.slots.crane === c.id ? " on" : ""), disabled: !c.allowed, title: c.reason || "", onclick: () => setSlot("crane", c.id) },
-        c.item.photo ? h("img", { src: asset(c.item.photo), loading: "lazy", alt: "" }) : h("div", { style: "height:86px;background:#222" }),
+        c.item.photo ? h("img", { src: asset(c.item.photo), loading: "lazy", alt: "" }) : h("div", { style: "height:86px;background:var(--img)" }),
         h("div", { class: "cb" }, h("b", {}, c.item.model || c.item.title), h("small", {}, c.item.short))))),
       h("div", { class: "cranes-other" }, "Інші:", other.map((c) => h("button", { class: "sm" + (S.sel.slots.crane === c.id ? " primary" : ""), disabled: !c.allowed, title: c.reason || "", onclick: () => setSlot("crane", c.id) }, c.item?.model || c.id)),
         cs.required ? null : h("button", { class: "sm" + (!S.sel.slots.crane ? " primary" : ""), onclick: () => setSlot("crane", null) }, "без крана")));
@@ -1975,7 +1994,7 @@ function priceRow(kind, x) {
     tr.className = changed ? "pending" : "";
     tr.innerHTML = "";
     tr.append(h("td", {}, x.title, x.unit ? ` (за ${x.unit.per} ${x.unit.name})` : "", x.featured ? h("span", { class: "badge" }, "основний") : null, x.own ? h("span", { class: "badge gray" }, "власне вир-во") : null,
-        x.price?.date ? h("small", { style: "display:block;color:#6B727B" }, "з КП " + core.formatDate(x.price.date)) : null),
+        x.price?.date ? h("small", { style: "display:block;color:var(--mut)" }, "з КП " + core.formatDate(x.price.date)) : null),
       h("td", {}, modeSel), h("td", {}, data),
       h("td", { class: "num" }, uah(p.base)),
       h("td", { class: "num" }, h("input", { type: "number", step: 0.5, value: r.markup ?? "", placeholder: "0", style: "width:64px", onchange: set("markup") })),
