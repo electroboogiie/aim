@@ -642,3 +642,14 @@ td.num, th.num, .num { font-variant-numeric: tabular-nums; }
 .pdfv-pages .hint { padding: 20px; }
 @media (max-width: 760px) { .modal:has(.modal-box.wide) { padding: 0; } .modal-box.wide { width: 100%; max-width: 100vw; height: 100dvh; border-radius: 0; box-sizing: border-box; } }
 .net-off .short { display: none; } @media (max-width: 760px) { .net-off .long { display: none; } .net-off .short { display: inline; } }
+
+/* «Вартість»: the order of positions in the KP */
+#rows td:first-child { position: relative; padding-left: 52px; }
+.ord-tools { position: absolute; left: 2px; top: 10px; display: flex; align-items: center; gap: 2px; }
+.ord-tools .grip { cursor: grab; color: var(--mut); font-size: 16px; padding: 2px 3px; user-select: none; }
+.ord-tools .ord { display: inline-flex; flex-direction: column; }
+.ord-tools .ord button { min-height: 0; height: 17px; width: 22px; padding: 0; line-height: 1; font-size: 11px; }
+.ord-tools .ord button:disabled { opacity: .25; }
+tr.dragging { opacity: .45; }
+tr.drop td { box-shadow: inset 0 2px 0 var(--or); }
+@media (pointer: coarse) { .ord-tools .grip { display: none; } .ord-tools .ord button { height: 24px; width: 28px; font-size: 13px; } }

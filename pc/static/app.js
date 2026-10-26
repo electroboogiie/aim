@@ -484,6 +484,7 @@ function kitTypes() { return cat.kit_types.filter((k) => k.id !== "part" && !k.d
 function allKitTypes() { return cat.kit_types.filter((k) => k.id !== "part"); }
 const craneSlot = () => S.kt.slots.find((s) => s.id === "crane");
 function initConf() {
+  $("#orderReset").onclick = () => { S.order = null; renderQuote(); };
   initSumBar();
   $("#preset").onchange = (e) => { const p = cat.presets.find((x) => x.id === e.target.value); if (p) applyPreset(p); };
   $("#discount").oninput = (e) => { S.discount = num(e.target.value) || 0; renderQuote(); };
@@ -500,7 +501,7 @@ function renderKitTabs() {
 }
 function setKit(id) {
   S.kt = core.kitTypeById(cat, id); S.sel = core.defaultSelection(S.kt, cat); S.manual = {}; S.kitPrice = null; S.qty = {}; S.preset = null;
-  S.extras = []; S.itemized = false; S.edits = null; S.editLog = {}; S.basePreset = null; S.confirmed = new Set(); S.cellOpen = null; editorBadge();
+  S.extras = []; S.itemized = false; S.order = null; S.edits = null; S.editLog = {}; S.basePreset = null; S.confirmed = new Set(); S.cellOpen = null; editorBadge();
   S.sel = core.reconcileSelection(cat, id, S.sel);
   S.sel.accessories = baseAccessories();
   renderKitTabs(); renderFeatured(); renderConf();
@@ -513,7 +514,7 @@ function applyPreset(p) {
   S.kt = core.kitTypeById(cat, p.kit_type);
   S.sel = core.reconcileSelection(cat, p.kit_type, core.presetSelection(p, cat));
   S.manual = {}; S.kitPrice = null; S.qty = { ...(p.quantities || {}) }; S.preset = p.id;
-  S.extras = structuredClone(p.extras || []); S.itemized = !!p.itemized; S.edits = null; S.editLog = {}; S.basePreset = p.id; S.cellOpen = null; editorBadge();
+  S.extras = structuredClone(p.extras || []); S.itemized = !!p.itemized; S.order = p.order || null; S.edits = null; S.editLog = {}; S.basePreset = p.id; S.cellOpen = null; editorBadge();
   confirmAll();   // a kit from a KP: its positions were chosen there
   renderKitTabs(); renderFeatured(); renderConf();
 }
@@ -997,6 +998,39 @@ function priceTools(kind, id, typed, toStored = (v) => v, unitNote = "") {
     } }, "Зберегти як нову ціну") : null;
   return h("div", { class: "pdate" }, at ? h("small", { title: "коли востаннє змінено ціну, що йде в КП" }, "ціна від " + core.formatDate(at)) : null, save);
 }
+/** Positions in the order the user dragged them to (the price page of the KP follows it); new positions keep their place. */
+function byOrder(list, key, order = S.order) {
+  if (!order?.length) return list;
+  const idx = new Map(order.map((k, i) => [k, i]));
+  const known = list.filter((x) => idx.has(key(x))).sort((a, b) => idx.get(key(a)) - idx.get(key(b)));
+  let k = 0;
+  return list.map((x) => (idx.has(key(x)) ? known[k++] : x));
+}
+const rowKey = (r) => (r.kind === "extra" || !r.item_id ? "x:" + r.title : r.item_id);
+/** «Вартість»: rows dragged by ⠿ (mouse) or moved with ↑ ↓ (phone, keyboard). */
+function orderRows(tb, out) {
+  const list = byOrder(out, (x) => x.key), keys = list.map((x) => x.key);
+  const move = (from, to) => {
+    if (to < 0 || to >= keys.length || from === to) return;
+    const k = [...keys]; k.splice(to, 0, k.splice(from, 1)[0]); S.order = k; S.preset = null; renderQuote();
+  };
+  list.forEach(({ tr }, i) => {
+    const grip = h("span", { class: "grip", title: "Перетягніть, щоб змінити порядок у КП", "aria-hidden": "true" }, "⠿");
+    grip.onmousedown = () => { tr.draggable = true; };
+    tr.ondragstart = (e) => { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); tr.classList.add("dragging"); };
+    tr.ondragend = () => { tr.draggable = false; tr.classList.remove("dragging"); };
+    tr.ondragover = (e) => { e.preventDefault(); tr.classList.add("drop"); };
+    tr.ondragleave = () => tr.classList.remove("drop");
+    tr.ondrop = (e) => { e.preventDefault(); tr.classList.remove("drop"); move(+e.dataTransfer.getData("text/plain"), i); };
+    const arrows = h("span", { class: "ord" },
+      h("button", { class: "sm ghost", disabled: i === 0, "aria-label": "Вище в списку КП", onclick: () => move(i, i - 1) }, "↑"),
+      h("button", { class: "sm ghost", disabled: i === list.length - 1, "aria-label": "Нижче в списку КП", onclick: () => move(i, i + 1) }, "↓"));
+    tr.firstChild.prepend(h("div", { class: "ord-tools" }, grip, arrows));
+    tb.append(tr);
+  });
+  const reset = $("#orderReset");
+  if (reset) reset.hidden = !S.order?.length;
+}
 function renderQuote() {
   const tb = $("#rows"); tb.innerHTML = ""; const warn = $("#warnings"); warn.innerHTML = ""; $("#kitPriceBox").innerHTML = "";
   let q;
@@ -1005,9 +1039,10 @@ function renderQuote() {
   lastQuote = q;
   const lp = $(".rg-row.live .price"); if (lp) lp.textContent = q.total_uah ? uah(q.total_uah) + (q.complete === false ? " *" : "") : "за запитом";
   const bundle = q.price_display === "bundle";
+  const out = [], add = (key, tr) => out.push({ key, tr });
   for (const r of q.rows) {
     if (r.kind === "extra") {   // own positions: edited in their block under the options
-      tb.append(h("tr", { class: "extra" }, h("td", {}, h("b", {}, r.title), h("small", {}, r.desc || "своя позиція")), h("td", { class: "num" }, r.price_text), h("td", { class: "num" }, h("small", {}, "у «Своїх позиціях»"))));
+      add("x:" + r.title, h("tr", { class: "extra" }, h("td", {}, h("b", {}, r.title), h("small", {}, r.desc || "своя позиція")), h("td", { class: "num" }, r.price_text), h("td", { class: "num" }, h("small", {}, "у «Своїх позиціях»"))));
       continue;
     }
     const inKit = bundle && r.price_uah == null && r.price_text === "у комплекті";
@@ -1015,15 +1050,16 @@ function renderQuote() {
     const inp = inKit ? h("small", {}, "у комплекті") : h("input", { type: "number", "aria-label": "Нова ціна, ₴: " + r.title, placeholder: "нова ціна, ₴", value: S.manual[r.item_id] ?? "",
       onchange: (e) => { S.manual[r.item_id] = num(e.target.value); renderQuote(); } });
     const tools = inKit ? null : priceTools("items", r.item_id, S.manual[r.item_id], unit ? (v) => v * unit.per / qty : undefined, unit ? ` за ${unit.per} ${unit.name}` : "");
-    tb.append(h("tr", {}, h("td", {}, h("b", {}, r.title), h("small", {}, r.desc), inKit ? null : priceInfo("items", r.item_id, S.manual[r.item_id])),
+    add(r.item_id || "x:" + r.title, h("tr", {}, h("td", {}, h("b", {}, r.title), h("small", {}, r.desc), inKit ? null : priceInfo("items", r.item_id, S.manual[r.item_id])),
       h("td", { class: "num" }, inKit ? "—" : (S.manual[r.item_id] != null ? h("s", {}, admRowPrice(r.item_id, qty)) : r.price_text)), h("td", { class: "num" }, inp, tools)));
   }
-  for (const c of q.choices.filter((c) => c.price_uah)) tb.append(h("tr", {}, h("td", {}, h("b", {}, c.title), h("small", {}, c.value_title)), h("td", { class: "num" }, uah(c.price_uah)), h("td")));
+  for (const c of q.choices.filter((c) => c.price_uah)) add(`x:${c.title}: ${c.value_title}`, h("tr", {}, h("td", {}, h("b", {}, c.title), h("small", {}, c.value_title)), h("td", { class: "num" }, uah(c.price_uah)), h("td")));
   for (const r of q.accessories) {
     const id = r.item_id || r.id, typed = S.sel.accessories.find((a) => a.id === id)?.price_uah ?? null;
-    tb.append(h("tr", {}, h("td", {}, h("b", {}, r.title), h("small", {}, "опція"), priceInfo("accessories", id)), h("td", { class: "num" }, r.price_text),
+    add(id, h("tr", {}, h("td", {}, h("b", {}, r.title), h("small", {}, "опція"), priceInfo("accessories", id)), h("td", { class: "num" }, r.price_text),
       h("td", { class: "num" }, h("small", {}, "ціна — у списку опцій"), priceTools("accessories", id, typed))));
   }
+  orderRows(tb, out);
   const kt0 = core.kitTypeById(cat, q.kit_type);
   if (kt0?.price_display === "bundle") {   // a kit with one price can also be priced position by position (as the ЗІЛ KP of 22.10.2026)
     $("#kitPriceBox").append(h("label", { class: "chk", title: "кожна позиція зі своєю ціною в таблиці «Вартість», без однієї ціни комплекту" },
@@ -1143,6 +1179,7 @@ function specFrom(q, meta, style) {
     if (spec.accessories?.length) chips.push("Опції для крана: с. {opt}", "Опції для причепа: с. {opt}");
     spec.upgrade_chips = chips.length > 8 ? [...chips.slice(0, 8 - (spec.accessories?.length ? 2 : 0)), ...(spec.accessories?.length ? chips.slice(-2) : [])] : chips;
   }
+  if (meta.order?.length) { spec.rows = byOrder(spec.rows, rowKey, meta.order); spec.rows.forEach((r, i) => { r.no = i + 1; }); }
   spec.style = style;
   applyPageEdits(spec, meta);
   return spec;
@@ -1187,11 +1224,11 @@ async function generate(asNew) {
   try {
     spec = specFrom(lastQuote, { number: $("#kpNumber").value || "0001",
       client: { name: $("#client").value.trim(), contact: $("#clientContact").value.trim() }, show_client: $("#clientShow").checked,
-      ...offerMeta($("#offerAcc").checked, !!$("#offerPrices").value, S.kt.id), edits: S.edits, base: S.basePreset }, $("#styleChips").dataset.v || "dark");
+      ...offerMeta($("#offerAcc").checked, !!$("#offerPrices").value, S.kt.id), edits: S.edits, base: S.basePreset, order: S.order }, $("#styleChips").dataset.v || "dark");
   } catch (e) { return toast((e.errors || [String(e)])[0]); }
   const state = { kit_type: S.kt.id, selection: S.sel, manual: S.manual, kitPrice: S.kitPrice, discount: S.discount, qty: S.qty, preset: S.preset,
     number: $("#kpNumber").value, date: $("#kpDate").value, client: $("#client").value, contact: $("#clientContact").value, style: spec.style, offerAcc: $("#offerAcc").checked, offerPrices: !!$("#offerPrices").value, clientShow: $("#clientShow").checked,
-    extras: S.extras.filter((x) => x.title?.trim()), itemized: S.itemized, edits: S.edits, editLog: S.editLog, basePreset: S.basePreset };
+    extras: S.extras.filter((x) => x.title?.trim()), itemized: S.itemized, edits: S.edits, editLog: S.editLog, basePreset: S.basePreset, order: S.order || null };
   const btn = $("#gen"), res = $("#genResult");
   btn.disabled = true; $("#genNew").disabled = true; btn.innerHTML = '<span class="spin"></span>Створюю КП… (PDF — до хвилини)'; res.innerHTML = "";
   const ttl = `КП № ${$("#kpNumber").value || "—"}` + ($("#client").value.trim() ? " · " + $("#client").value.trim() : "");
@@ -1237,7 +1274,7 @@ function loadState(entry) {
   S.sel = core.reconcileSelection(cat, st.kit_type, st.selection);
   Object.assign(S, { manual: st.manual || {}, kitPrice: st.kitPrice ?? null, discount: st.discount || 0, qty: st.qty || {}, preset: st.preset || null, historyId: entry.id,
     extras: structuredClone(st.extras || []), itemized: !!st.itemized, edits: structuredClone(st.edits || null), editLog: structuredClone(st.editLog || {}),
-    basePreset: st.basePreset || st.preset || null, cellOpen: null });
+    basePreset: st.basePreset || st.preset || null, cellOpen: null, order: st.order || null });
   confirmAll();
   $("#kpNumber").value = st.number || entry.number || ""; $("#kpDate").value = st.date || core.todayIso();
   $("#client").value = st.client || ""; $("#clientContact").value = st.contact || ""; $("#discount").value = S.discount;
@@ -2200,7 +2237,7 @@ function recalcEntry(e) {
 async function regenerateEntry(e, q, sel) {
   const st = e.state;
   const spec = specFrom(q, { number: st.number || e.number || "0001", client: { name: st.client || e.client || "", contact: st.contact || e.contact || "" },
-    show_client: st.clientShow !== false, ...offerMeta(st.offerAcc === true, !!st.offerPrices, st.kit_type), edits: st.edits || null, base: st.basePreset || null }, st.style || e.style || admin.style || "dark");
+    show_client: st.clientShow !== false, ...offerMeta(st.offerAcc === true, !!st.offerPrices, st.kit_type), edits: st.edits || null, base: st.basePreset || null, order: st.order || null }, st.style || e.style || admin.style || "dark");
   const r = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ spec, state: { ...st, selection: sel || st.selection }, history_id: e.id }) });
   if (!r.pptx) throw new Error((r.messages || ["КП не створено"]).slice(-1)[0]);
   return r;
