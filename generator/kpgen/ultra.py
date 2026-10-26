@@ -75,9 +75,7 @@ def conversion(rows, model, cs, t, truck_spec):
               pump=f'{pm.group(0).rstrip(",;")}, привід гідросистеми крана' if pm else 'привід гідросистеми крана', last=last[0], last_sub=last[1])
     tiles = [(a, b.replace('90 л', '{oil} л')) for a, b in TRUCK_TILES] if frame else \
             [(a.format(**fm), b) for a, b, k in TRUCK_TILES_PTO if not k or has[k]]
-    ph = conv.get('photo') or ''   # the user's photo of the conversion (ЗІЛ: zil_platform_photo); else the scheme
-    photo = ph if ph and ph != 'prod/truck_conversion.png' and R.asset_ok(ph) else ''
-    return dict(frame=frame, desc=cd, lead=lead, fm=fm, tiles=[(a.format(**fm), b.format(**fm)) for a, b in tiles], photo=photo)
+    return dict(frame=frame, desc=cd, lead=lead, fm=fm, tiles=[(a.format(**fm), b.format(**fm)) for a, b in tiles])
 
 
 # ---------------------------------------------------------------- rasters
@@ -447,19 +445,19 @@ class Ultra:
         D, cs, t = self.deck, self.cs, self.truck_name
         s = D.slide(self.raster('bg-a', page_bg, ((8.3, 6.5, 3.2, 0.14),)))
         self.pages.append((s, False))
-        cv = conversion(self.spec['rows'], self.m, cs, t, self.truck_spec)
         d = self.photo_of('npl', None)
         if d:
             D.img(s, self.raster('photo', photo, d[0], 7.27, 4.2, d[1], d[2], assets=(d[0],)), 0.5, 0.95, 7.27, 4.2, r=0.2).name = 'hero:npl'
-        else:   # the conversion's photo, or the user's scheme (platform, pyramid with outriggers, tank), on a card
-            sch = cv['photo'] or 'prod/truck_pyramid.png'
+        else:   # the user's scheme of the conversion (platform, pyramid with outriggers, tank) on a card
+            sch = 'prod/truck_platform_render.png'
             D.box(s, 0.5, 0.95, 7.27, 4.2, CARD, LINE, r=0.2)
             D.img(s, self.raster('scheme', lambda p_, w_, h_: jpg(R.on_card(Image.open(R.asset(p_)).convert('RGBA'), w_, h_, 0.95)), sch, 7.0, 3.95, assets=(sch,)), 0.63, 1.08, 7.0, 3.95, r=0.16)
-            if not cv['photo']: D.text(s, 5.0, 4.75, 2.6, 0.2, '* схематичне зображення', 7.5, DIM, align='r')
+            D.text(s, 5.0, 4.75, 2.6, 0.2, '* схематичне зображення', 7.5, DIM, align='r')
         D.box(s, 0.75, 4.67, 2.3, 0.3, OR, r=0.15)
-        D.text(s, 0.75, 4.67, 2.3, 0.3, 'СХЕМА ДООБЛАДНАННЯ' if not d and not cv['photo'] else 'ДООБЛАДНАННЯ', 8, WHITE, True, 'c', 'm', track=0.5)
+        D.text(s, 0.75, 4.67, 2.3, 0.3, 'СХЕМА ДООБЛАДНАННЯ' if not d else 'ДООБЛАДНАННЯ', 8, WHITE, True, 'c', 'm', track=0.5)
         self.kicker(s, 0.5, 5.45, 'дообладнання · власне виробництво')
         D.rt(s, self.headline([[('Лісовоз на базі', WHITE)], [(t, OR)]]), 0.48, 5.8, 0.42)
+        cv = conversion(self.spec['rows'], self.m, cs, t, self.truck_spec)
         frame, cd, fm, tiles = cv['frame'], cv['desc'], cv['fm'], cv['tiles']
         D.text(s, 0.5, 6.87, 7.27, 0.9, [cv['lead'], cd[:1].upper() + cd[1:]], 10.5 if frame else 9.5, (210, 213, 218), spacing=1.2)
         tw, gap = (7.27 - 0.15) / 2, 0.12; rh = min(0.68, (10.85 - 7.85 - gap * 3) / 4)

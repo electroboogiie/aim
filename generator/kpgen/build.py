@@ -893,7 +893,7 @@ class Engine:
         by_id(s, 14).height = I(2.2)
         bg = by_name(s, 'bg')[0]   # page background of the config page (no crane photo) + the scheme as a cut-out on the right
         set_image(bg, by_name(self.pages['config'], 'bg')[0].image.blob)
-        sch = cv['photo'] or 'prod/truck_pyramid.png'   # the user's photo of the conversion, else the scheme
+        sch = 'prod/truck_platform_render.png'
         data = self.raster('scheme', lambda p: R.png(R.cutout_glow(R.alpha_crop(Image.open(R.asset(p))), a=45)), sch, assets=(sch,))
         im = Image.open(io.BytesIO(data))
         pic = s.shapes.add_picture(io.BytesIO(data), I(3.7), I(1.35), I(4.2), I(4.2 * im.height / im.width))
