@@ -36,7 +36,7 @@ export function kpRows(q) {
     });
     if (q.price_display === "itemized") {
         for (const ch of q.choices) {
-            if (ch.price_uah > 0)
+            if (ch.price_uah !== 0)
                 rows.push({ no: 0, title: `${ch.title}: ${ch.value_title}`, desc: "", qty: 1, price_text: formatUah(ch.price_uah) });
         }
         for (const a of q.accessories) {

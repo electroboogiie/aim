@@ -23,6 +23,8 @@ const h = (tag, attrs = {}, ...kids) => {
 const toast = (t) => { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("on"), 2800); };
 const num = (v) => (v === "" || v == null || isNaN(Number(v)) ? null : Number(v));
 const uah = (n) => (n == null ? "—" : core.formatUah(n));
+/** Surcharge or discount: «+87 600 ₴», «−50 900 ₴». */
+const sgnUah = (n) => (n == null ? "—" : (n > 0 ? "+" : n < 0 ? "−" : "") + core.formatUah(Math.abs(n)));
 const nowStr = () => new Date().toLocaleString("uk-UA", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 const asset = (p) => (p ? "/assets/" + p : "");
 const qs = (o) => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
@@ -302,6 +304,10 @@ function normAdmin() {
   for (const k of ["items", "accessories", "kits", "kinds", "kp_items", "pos"]) admin.photos[k] ??= {};
   admin.materials ??= { list: [], log: [] }; admin.materials.list ??= []; admin.materials.log ??= [];
   admin.bom ??= {}; admin.labour ??= [];
+  {   // ids repeated by an earlier big import: calculations resolved them to the last one, so the earlier ones get new ids
+    const L = admin.materials.list, last = new Map(L.map((m, i) => [m.id, i]));
+    L.forEach((m, i) => { if (last.get(m.id) !== i) m.id = newMatId(); });
+  }
   for (const k of ["items", "bundles", "accessories"]) admin.prices[k] ??= {};
   admin.texts.terms ??= {}; admin.texts.cranes ??= {}; admin.texts.npl ??= {};
   admin.page_edits ??= { tpl: {}, preset: {} }; admin.page_edits.tpl ??= {}; admin.page_edits.preset ??= {};   // page editor: style templates, base KPs
@@ -576,7 +582,7 @@ function setAcc(id, patch) {
 const slotPick = (s) => { const cands = core.slotCandidates(cat, S.kt.id, s.id, S.sel); return (cands.find((c) => c.allowed && c.id === s.default) || cands.find((c) => c.allowed))?.id; };
 const shortLabel = (it, all) => { const t = it?.title || ""; const common = all.length > 1 ? commonPrefix(all.map((c) => c.item?.title || "")) : ""; return (common.length > 6 && t.length > common.length ? t.slice(common.length).trim() : itemLabel(it, all.map((c) => c.item))) || t; };
 function commonPrefix(list) { let p = list[0] || ""; for (const s of list) while (!s.startsWith(p)) p = p.slice(0, p.lastIndexOf(" ") > 0 ? p.lastIndexOf(" ") : p.length - 1); return p; }
-function choicePriceMark(o, items) { return core.choiceIsStandard(o, items) ? "базовий" : o.price_uah ? "+" + uah(o.price_uah) : o.on_request ? "доплата за запитом" : ""; }
+function choicePriceMark(o, items) { return core.choiceIsStandard(o, items) ? "базовий" : o.price_uah ? sgnUah(o.price_uah) : o.on_request ? "доплата за запитом" : ""; }
 /** Groups of picks of a position ("slot:<id>" or "acc:<id>"): its variants, its choices, quantity, inside the conversion or separate. */
 function posVariants(key) {
   const kt = S.kt, sel = S.sel, items = core.selectedItems(cat, kt, sel).map((x) => x.item), out = [];
@@ -680,7 +686,7 @@ function renderTree() {
     cols.push(["Кран", nodes]);
   }
   // 3. crane-bound choices in one column: захват, under it розподільник
-  const optMark = (o) => core.choiceIsStandard(o, items) ? ["★ базовий", "std"] : o.price_uah ? ["+" + uah(o.price_uah), ""] : o.on_request ? ["доплата за запитом", "req"] : ["без доплати", ""];
+  const optMark = (o) => core.choiceIsStandard(o, items) ? ["★ базовий", "std"] : o.price_uah ? [sgnUah(o.price_uah), ""] : o.on_request ? ["доплата за запитом", "req"] : ["без доплати", ""];
   const craneCh = kt.choices.filter((ch) => ch.slot === "crane" && sel.slots.crane);
   if (craneCh.length) {
     const nodes = [];
@@ -811,7 +817,7 @@ function renderConf() {
     const sel = h("select", { onchange: (e) => { S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, choices: { ...S.sel.choices, [ch.id]: e.target.value } }); if (ch.slot) confirmPos("slot:" + ch.slot); changed(); } },
       opts.map((o) => { const why = core.choiceOptionBlock(cat, S.kt, o, S.sel, items);
         return h("option", { value: o.value, disabled: !!why && (S.sel.choices?.[ch.id] ?? ch.default) !== o.value },
-          o.title + (core.choiceIsStandard(o, items) ? " — базовий" : o.price_uah ? ` (+${core.formatUah(o.price_uah)})` : o.on_request ? " — доплата за запитом" : "") + (why ? ` (${why})` : "")); }));
+          o.title + (core.choiceIsStandard(o, items) ? " — базовий" : o.price_uah ? ` (${sgnUah(o.price_uah)})` : o.on_request ? " — доплата за запитом" : "") + (why ? ` (${why})` : "")); }));
     sel.value = S.sel.choices?.[ch.id] ?? ch.default;
     chb.append(h("label", {}, ch.title, sel));
   }
@@ -1565,7 +1571,7 @@ function renderKitEditor() {
       h("div", { class: "ord" }, h("button", { onclick: () => { moveIn(CO, chIds, c0.id, -1); saveAdmin(); renderKitEditor(); } }, "▲"), h("button", { onclick: () => { moveIn(CO, chIds, c0.id, 1); saveAdmin(); renderKitEditor(); } }, "▼")),
       h("div", { class: "ed-main" }, h("b", {}, ch.title),
         h("div", { class: "chips" }, ch.options.map((o) => h("span", { class: "chip" + (o.value === ch.default ? " on" : "") + (o._off ? " gone" : ""), title: o._off ? "варіант вимкнено" : "" },
-          o.title + (o.price_uah ? ` · +${core.formatUah(o.price_uah)}` : o.on_request && o.value !== ch.default ? " · за запитом" : "")))),
+          o.title + (o.price_uah ? ` · ${sgnUah(o.price_uah)}` : o.on_request && o.value !== ch.default ? " · за запитом" : "")))),
         h("small", { class: "hint", style: "margin:0" }, (c0.slot ? `показується, коли в комплекті є «${slot?.title || c0.slot}»` : "завжди") + (own ? " · додано в налаштуваннях" : ""))),
       h("div", { class: "ed-side" },
         h("label", { class: "toggle" }, h("input", { type: "checkbox", checked: !off, onchange: (e) => {
@@ -2108,8 +2114,9 @@ async function regenerateEntry(e, q, sel) {
 // ------------------------------------------------------------------ settings: price calculation — products, works, materials, import, result, log
 let ownProduct = null, ownTab = "specs", matQuery = "", matGroup = "", importState = null;
 const M = () => admin.materials;
-const newMatId = () => "m_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-const newWorkId = () => "w_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+let idSeq = 0;   // many ids in one millisecond (a warehouse file of 1 600 rows) never collide
+const newMatId = () => "m_" + Date.now().toString(36) + (idSeq++).toString(36) + Math.random().toString(36).slice(2, 5);
+const newWorkId = () => "w_" + Date.now().toString(36) + (idSeq++).toString(36) + Math.random().toString(36).slice(2, 5);
 const normName = (s) => String(s ?? "").toLowerCase().replace(/[«»"'`’]/g, "").replace(/[\s ]+/g, " ").trim();
 const normCode = (s) => String(s ?? "").replace(/[\s ]+/g, "").toLowerCase();
 /** Work name without the 1C suffix «(операція)». */
@@ -2155,10 +2162,10 @@ function prodOptions(sel, filter = () => true) {
 }
 function renderOwn() {
   const seg = $("#ownSeg"); seg.innerHTML = "";
-  const tabs = [["specs", "Вироби"], ["bom", "Калькуляція виробу"], ["labour", "Розцінки робіт"], ["mats", "Матеріали і ціни"], ["import", "Імпорт з Excel"], ["result", "Результат оновлення"], ["log", "Журнал і відкат"]];
+  const tabs = [["specs", "Вироби"], ["bom", "Калькуляція виробу"], ["parts", "Складові й опції"], ["labour", "Розцінки робіт"], ["mats", "Матеріали і ціни"], ["import", "Імпорт з Excel"], ["result", "Результат оновлення"], ["log", "Журнал і відкат"]];
   for (const [k, t] of tabs) seg.append(h("button", { class: ownTab === k ? "on" : "", onclick: () => { ownTab = k; renderOwn(); } }, t, k === "result" && admin.calc_result?.rows?.length ? h("b", { class: "cnt" }, String(admin.calc_result.rows.length)) : null));
   const box = $("#ownBox"); box.innerHTML = "";
-  ({ specs: ownSpecs, bom: ownBom, labour: ownLabour, mats: ownMaterials, import: ownImport, result: ownResult, log: ownLog })[ownTab](box);
+  ({ specs: ownSpecs, bom: ownBom, parts: ownParts, labour: ownLabour, mats: ownMaterials, import: ownImport, result: ownResult, log: ownLog })[ownTab](box);
 }
 const openCalc = (id) => { ownProduct = id; ownTab = "bom"; renderOwn(); };
 
@@ -2270,6 +2277,382 @@ function ownBom(box) {
   fin.onchange = () => { R().mode = "bom"; const v = num(fin.value); if (v == null) delete R().final; else R().final = v; save(); };
 }
 
+// ---- components (parts) of a product: materials, a share of consumables by steel mass and allocated hours; options as signed lines
+// against the base; templates of a component with a note and dates; similar warehouse items offered as options.
+const todayUa = () => new Date().toLocaleDateString("uk-UA");
+const SEEDS = [{ file: "npl10_404.json", title: "НПЛ-10 за замовленням 404 (27.10.2026)" }];
+/**
+ * Live cost of each component: materials of its rows, consumables and fasteners (components marked dist) spread by steel mass,
+ * work hours as split in the work rows (hours not split go by mass) × the current rates.
+ */
+function partCosts(pid) {
+  const B = admin.bom[pid]; if (!B?.parts?.length) return null;
+  const mats = matMap(), works = labMap(), subs = specByName();
+  const mk = (p) => ({ ...p, mat: 0, share: 0, hours: 0, labour: 0, rows: [], ops: {} });
+  const P = new Map(B.parts.map((p) => [p.id, mk(p)])), none = mk({ id: "", title: "Без складової" });
+  const get = (id) => P.get(id) || none;
+  B.rows.forEach((r, i) => {
+    if (r.work) return;
+    const m = mats.get(r.mat), sid = m ? subs.get(normName(m.name)) : null;
+    const pu = sid && sid !== pid ? bomCost(sid)?.total ?? null : matUah(m), sum = (pu ?? 0) * (num(r.qty) ?? 0);
+    const p = get(r.part); p.mat += sum; p.rows.push({ r, i, m, pu, sum });
+  });
+  const fab = [...P.values()].filter((p) => !p.dist && num(p.kg) > 0), kgT = fab.reduce((s, p) => s + num(p.kg), 0);
+  const addH = (p, w, x) => { const rate = num(w?.rate) ?? 0; p.hours += x; p.labour += x * rate; p.ops[w?.name || "?"] = (p.ops[w?.name || "?"] || 0) + x; };
+  for (const r of B.rows) {
+    if (!r.work) continue;
+    const w = works.get(r.work); let rest = num(r.qty) ?? 0;
+    for (const [pp, x] of Object.entries(r.split || {})) { addH(get(pp), w, num(x) ?? 0); rest -= num(x) ?? 0; }
+    if (Math.abs(rest) < 1e-6) continue;
+    if (kgT) for (const p of fab) addH(p, w, rest * num(p.kg) / kgT); else addH(none, w, rest);
+  }
+  const distT = [...P.values()].filter((p) => p.dist).reduce((s, p) => s + p.mat, 0);
+  for (const p of fab) p.share = kgT ? distT * num(p.kg) / kgT : 0;
+  const list = [...P.values(), ...(none.rows.length || none.hours ? [none] : [])];
+  for (const p of list) p.total = p.dist ? 0 : p.mat + p.share + p.labour;
+  return { parts: list, perKg: kgT ? distT / kgT : 0, distT, kgT, total: list.reduce((s, p) => s + p.total, 0) + (kgT ? 0 : distT) };
+}
+/** Surcharge (+) or discount (−) of an option from its lines at today's prices and rates. */
+function optDelta(o, pc) {
+  const mats = matMap(), works = labMap();
+  let mat = 0, lab = 0, other = 0; const miss = [];
+  for (const l of o.lines || []) {
+    if (l.mat) { const m = mats.get(l.mat), p = matUah(m); if (p == null) miss.push(m?.name || "матеріал видалено"); else mat += p * (num(l.qty) ?? 0); }
+    else if (l.work) { const w = works.get(l.work), r = num(w?.rate); if (r == null) miss.push(w?.name || "роботу видалено"); else lab += r * (num(l.hours) ?? 0); }
+    else if (l.dist_kg) other += (num(l.dist_kg) ?? 0) * (pc?.perKg ?? 0);
+    else if (l.fixed) other += num(l.fixed) ?? 0;
+  }
+  return { mat, lab, other, total: mat + lab + other, miss };
+}
+const optPrice = (o, t, pc) => core.roundTo(optDelta(o, pc).total * (t.k ?? 1), settings.rounding_uah || 1);
+const tKey = (t) => t.choice ? `ch:${t.choice}:${t.value}` : `acc:${t.acc || t.acc_new}`;
+function choiceDef(id) { for (const kt of allKitTypes()) for (const ch of kitChoicesRaw(kt.id)) if (ch.id === id) return effChoice(ch, true); return null; }
+/** Where an option's price goes and what is there now. */
+function targetInfo(t) {
+  if (t.choice) {
+    const ch = choiceDef(t.choice), o = ch?.options.find((x) => x.value === t.value);
+    return { title: `${ch?.title || t.choice}: ${o?.title || t.title || t.value}${t.k > 1 ? ` (× ${t.k})` : ""}`, now: o ? (o.price_uah ?? null) : undefined, exists: !!o };
+  }
+  const id = t.acc || t.acc_new, a = cat.accessories.find((x) => x.id === id);
+  return { title: `опція «${a?.title || t.title || id}»`, now: a ? (a.price?.mode === "ref" ? a.price.uah : null) : undefined, exists: !!a };
+}
+/** Puts the option's price into the KP: the choice surcharge (a new variant if there is none) or the accessory price, fixed for KPs. */
+async function acceptOpt(pid, o, t, price) {
+  const note = `опція «${o.name}» → ${targetInfo(t).title}: ${sgnUah(price)}`;
+  if (t.choice) {
+    const E = ovOf("choices", t.choice), ch = choiceDef(t.choice);
+    const cu = (E.custom || []).find((x) => x.value === t.value);
+    if (!ch?.options.some((x) => x.value === t.value)) (E.custom ??= []).push({ value: t.value, title: t.title || o.name, short: t.title || o.name, note: "", price_uah: price });
+    else if (cu) { cu.price_uah = price; delete cu.on_request; }
+    else ((E.edits ??= {})[t.value] ??= {}).price = price;
+  } else {
+    const id = t.acc || t.acc_new, A = ovOf("accs");
+    if (t.acc_new && !(A.custom || []).some((x) => x.id === id) && !cat0.accessories.some((x) => x.id === id))
+      (A.custom ??= []).push({ id, group: "trailer", title: t.title || o.name, desc: t.desc || o.name, photo: "", price: { mode: "on_request" }, source: "калькуляція: " + (admin.bom[pid]?.title || pid), compatible: [pid] });
+    const old = structuredClone(admin.prices.accessories[id] ?? null);
+    const R = (admin.prices.accessories[id] = { ...(old || {}), base: price }); delete R.mode; delete R.final; delete R.markup;
+    M().log.unshift({ id: "l_" + Date.now().toString(36), at: nowStr(), note, changes: [], bom: [], prices: [{ kind: "accessories", id, old, new: structuredClone(R) }] });
+    (admin.fixed ??= {}).accessories ??= {};
+    const prev = admin.fixed.accessories[id];
+    admin.fixed.accessories[id] = { price, at: core.todayIso(), lines: [`з калькуляції опції «${o.name}»: ${uah(price)}`], ...(prev ? { prev: { price: prev.price, at: prev.at, lines: prev.lines } } : {}) };
+  }
+  (o.accepted ??= {})[tKey(t)] = { price, at: todayUa() };
+  o.applied = todayUa();
+  await saveAdmin(true, note); cat = effCatalog();
+}
+/** Words of a name without numbers: «Шина 560/60R22.5 BKT…» and «Шина 500/45-22,5 …» are the same kind. */
+const kindWords = (s) => tokens(s).filter((w) => !/\d/.test(w) && w.length > 2);
+function simScore(a, b) {
+  const A = kindWords(a), Bw = new Set(kindWords(b)); if (!A.length || !Bw.size) return 0;
+  const shared = A.filter((w) => Bw.has(w)).length / A.length;
+  return A[0] === kindWords(b)[0] ? 0.5 + shared / 2 : shared >= 0.6 ? shared / 2 : 0;
+}
+/** Similar warehouse items for a row: the same kind of item (first word) or a kind used in the same component («Колесо…» for a tyre of
+ * the wheels), the same unit; picking one makes an option. */
+function similarDialog(pid, row, part) {
+  const m = matMap().get(row.mat); if (!m) return toast("Матеріалу немає в довіднику");
+  const mats = matMap(), kinds = new Set((admin.bom[pid]?.rows || []).filter((r) => r.mat && part && r.part === part.id).map((r) => kindWords(mats.get(r.mat)?.name || "")[0]).filter(Boolean));
+  const score = (x) => simScore(m.name, x.name) || (kinds.has(kindWords(x.name)[0]) ? 0.4 : 0);
+  const q = num(row.qty) ?? 1, pu = matUah(m) ?? 0;
+  let query = "";
+  const box = h("div");
+  const draw = () => {
+    box.innerHTML = "";
+    const qq = normName(query);
+    const list = M().list.filter((x) => x.id !== m.id && (qq ? normName(x.name).includes(qq) : (x.unit || "") === (m.unit || "")))
+      .map((x) => ({ x, s: qq ? 1 : score(x) })).filter((c) => c.s > 0)
+      .sort((a, b) => b.s - a.s || Math.abs((matUah(a.x) ?? 0) - pu) - Math.abs((matUah(b.x) ?? 0) - pu)).slice(0, 40);
+    const tb = h("tbody");
+    for (const { x } of list) {
+      const p = matUah(x), d = p == null ? null : core.roundTo((p - pu) * q, 1);
+      tb.append(h("tr", {}, h("td", {}, x.name, x.group ? h("small", { style: "display:block" }, x.group) : null), h("td", {}, x.unit || ""),
+        h("td", { class: "num" }, p == null ? "без ціни" : uah(Math.round(p))), h("td", { class: "num" }, d == null ? "—" : h("b", { class: d > 0 ? "plus" : d < 0 ? "minus" : "" }, sgnUah(d))),
+        h("td", {}, h("button", { class: "sm primary", onclick: () => {
+          const B = admin.bom[pid];
+          (B.opts ??= []).push({ id: "o_" + Date.now().toString(36), group: part?.title || "", part: part?.id, name: x.name, vs: m.name,
+            how: `замість «${m.name}» × ${fmtN(q)} ${m.unit || ""}`, lines: [{ mat: x.id, qty: q }, { mat: m.id, qty: -q }], targets: [], note: "", created: todayUa(), accepted: {} });
+          saveAdmin(); closeModal(); renderOwn(); toast("Додано опцію: " + x.name);
+        } }, "Як опцію"))));
+    }
+    box.append(list.length ? h("div", { class: "tbl-wrap", style: "max-height:55vh" }, h("table", { class: "prices" },
+      h("thead", {}, h("tr", {}, ["Позиція складу", "Од.", "Ціна", `Різниця × ${fmtN(q)}`, ""].map((t, i) => h("th", { class: i === 2 || i === 3 ? "num" : "" }, t)))), tb))
+      : h("p", { class: "hint" }, qq ? "Нічого не знайдено." : "Подібних позицій з тією ж одиницею не знайдено — пошукайте за назвою."));
+  };
+  const inp = h("input", { type: "search", placeholder: "пошук по всьому складу", style: "width:100%", oninput: (e) => { query = e.target.value; draw(); } });
+  draw();
+  modal(h("div", { class: "form wide" }, h("h2", {}, "Інші зі складу"), h("p", { class: "hint", style: "margin:0" }, `Зараз: «${m.name}», ${fmtN(q)} ${m.unit || ""} × ${uah(Math.round(pu))}. Обрана позиція стане опцією з надбавкою чи знижкою, базова калькуляція не зміниться.`),
+    inp, box, h("div", { class: "acts" }, h("button", { onclick: closeModal }, "Закрити"))));
+}
+/** Template of a component: its rows by name, hours by work, mass; a note and the dates of creation and use set by hand. */
+function tplCost(t, pc) {
+  const byName = new Map(M().list.map((m) => [normName(m.name), m])), byWork = new Map(admin.labour.map((w) => [normName(w.name), w]));
+  let mat = 0, lab = 0; const miss = [];
+  for (const r of t.rows) { const p = matUah(byName.get(normName(r.name))); if (p == null) miss.push(r.name); else mat += p * r.qty; }
+  for (const [w, x] of Object.entries(t.hours || {})) lab += (num(byWork.get(normName(w))?.rate) ?? 0) * x;
+  const share = t.dist ? 0 : (num(t.kg) ?? 0) * (pc?.perKg ?? 0);
+  return { mat, lab, share, total: mat + lab + share, miss };
+}
+function saveTplDialog(pid, p) {
+  const f = {};
+  modal(h("div", { class: "form" }, h("h2", {}, `Шаблон складової «${p.title}»`),
+    h("label", {}, "Назва шаблону", f.title = h("input", { value: p.title })),
+    h("label", {}, "Пам'ятка", f.note = h("textarea", { rows: 3, placeholder: "що це за варіант, де застосовано, що перевірити" }, p.note || "")),
+    h("div", { class: "lay-cols" }, h("label", {}, "Створено", f.created = h("input", { type: "date", value: core.todayIso() })), h("label", {}, "Застосовано", f.applied = h("input", { type: "date" }))),
+    h("p", { class: "hint" }, `${p.rows.length} рядків матеріалів, ${fmtN(p.hours, 1)} год, ${fmtN(num(p.kg) ?? 0, 0)} кг сталі.`),
+    h("div", { class: "acts" }, h("button", { onclick: closeModal }, "Скасувати"), h("button", { class: "primary", onclick: () => {
+      (admin.part_tpl ??= []).push({ id: "t_" + Date.now().toString(36), product: pid, part: p.id, title: f.title.value.trim() || p.title, note: f.note.value.trim(),
+        created: f.created.value, applied: f.applied.value, kg: num(p.kg) ?? 0, dist: !!p.dist,
+        rows: p.rows.map((x) => ({ name: x.m?.name || "?", unit: x.m?.unit || "", qty: num(x.r.qty) ?? 0 })), hours: { ...p.ops } });
+      saveAdmin(); closeModal(); renderOwn(); toast("Шаблон збережено");
+    } }, "Зберегти"))));
+}
+/** Rows and hours of a template replace the component's rows in the calculation (logged, undo in the log). */
+function applyTpl(pid, t) {
+  const B = admin.bom[pid], part = t.part;
+  if (!B.parts?.some((p) => p.id === part)) return toast("У цьому виробі немає такої складової");
+  const byName = new Map(M().list.map((m) => [normName(m.name), m])), byWork = new Map(admin.labour.map((w) => [normName(w.name), w]));
+  const miss = t.rows.filter((r) => !byName.has(normName(r.name)));
+  if (miss.length) return toast(`Немає в довіднику: ${miss.slice(0, 2).map((r) => r.name).join(", ")}${miss.length > 2 ? "…" : ""}`);
+  snapResult(`шаблон «${t.title}» → ${productTitle(prodById(pid))}`, () => {
+    const old = structuredClone(B);
+    B.rows = B.rows.filter((r) => r.work || r.part !== part);
+    for (const r of t.rows) B.rows.push({ mat: byName.get(normName(r.name)).id, qty: r.qty, part });
+    for (const r of B.rows) if (r.work && r.split?.[part] != null) { r.qty = (num(r.qty) ?? 0) - num(r.split[part]); delete r.split[part]; }
+    for (const [wn, x] of Object.entries(t.hours || {})) {
+      let w = byWork.get(normName(wn)); if (!w) { w = { id: newWorkId(), name: wn, rate: null }; admin.labour.push(w); }
+      let r = B.rows.find((y) => y.work === w.id); if (!r) B.rows.push(r = { work: w.id, qty: 0, split: {} });
+      r.qty = (num(r.qty) ?? 0) + x; (r.split ??= {})[part] = x;
+    }
+    const P = B.parts.find((p) => p.id === part); P.kg = t.kg; P.applied = todayUa(); P.tpl = t.title;
+    t.applied = core.todayIso();
+    logChange(`шаблон «${t.title}» → складова «${P.title}»`, [], [{ product: pid, old, new: structuredClone(B) }]);
+  });
+}
+/** Option = template minus the component now: its name becomes a choice with a surcharge or discount. */
+function tplOption(pid, t, pc) {
+  const B = admin.bom[pid], p = pc.parts.find((x) => x.id === t.part);
+  const byName = new Map(M().list.map((m) => [normName(m.name), m])), byWork = new Map(admin.labour.map((w) => [normName(w.name), w]));
+  const lines = [];
+  for (const r of t.rows) { const m = byName.get(normName(r.name)); if (m) lines.push({ mat: m.id, qty: r.qty }); }
+  for (const x of p?.rows || []) lines.push({ mat: x.r.mat, qty: -(num(x.r.qty) ?? 0) });
+  const hrs = { ...(t.hours || {}) }; for (const [k, v] of Object.entries(p?.ops || {})) hrs[k] = (hrs[k] || 0) - v;
+  for (const [k, v] of Object.entries(hrs)) { const w = byWork.get(normName(k)); if (w && Math.abs(v) > 0.01) lines.push({ work: w.id, hours: Math.round(v * 100) / 100 }); }
+  const dk = (num(t.kg) ?? 0) - (num(p?.kg) ?? 0); if (!t.dist && Math.abs(dk) > 0.5) lines.push({ dist_kg: Math.round(dk) });
+  (B.opts ??= []).push({ id: "o_" + Date.now().toString(36), group: p?.title || "", part: t.part, name: t.title, vs: p?.title || "", how: `шаблон «${t.title}» замість складової зараз`, lines, targets: [], note: t.note || "", created: todayUa(), accepted: {} });
+  saveAdmin(); renderOwn(); toast("Додано опцію з шаблону");
+}
+/** Loads a prepared calculation (components, options, the warehouse list): the product's manual price is not touched. */
+async function loadSeed(file) {
+  let D; try { D = await api("/calc/" + file); } catch (e) { return toast(e.message); }
+  const byName = new Map(M().list.map((m) => [normName(m.name), m]));
+  const nNew = D.warehouse.filter((w) => !byName.has(normName(w.name))).length, nDiff = D.warehouse.filter((w) => { const m = byName.get(normName(w.name)); return m && w.price != null && (num(m.price) !== w.price || m.cur === "EUR"); }).length;
+  const f = {};
+  const old = admin.bom[D.product];
+  modal(h("div", { class: "form" }, h("h2", {}, D.title),
+    h("p", {}, `Конфігурація: ${D.config}.`), h("p", {}, "Собівартість 404 за цінами складу: ", h("b", {}, uah(D.cost404)), ". Ціну НПЛ-10, введену вручну, програма не змінює: розрахункова збережеться з датою для порівняння."),
+    h("label", { class: "chk" }, f.upd = h("input", { type: "checkbox", checked: true }), `Оновити ціни матеріалів, які вже є в довіднику, цінами складу ${D.date} (різних: ${nDiff})`),
+    h("label", { class: "chk" }, f.add = h("input", { type: "checkbox", checked: true }), `Додати в довідник позиції складу, яких там немає (${nNew}) — для пошуку «Інші зі складу»`),
+    old?.rows?.length ? h("p", { class: "hint minus" }, `Поточна калькуляція «${productTitle(prodById(D.product))}» (${old.rows.length} рядків) буде замінена; відкат — у «Журнал і відкат».`) : null,
+    h("div", { class: "acts" }, h("button", { onclick: closeModal }, "Скасувати"), h("button", { class: "primary", onclick: () => { closeModal(); applySeed(D, f.upd.checked, f.add.checked); } }, "Завантажити"))));
+}
+function applySeed(D, upd, add) {
+  snapResult(D.title, () => {
+    const list = M().list, byName = new Map(list.map((m) => [normName(m.name), m])), changes = [];
+    const need = new Set([...D.rows.map((r) => normName(r.name)), ...D.opts.flatMap((o) => o.lines.filter((l) => l.name).map((l) => normName(l.name)))]);
+    for (const w of D.warehouse) {
+      const m = byName.get(normName(w.name));
+      if (m) {
+        if (upd && w.price != null && (num(m.price) !== w.price || m.cur === "EUR")) { changes.push({ id: m.id, name: m.name, old: { price: m.price, cur: m.cur }, new: { price: w.price, cur: "UAH" } }); m.price = w.price; m.cur = "UAH"; }
+        if (!m.group && w.group) m.group = w.group;
+      } else if (add || need.has(normName(w.name))) {
+        const x = { id: newMatId(), code: "", name: w.name, unit: w.unit || "шт", group: w.group || "", price: w.price, cur: "UAH" };
+        list.push(x); byName.set(normName(x.name), x); changes.push({ id: x.id, name: x.name, old: null, new: { price: x.price, cur: "UAH" } });
+      }
+    }
+    const byWork = new Map(admin.labour.map((w) => [normName(w.name), w])), wid = {};
+    for (const w of D.works) {
+      let x = byWork.get(normName(w.name));
+      if (!x) { x = { id: newWorkId(), name: w.name, rate: w.rate }; admin.labour.push(x); byWork.set(normName(w.name), x); changes.push({ id: x.id, kind: "work", name: x.name, old: null, new: { price: x.rate } }); }
+      wid[w.name] = x.id;
+    }
+    const line = (l) => l.name ? { mat: byName.get(normName(l.name)).id, qty: l.qty } : l.work ? { work: (byWork.get(normName(l.work)) || {}).id, hours: l.hours } : { ...l };
+    const old = structuredClone(admin.bom[D.product] || { rows: [], coef: 1, extra: 0 });
+    const keep = new Map((old.opts || []).map((o) => [o.id, o]));
+    admin.bom[D.product] = { coef: old.coef ?? 1, extra: old.extra ?? 0, title: D.title, file: D.file, at: nowStr(), seed: D.id, config: D.config,
+      rows: [...D.rows.map((r) => ({ mat: byName.get(normName(r.name)).id, qty: r.qty, part: r.part })), ...D.works.map((w) => ({ work: wid[w.name], qty: w.hours, split: w.split }))],
+      parts: D.parts.map((p) => ({ ...p, note: (old.parts || []).find((x) => x.id === p.id)?.note || "", created: D.date, applied: D.date })),
+      opts: [...D.opts.map((o) => { const k = keep.get(o.id); return { ...o, lines: o.lines.map(line), note: k?.note || "", created: k?.created || D.date, applied: k?.applied, accepted: k?.accepted || {} }; }),
+        ...(old.opts || []).filter((o) => !D.opts.some((x) => x.id === o.id))],
+      saved: [...(old.saved || []), { at: D.date, cost: D.cost404, base: D.base_est, base291: D.base_291, note: `${D.title}: ${D.config}; ціни складу ${D.date}` }] };
+    logChange(D.title, changes, [{ product: D.product, old, new: structuredClone(admin.bom[D.product]) }]);
+  });
+  ownProduct = D.product; ownTab = "parts"; renderOwn();
+  toast("Розклад завантажено");
+}
+let partOpen = null;
+function ownParts(box) {
+  cat = effCatalog();
+  const withParts = ownProducts().filter((p) => admin.bom[p.id]?.parts?.length);
+  if (!withParts.some((p) => p.id === ownProduct)) ownProduct = withParts[0]?.id || ownProduct;
+  const pid = ownProduct, B = admin.bom[pid], pc = partCosts(pid), prod = prodById(pid);
+  box.append(h("div", { class: "card" }, h("div", { class: "inline", style: "margin:0" },
+    withParts.length ? [h("b", {}, "Виріб"), h("select", { onchange: (e) => { ownProduct = e.target.value; renderOwn(); } }, withParts.map((p) => h("option", { value: p.id, selected: p.id === pid }, productTitle(p))))] : null,
+    SEEDS.map((s) => h("button", { class: "sm", onclick: () => loadSeed(s.file) }, "Завантажити розклад: " + s.title))),
+    h("p", { class: "hint", style: "margin:6px 0 0" }, "Складова — частина виробу з власними матеріалами, часткою розхідників (за масою сталі) і годинами. Опції рахуються від базового варіанта і перераховуються з кожним оновленням цін складу й розцінок.")));
+  if (!pc) { box.append(h("p", { class: "hint" }, "Розкладу на складові ще немає. Завантажте підготовлений розклад кнопкою вище.")); return; }
+  const save = () => { saveAdmin(); renderOwn(); };
+  const bc = bomCost(pid), cost = bc ? bc.total : pc.total;
+  const seedOpts = (B.opts || []).filter((o) => o.in404);
+  const baseEst = cost - seedOpts.reduce((s, o) => s + optDelta(o, pc).total * o.in404, 0);
+  const kind = prodKind(pid), inKp = kpPrice(kind, pid, prod?.price);
+  // summary and saved prices
+  box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, B.title || productTitle(prod), h("small", {}, B.config || "")),
+    h("button", { class: "sm primary", onclick: () => { (B.saved ??= []).push({ at: todayUa(), cost: Math.round(cost), base: Math.round(baseEst), note: "збережено вручну" }); save(); toast("Розрахункову ціну збережено"); } }, "Зберегти розрахунок на сьогодні")),
+    h("div", { class: "bom-sum" }, h("div", {}, "Собівартість цієї конфігурації: ", h("b", {}, uah(Math.round(cost)))),
+      seedOpts.length ? h("div", {}, "Базовий варіант (мінус опції, що є в ній): ", h("b", {}, uah(Math.round(baseEst)))) : null,
+      h("div", {}, "У КП зараз: ", h("b", {}, inKp == null ? "за запитом" : uah(inKp)), h("small", {}, " — ціна вручну, розрахунок її не змінює"))),
+    (B.saved || []).length ? h("details", { class: "pinfo" }, h("summary", {}, `Збережені розрахунки: ${B.saved.length}`),
+      h("ul", {}, [...B.saved].reverse().map((s, i, arr) => h("li", {}, h("b", {}, s.at), ` · собівартість ${uah(s.cost)}`, s.base ? ` · база ${uah(s.base)}` : "", s.note ? h("small", {}, " · " + s.note) : null,
+        h("button", { class: "sm danger", style: "margin-left:6px", onclick: () => { B.saved.splice(arr.length - 1 - i, 1); save(); } }, "×"))))) : null));
+  // components
+  const tb = h("tbody");
+  for (const p of pc.parts) {
+    const P = B.parts.find((x) => x.id === p.id), open = partOpen === p.id;
+    tb.append(h("tr", { class: open ? "on" : "" },
+      h("td", {}, h("a", { href: "#", onclick: (e) => { e.preventDefault(); partOpen = open ? null : p.id; renderOwn(); } }, (open ? "▾ " : "▸ ") + p.title),
+        P?.tpl ? h("small", { style: "display:block" }, "шаблон: " + P.tpl) : null, P?.note ? h("small", { style: "display:block" }, "📝 " + P.note) : null),
+      h("td", { class: "num" }, p.dist ? "—" : fmtN(num(p.kg) ?? 0, 0)), h("td", { class: "num" }, uah(Math.round(p.mat))),
+      h("td", { class: "num" }, p.dist ? h("small", {}, "розподілено за масою") : uah(Math.round(p.share))),
+      h("td", { class: "num" }, p.hours ? fmtN(p.hours, 1) : "—"), h("td", { class: "num" }, p.labour ? uah(Math.round(p.labour)) : "—"),
+      h("td", { class: "num" }, h("b", {}, p.dist ? "—" : uah(Math.round(p.total)))),
+      h("td", { class: "nowrap" }, P ? [h("input", { type: "text", value: P.created || "", placeholder: "створено", title: "створено", style: "width:94px", onchange: (e) => { P.created = e.target.value.trim(); saveAdmin(); } }),
+        h("input", { type: "text", value: P.applied || "", placeholder: "застосовано", title: "застосовано", style: "width:94px", onchange: (e) => { P.applied = e.target.value.trim(); saveAdmin(); } })] : null),
+      h("td", { class: "nowrap" }, P ? [h("button", { class: "sm", title: "пам'ятка", onclick: () => { const t = h("textarea", { rows: 4 }, P.note || "");
+          modal(h("div", { class: "form" }, h("h2", {}, "Пам'ятка: " + P.title), t, h("div", { class: "acts" }, h("button", { onclick: closeModal }, "Скасувати"), h("button", { class: "primary", onclick: () => { P.note = t.value.trim(); closeModal(); save(); } }, "Зберегти")))); } }, "📝"),
+        h("button", { class: "sm", onclick: () => saveTplDialog(pid, p) }, "У шаблон")] : null)));
+    if (!open) continue;
+    const inner = h("tbody");
+    for (const x of p.rows) inner.append(h("tr", {}, h("td", {}, x.m?.name || "матеріал видалено"), h("td", { class: "num" }, fmtN(num(x.r.qty) ?? 0, 3), " ", x.m?.unit || ""),
+      h("td", { class: "num" }, x.pu == null ? "без ціни" : uah(Math.round(x.pu))), h("td", { class: "num" }, uah(Math.round(x.sum))),
+      h("td", {}, h("select", { class: "sm", onchange: (e) => { x.r.part = e.target.value; save(); } }, B.parts.map((q) => h("option", { value: q.id, selected: q.id === x.r.part }, q.title.split(":")[0])), h("option", { value: "", selected: !x.r.part }, "без складової"))),
+      h("td", {}, h("button", { class: "sm", onclick: () => similarDialog(pid, x.r, P) }, "Інші зі складу"))));
+    tb.append(h("tr", { class: "sub" }, h("td", { colspan: 9 },
+      p.rows.length ? h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Матеріал", "К-сть", "Ціна", "Сума", "Складова", ""].map((t, i) => h("th", { class: i && i < 4 ? "num" : "" }, t)))), inner) : h("p", { class: "hint" }, "Матеріалів немає."),
+      Object.keys(p.ops).length ? h("p", { class: "hint" }, "Години: " + Object.entries(p.ops).map(([k, v]) => `${k} ${fmtN(v, 1)}`).join(" · ")) : null,
+      P && !P.dist ? h("label", { class: "inline" }, "Маса сталі, кг (для частки розхідників)", h("input", { type: "number", value: P.kg ?? "", style: "width:90px", onchange: (e) => { P.kg = num(e.target.value) ?? 0; save(); } })) : null)));
+  }
+  box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Складові", h("small", {}, `разом ${uah(Math.round(pc.total))}; розхідники й кріплення ${uah(Math.round(pc.distT))} = ${fmtN(pc.perKg, 2)} ₴ на кг сталі`))),
+    h("div", { class: "tbl-wrap" }, h("table", { class: "prices parts" }, h("thead", {}, h("tr", {}, ["Складова", "Сталь, кг", "Матеріали", "Розхідники", "Год", "Роботи", "Разом", "Створено / застосовано", ""].map((t, i) => h("th", { class: i && i < 7 ? "num" : "" }, t)))), tb)),
+    h("p", { class: "hint" }, "Натисніть складову, щоб побачити її рядки: «Інші зі складу» пропонує подібні позиції (той самий вид і одиниця) з різницею в ціні, а обрана стає опцією. «У шаблон» зберігає складову з пам'яткою й датами.")));
+  // options
+  const ot = h("tbody");
+  for (const o of B.opts || []) {
+    const d = optDelta(o, pc), ts = o.targets || [];
+    const tcell = h("td", {}, ts.map((t) => {
+      const ti = targetInfo(t), price = optPrice(o, t, pc), acc = o.accepted?.[tKey(t)];
+      return h("div", { class: "tgt" }, h("small", {}, ti.title, " · у КП: ", ti.now === undefined ? "ще немає" : ti.now == null ? "за запитом" : sgnUah(ti.now)),
+        acc ? h("small", { class: "hint", style: "margin:0 0 0 4px" }, `(прийнято ${sgnUah(acc.price)} ${acc.at})`) : null,
+        ti.now === price ? h("span", { class: "badge gray" }, "як у КП") : h("button", { class: "sm primary", onclick: async () => { await acceptOpt(pid, o, t, price); renderOwn(); toast("Ціну опції поставлено в КП"); } }, `Поставити ${sgnUah(price)}`),
+        h("button", { class: "sm danger", title: "прибрати прив'язку", onclick: () => { o.targets = ts.filter((x) => x !== t); save(); } }, "×"));
+    }), h("button", { class: "sm", onclick: () => targetDialog(pid, o) }, "＋ куди в КП"));
+    ot.append(h("tr", {},
+      h("td", {}, h("b", {}, o.name), h("small", { style: "display:block" }, (o.group ? o.group + " · " : "") + "порівняно з: " + (o.vs || "—")),
+        h("details", { class: "pinfo" }, h("summary", {}, "як пораховано"), h("p", { class: "hint", style: "margin:4px 0" }, o.how || ""), optLines(o, pc, save)),
+        o.note ? h("small", { style: "display:block" }, "📝 " + o.note) : null),
+      h("td", { class: "num" }, uah(Math.round(d.mat))), h("td", { class: "num" }, uah(Math.round(d.lab))), h("td", { class: "num" }, d.other ? uah(Math.round(d.other)) : "—"),
+      h("td", { class: "num" }, h("b", { class: d.total > 0 ? "plus" : d.total < 0 ? "minus" : "" }, sgnUah(Math.round(d.total))), d.miss.length ? h("small", { class: "minus", style: "display:block" }, `без ціни: ${d.miss.length}`) : null),
+      tcell,
+      h("td", { class: "nowrap" }, h("input", { type: "text", value: o.created || "", placeholder: "створено", title: "створено", style: "width:94px", onchange: (e) => { o.created = e.target.value.trim(); saveAdmin(); } }),
+        h("input", { type: "text", value: o.applied || "", placeholder: "застосовано", title: "застосовано", style: "width:94px", onchange: (e) => { o.applied = e.target.value.trim(); saveAdmin(); } })),
+      h("td", { class: "nowrap" }, h("button", { class: "sm", title: "пам'ятка", onclick: () => { const t = h("textarea", { rows: 4 }, o.note || "");
+          modal(h("div", { class: "form" }, h("h2", {}, "Пам'ятка: " + o.name), t, h("div", { class: "acts" }, h("button", { onclick: closeModal }, "Скасувати"), h("button", { class: "primary", onclick: () => { o.note = t.value.trim(); closeModal(); save(); } }, "Зберегти")))); } }, "📝"),
+        h("button", { class: "sm danger", onclick: () => confirmBox(`Видалити опцію «${o.name}»? Ціна, вже поставлена в КП, лишиться.`, "Видалити", () => { B.opts = B.opts.filter((x) => x !== o); save(); }) }, "×"))));
+  }
+  box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Опції з калькуляції", h("small", {}, "надбавка (+) чи знижка (−) до базового варіанта за поточними цінами"))),
+    (B.opts || []).length ? h("div", { class: "tbl-wrap" }, h("table", { class: "prices opts" }, h("thead", {}, h("tr", {}, ["Опція", "Матеріали", "Роботи", "Розхідники, інше", "Надбавка / знижка", "Куди в КП", "Створено / застосовано", ""].map((t, i) => h("th", { class: i && i < 5 ? "num" : "" }, t)))), ot))
+      : h("p", { class: "hint" }, "Опцій ще немає: оберіть «Інші зі складу» в рядку складової або створіть опцію з шаблону."),
+    h("p", { class: "hint" }, "«Поставити» записує суму в доплату варіанта (дишло, гальма, колеса, коники…) чи в ціну опції причепа і фіксує її для нових КП. Після оновлення цін складу сума тут перераховується, а на сторінці «Результат оновлення» видно опції, де вона змінилась.")));
+  // templates
+  const T = (admin.part_tpl || []).filter((t) => t.product === pid || B.parts.some((p) => p.id === t.part));
+  if (T.length) {
+    const tt = h("tbody");
+    for (const t of T) {
+      const c = tplCost(t, pc), now = pc.parts.find((p) => p.id === t.part);
+      tt.append(h("tr", {}, h("td", {}, h("input", { value: t.title, style: "min-width:220px", onchange: (e) => { t.title = e.target.value.trim(); saveAdmin(); } }),
+          h("small", { style: "display:block" }, "складова: " + (now?.title || t.part))),
+        h("td", {}, h("textarea", { rows: 2, style: "min-width:200px", onchange: (e) => { t.note = e.target.value.trim(); saveAdmin(); } }, t.note || "")),
+        h("td", { class: "nowrap" }, h("input", { type: "date", value: t.created || "", title: "створено", onchange: (e) => { t.created = e.target.value; saveAdmin(); } }),
+          h("input", { type: "date", value: t.applied || "", title: "застосовано", onchange: (e) => { t.applied = e.target.value; saveAdmin(); } })),
+        h("td", { class: "num" }, uah(Math.round(c.total)), c.miss.length ? h("small", { class: "minus", style: "display:block" }, `без ціни: ${c.miss.length}`) : null),
+        h("td", { class: "num" }, now && !t.dist ? sgnUah(Math.round(c.total - now.total)) : "—"),
+        h("td", { class: "nowrap" }, h("button", { class: "sm", onclick: () => confirmBox(`Замінити складову «${now?.title || t.part}» рядками шаблону «${t.title}»?`, "Замінити", () => applyTpl(pid, t)) }, "Застосувати"),
+          h("button", { class: "sm", onclick: () => tplOption(pid, t, pc) }, "Як опцію"),
+          h("button", { class: "sm danger", onclick: () => confirmBox(`Видалити шаблон «${t.title}»?`, "Видалити", () => { admin.part_tpl = admin.part_tpl.filter((x) => x !== t); save(); }) }, "×"))));
+    }
+    box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Шаблони складових", h("small", {}, "ціна шаблону за поточними цінами складу і розцінками"))),
+      h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Шаблон", "Пам'ятка", "Створено / застосовано", "Ціна", "Різниця зі складовою", ""].map((t, i) => h("th", { class: i === 3 || i === 4 ? "num" : "" }, t)))), tt))));
+  }
+}
+/** Lines of an option: + added, − removed; quantities can be corrected. */
+function optLines(o, pc, save) {
+  const mats = matMap(), works = labMap();
+  return h("table", { class: "prices mini" }, h("tbody", {}, (o.lines || []).map((l) => {
+    const m = l.mat ? mats.get(l.mat) : null, w = l.work ? works.get(l.work) : null;
+    const k = l.mat ? "qty" : l.work ? "hours" : l.dist_kg != null ? "dist_kg" : "fixed";
+    const what = l.mat ? m?.name || "матеріал видалено" : l.work ? (w?.name || "робота") + ", год" : l.dist_kg != null ? "розхідники й кріплення, кг сталі" : "інше, ₴";
+    const sum = l.mat ? (matUah(m) ?? 0) * l.qty : l.work ? (num(w?.rate) ?? 0) * l.hours : l.dist_kg != null ? l.dist_kg * pc.perKg : l.fixed;
+    return h("tr", {}, h("td", {}, what), h("td", { class: "num" }, h("input", { type: "text", inputmode: "decimal", value: l[k], style: "width:70px", onchange: (e) => { const v = parsePrice(e.target.value); if (v != null) { l[k] = v; save(); } } }), " ", m?.unit || ""),
+      h("td", { class: "num" }, sgnUah(Math.round(sum))));
+  })));
+}
+/** Where the option's price goes: a variant of a kit choice (existing or new) or an option of the trailer (existing or new). */
+function targetDialog(pid, o) {
+  const f = {};
+  const chs = []; const seen = new Set();
+  for (const kt of allKitTypes()) if ((kt.slots || []).some((s) => (s.candidates || []).includes(pid))) for (const ch of kitChoicesRaw(kt.id)) if (!ch.slot && !seen.has(ch.id)) { seen.add(ch.id); chs.push(effChoice(ch, true)); }
+  const accs = cat.accessories.filter((a) => a.group === "trailer");
+  const sel = h("select", {}, h("optgroup", { label: "Варіант вибору" }, chs.flatMap((ch) => ch.options.map((x) => h("option", { value: `ch|${ch.id}|${x.value}` }, `${ch.title}: ${x.title}`)))),
+    h("optgroup", { label: "Новий варіант вибору" }, chs.map((ch) => h("option", { value: `chnew|${ch.id}` }, `${ch.title}: ＋ новий «${o.name}»`))),
+    h("optgroup", { label: "Опція причепа" }, accs.map((a) => h("option", { value: `acc|${a.id}` }, a.title))), h("option", { value: "accnew" }, "＋ нова опція причепа «" + o.name + "»"));
+  modal(h("div", { class: "form" }, h("h2", {}, "Куди в КП: " + o.name), h("label", {}, "Ціль", sel),
+    h("label", {}, "Скільки разів (напр. 4 коники × нарощування)", f.k = h("input", { type: "number", min: 1, value: 1, style: "width:80px" })),
+    h("div", { class: "acts" }, h("button", { onclick: closeModal }, "Скасувати"), h("button", { class: "primary", onclick: () => {
+      const [t, a, b] = sel.value.split("|"), k = Math.max(1, num(f.k.value) || 1);
+      const tg = t === "ch" ? { choice: a, value: b, k } : t === "chnew" ? { choice: a, value: "u_" + Date.now().toString(36), title: o.name, k } : t === "acc" ? { acc: a, k } : { acc_new: "u_" + Date.now().toString(36), title: o.name, desc: o.name, k };
+      (o.targets ??= []).push(tg); saveAdmin(); closeModal(); renderOwn();
+    } }, "Додати"))));
+}
+/** Options whose price at today's warehouse prices differs from the one put into the KP. */
+function changedOpts() {
+  const out = [];
+  for (const p of ownProducts()) {
+    const B = admin.bom[p.id]; if (!B?.opts?.length) continue;
+    const pc = partCosts(p.id);
+    for (const o of B.opts) for (const t of o.targets || []) { const a = o.accepted?.[tKey(t)]; if (!a) continue; const price = optPrice(o, t, pc); if (price !== a.price) out.push({ pid: p.id, o, t, a, price }); }
+  }
+  return out;
+}
+
 // ---- labour rates
 function ownLabour(box) {
   const L = admin.labour;
@@ -2367,21 +2750,33 @@ function snapResult(note, fn) {
   const after = calcSnapshot(), rows = [];
   for (const [k, a] of after) {
     const b = before.get(k);
-    if (!b || (b.cost === a.cost && b.calc === a.calc)) continue;
+    if (!b || (Math.abs((b.cost ?? 0) - (a.cost ?? 0)) < 0.5 && (b.cost == null) === (a.cost == null) && b.calc === a.calc)) continue;
     const id = k.slice(2), p = prodById(id), kind = prodKind(id);
     rows.push({ kind, id, title: productTitle(p), oldCost: b.cost, newCost: a.cost, calc: a.calc, inKp: kpPrice(kind, id, p?.price), pick: "auto", manual: null });
   }
-  if (rows.length) { admin.calc_result = { at: nowStr(), note, rows, bundles: [] }; ownTab = "result"; }
+  const opts = changedOpts().length;
+  if (rows.length || opts) { admin.calc_result = { at: nowStr(), note, rows, bundles: [] }; ownTab = "result"; }
   saveAdmin(true, note);
   renderOwn(); fixBadge();
   if (rows.length) toast(`Змінилась собівартість ${rows.length} виробів — оберіть нові ціни`);
+  else if (opts) toast(`Змінилась надбавка ${opts} опцій — перегляньте нові суми`);
 }
 function bundlesWith(itemIds) {
   return cat0.bundles.filter((b) => Object.values(b.slots || {}).some((x) => itemIds.has(x)));
 }
 function ownResult(box) {
   const R = admin.calc_result;
-  if (!R?.rows.length) { box.append(h("p", { class: "hint" }, "Тут з’являється результат після оновлення цін матеріалів чи розцінок: як змінилась собівартість кожного виробу і яку ціну поставити в КП.")); return; }
+  const co = changedOpts();
+  if (co.length) {
+    const tb = h("tbody");
+    for (const x of co) tb.append(h("tr", { class: "pending" }, h("td", {}, h("a", { href: "#", onclick: (e) => { e.preventDefault(); ownProduct = x.pid; ownTab = "parts"; renderOwn(); } }, x.o.name), h("small", { style: "display:block" }, targetInfo(x.t).title)),
+      h("td", { class: "num" }, sgnUah(x.a.price), h("small", { style: "display:block" }, x.a.at)), h("td", { class: "num" }, h("b", {}, sgnUah(x.price))),
+      h("td", {}, h("button", { class: "sm primary", onclick: async () => { await acceptOpt(x.pid, x.o, x.t, x.price); renderOwn(); } }, "Поставити в КП"))));
+    box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Опції: нова надбавка чи знижка", h("small", {}, "перераховано за новими цінами складу і розцінками")),
+      h("button", { class: "sm", onclick: async () => { for (const x of co) await acceptOpt(x.pid, x.o, x.t, x.price); renderOwn(); toast(`Оновлено опцій: ${co.length}`); } }, "Поставити всі")),
+      h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Опція", "У КП зараз", "Нова сума", ""].map((t, i) => h("th", { class: i === 1 || i === 2 ? "num" : "" }, t)))), tb))));
+  }
+  if (!R?.rows.length) { if (!co.length) box.append(h("p", { class: "hint" }, "Тут з’являється результат після оновлення цін матеріалів чи розцінок: як змінилась собівартість кожного виробу і яку ціну поставити в КП.")); return; }
   const tb = h("tbody");
   const newOf = (r) => r.pick === "auto" ? r.calc : r.pick === "manual" ? r.manual : r.inKp;
   for (const r of R.rows) {
@@ -3090,7 +3485,7 @@ function rowCard(z, P) {
       card.append(h("label", { class: "inline" }, ch.title, h("select", { value: v, onchange: (e) => {
         S.sel = core.reconcileSelection(cat, S.kt.id, { ...S.sel, choices: { ...S.sel.choices, [ch.id]: e.target.value } });
         posChanged(`${ch.title}: ${ch.options.find((o) => o.value === e.target.value)?.title || e.target.value}`);
-      } }, ch.options.map((o) => h("option", { value: o.value }, o.title + (o.price_uah ? ` (+${uah(o.price_uah)})` : ""))))));
+      } }, ch.options.map((o) => h("option", { value: o.value }, o.title + (o.price_uah ? ` (${sgnUah(o.price_uah)})` : ""))))));
     }
   }
   if (tile) card.append(h("div", { class: "pic-row" }, h("small", {}, "Фото"), gallerySelect(E.photo, (p) => rowEdit(id, "photo", p, null, `Фото «${ot}» → ${p ? p.split("/").pop() : "як у каталозі"}`), "— як у каталозі —")));

@@ -615,3 +615,12 @@ td.num, th.num, .num { font-variant-numeric: tabular-nums; }
 .tbl-wrap { border: 1px solid var(--line2); border-radius: var(--r); }
 .tbl-wrap table th { position: sticky; top: 0; z-index: 1; }
 .tbl-wrap table tr:last-child td { border-bottom: 0; }
+/* components and options of a calculation («Складові й опції») */
+td.nowrap { white-space: nowrap; } td.nowrap > * + * { margin-left: 4px; }
+table.parts tr.on > td { background: var(--sub); font-weight: 600; }
+table.parts tr.sub > td { background: var(--sub); padding: 6px 10px 12px 24px; }
+table.parts tr.sub table.prices { background: var(--card, transparent); }
+table.opts .tgt { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-bottom: 4px; }
+table.prices.mini { margin-top: 4px; font-size: 12px; } table.prices.mini td { padding: 2px 6px; }
+table.opts td:nth-child(6) { min-width: 330px; } table.opts .tgt > small:first-child { flex-basis: 100%; }
+table.opts .tgt { padding-bottom: 6px; border-bottom: 1px dashed var(--line2); } table.opts .tgt:last-of-type { border-bottom: 0; }
