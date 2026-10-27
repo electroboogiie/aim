@@ -624,3 +624,17 @@ table.opts .tgt { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 
 table.prices.mini { margin-top: 4px; font-size: 12px; } table.prices.mini td { padding: 2px 6px; }
 table.opts td:nth-child(6) { min-width: 330px; } table.opts .tgt > small:first-child { flex-basis: 100%; }
 table.opts .tgt { padding-bottom: 6px; border-bottom: 1px dashed var(--line2); } table.opts .tgt:last-of-type { border-bottom: 0; }
+/* НПЛ analytics */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(122px, 1fr)); gap: 8px; margin: 10px 0; }
+.steps > div { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; background: var(--sub); display: flex; flex-direction: column; gap: 2px; }
+.steps > div > span { font-size: 12px; color: var(--mut); }
+.steps > div > b { font-size: 15px; }
+.steps > div > small { font-size: 11.5px; color: var(--mut); }
+.steps > div.warn { background: var(--warn-soft); border-color: var(--warn); }
+.steps > div.warn > b { color: var(--warn); }
+.steps > div.tot { background: var(--blue-soft); border-color: var(--blue); }
+table.anrows td { vertical-align: top; }
+table.anrows select { max-width: 230px; }
+tr.tot td { border-top: 2px solid var(--line3); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chips button { font-size: 11.5px; padding: 2px 8px; }

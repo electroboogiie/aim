@@ -142,6 +142,7 @@
         <div class="grp">Ціни</div>
         <button data-sub="a-prices"><i>₴</i>Ціни позицій і курс €</button>
         <button data-sub="a-own"><i>⚒</i>Розрахунок ціни</button>
+        <button data-sub="a-anal"><i>∑</i>Аналітика НПЛ</button>
         <button data-sub="a-fix"><i>✓</i>Фіксація цін і КП <b class="cnt" id="fixCount" hidden></b></button>
         <div class="grp">Службове</div>
         <button data-sub="a-versions"><i>↺</i>Версії і відкат</button>
@@ -216,6 +217,12 @@
             <select id="bulkGroup"></select> <input type="number" id="bulkPct" step="0.5" style="width:80px"> %
             <button id="bulkApply">Застосувати</button></div>
           <div id="priceTables"></div>
+        </div>
+
+        <div id="a-anal" class="subtab">
+          <div class="page-head"><h1>Аналітика НПЛ</h1></div>
+          <p class="hint">Кожне замовлення НПЛ окремо (матеріали й години з 1С, примітка): спершу віднімаються готові вироби (бак, ящик) за їхніми калькуляціями, далі матеріали й години розносяться за складовими за правилами та кресленням, решта — «нерозподілено», її переносите вручну. Нижче — базовий НПЛ, варіації комплектування і ціни опцій з описом, як їх сформовано. Розрахована ціна — для інформації; у КП вона потрапляє лише вашою кнопкою, або ставите свою.</p>
+          <div id="analBox"></div>
         </div>
 
         <div id="a-own" class="subtab">
