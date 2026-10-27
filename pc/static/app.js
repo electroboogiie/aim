@@ -2475,14 +2475,13 @@ function simScore(a, b) {
   const shared = A.filter((w) => Bw.has(w)).length / A.length;
   return A[0] === kindWords(b)[0] ? 0.5 + shared / 2 : shared >= 0.6 ? shared / 2 : 0;
 }
-/** First data load: the warehouse into the materials (new ones added, prices of today), works, the orders proposed. Logged, undo in the log. */
-async function loadAnalysis() {
-  let D; try { D = await api("/calc/npl10_analysis.json"); } catch (e) { toast(e.message); return false; }
+/** Warehouse names into the materials (new ones added; prices of today only on the first load), works added. Returns name → id maps. */
+function anImportRefs(D, prices) {
   const list = M().list, byName = new Map(list.map((m) => [normName(m.name), m])), changes = [];
   for (const w of D.warehouse) {
     const m = byName.get(normName(w.name));
     if (m) {
-      if (w.price != null && (num(m.price) !== w.price || m.cur === "EUR")) { changes.push({ id: m.id, name: m.name, old: { price: m.price, cur: m.cur }, new: { price: w.price, cur: "UAH" } }); m.price = w.price; m.cur = "UAH"; }
+      if (prices && w.price != null && (num(m.price) !== w.price || m.cur === "EUR")) { changes.push({ id: m.id, name: m.name, old: { price: m.price, cur: m.cur }, new: { price: w.price, cur: "UAH" } }); m.price = w.price; m.cur = "UAH"; }
       if (!m.group && w.group) m.group = w.group;
     } else {
       const x = { id: newMatId(), code: "", name: w.name, unit: w.unit || "шт", group: w.group || "", price: w.price, cur: "UAH" };
@@ -2492,15 +2491,58 @@ async function loadAnalysis() {
   const byWork = new Map(admin.labour.map((w) => [normName(w.name), w]));
   for (const w of D.works) if (!byWork.has(normName(w.name))) { const x = { id: newWorkId(), name: w.name, rate: w.rate }; admin.labour.push(x); byWork.set(normName(w.name), x); changes.push({ id: x.id, kind: "work", name: x.name, old: null, new: { price: x.rate } }); }
   const mid = (n) => byName.get(normName(n))?.id, wid = (n) => byWork.get(normName(n))?.id;
-  const line = (l) => l.name ? { mat: mid(l.name), qty: l.qty } : l.work ? { work: wid(l.work), hours: l.hours } : { ...l };
+  return { changes, mid, wid, line: (l) => l.name ? { mat: mid(l.name), qty: l.qty } : l.work ? { work: wid(l.work), hours: l.hours } : { ...l } };
+}
+const anSeedOrder = (o, R) => ({ ...o, rows: o.rows.map((r) => ({ mat: R.mid(r.name), qty: r.qty })), works: o.works.map((w) => ({ work: R.wid(w.name), qty: w.hours })), notes: {} });
+const anSeedOpt = (o, R, D) => ({ ...o, lines: o.lines.map(R.line), note: "", created: D.date, accepted: {} });
+/** First data load: the warehouse into the materials (new ones added, prices of today), works, the orders proposed. Logged, undo in the log. */
+async function loadAnalysis() {
+  let D; try { D = await api("/calc/npl10_analysis.json"); } catch (e) { toast(e.message); return false; }
+  const R = anImportRefs(D, true);
   admin.analysis = { seed: D.id, product: D.product, base: D.base, date: D.date, perKgFrom: "404", parts: D.parts, rules: D.rules, pattern: D.pattern, fixed: D.fixed,
-    driver: D.driver, asm: D.asm, markup: 0, calc: {}, tpl: [], saved: [], prices_note: `ціни ${changes.filter((c) => c.old).length} матеріалів оновлено, ${changes.filter((c) => !c.old).length} додано зі складу ${D.date}`,
-    orders: D.orders.map((o) => ({ ...o, rows: o.rows.map((r) => ({ mat: mid(r.name), qty: r.qty })), works: o.works.map((w) => ({ work: wid(w.name), qty: w.hours })), notes: {} })),
-    opts: D.opts.map((o) => ({ ...o, lines: o.lines.map(line), note: "", created: D.date, accepted: {} })) };
+    driver: D.driver, asm: D.asm, markup: 0, calc: {}, tpl: [], saved: [], prices_note: `ціни ${R.changes.filter((c) => c.old).length} матеріалів оновлено, ${R.changes.filter((c) => !c.old).length} додано зі складу ${D.date}`,
+    orders: D.orders.map((o) => anSeedOrder(o, R)), opts: D.opts.map((o) => anSeedOpt(o, R, D)) };
   for (const o of AN().orders) { proposeRows(o); proposeHours(o); }
-  logChange(`аналітика НПЛ-10: склад ${D.date}, замовлення ${D.orders.map((o) => o.id).join(", ")}`, changes);
+  logChange(`аналітика НПЛ-10: склад ${D.date}, замовлення ${D.orders.map((o) => o.id).join(", ")}`, R.changes);
   await saveAdmin(true, "аналітика НПЛ-10: вхідні дані");
   toast("Вхідні дані НПЛ-10 завантажено");
+  return true;
+}
+/**
+ * Newer input data over what is here: rules, hours of the orders and the options' descriptions and lines from the seed; kept: rows and
+ * hours moved by hand, an order's note edited by hand, component notes, templates, prices put into KPs, targets, option notes and dates.
+ */
+let anChecked = false;
+async function upgradeAnalysis() {
+  anChecked = true;
+  let D; try { D = await api("/calc/npl10_analysis.json"); } catch { return false; }
+  const A = AN(); if (!D || A.seed === D.id) return false;
+  const R = anImportRefs(D, false);
+  Object.assign(A, { seed: D.id, parts: D.parts, rules: D.rules, pattern: D.pattern, fixed: D.fixed, driver: D.driver, asm: D.asm });
+  for (const so of D.orders) {
+    const n = anSeedOrder(so, R), x = anOrder(so.id);
+    if (!x) { A.orders.push(n); continue; }
+    const hand = x.rows.filter((r) => r.by === "hand" && r.part !== "x"), left = new Map();
+    for (const r of n.rows) left.set(r.mat, (left.get(r.mat) || 0) + (num(r.qty) ?? 0));
+    for (const r of hand) left.set(r.mat, (left.get(r.mat) || 0) - (num(r.qty) ?? 0));
+    x.rows = [...hand, ...[...left].filter(([, q]) => q > 1e-9).map(([mat, qty]) => ({ mat, qty: rnd4(qty) }))];
+    const oldW = new Map(x.works.map((w) => [w.work, w]));
+    x.works = n.works.map((w) => { const o = oldW.get(w.work); return o?.by === "hand" && Math.abs((num(o.qty) ?? 0) - w.qty) < 0.01 ? o : w; });
+    if (!x.note || x.note === D.prev_notes?.[so.id]) x.note = n.note;
+    x.est = n.est; x.plasma = n.plasma;
+  }
+  A.opts = A.opts.filter((o) => !(D.removed_opts || []).includes(o.id));
+  for (const so of D.opts) {
+    const n = anSeedOpt(so, R, D), x = A.opts.find((o) => o.id === so.id);
+    if (!x) { A.opts.push(n); continue; }
+    Object.assign(x, { group: n.group, name: n.name, vs: n.vs, how: n.how, lines: n.lines, n404: n.n404, n292: n.n292, info: n.info });
+    for (const t of n.targets) { const e = (x.targets || []).find((y) => tKey(y) === tKey(t)); if (e) Object.assign(e, t); else (x.targets ??= []).push(t); }
+    if (!n.info) delete x.info;
+  }
+  for (const o of A.orders) { o.rows.forEach((r) => { if (r.part === "x") { delete r.part; delete r.by; } }); proposeRows(o); proposeHours(o); }
+  if (R.changes.length) logChange(`аналітика НПЛ-10: нові позиції складу (${R.changes.length})`, R.changes);
+  await saveAdmin(true, "аналітика НПЛ-10: оновлені вхідні дані");
+  toast("Вхідні дані НПЛ-10 оновлено: години 291 і 292, правила, опції");
   return true;
 }
 /** A new order from a 1C «Специфікація» file: its materials and hours, then the same proposal. */
@@ -2539,7 +2581,7 @@ function kindSuggest() {
   return (name) => [...(out.get(kindWords(name)[0]) || new Map())].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([p]) => p);
 }
 const partSel = (val, on, cls = "sm") => h("select", { class: cls, onchange: (e) => on(e.target.value) },
-  h("option", { value: "", selected: !val }, "— нерозподілено —"), AN().parts.map((p) => h("option", { value: p.id, selected: val === p.id }, p.title)), h("option", { value: "x", selected: val === "x" }, "не входить у НПЛ (ремонт, інше)"));
+  h("option", { value: "", selected: !val }, "— нерозподілено —"), AN().parts.map((p) => h("option", { value: p.id, selected: val === p.id }, p.title)));
 function splitRowDialog(o, r) {
   const m = matMap().get(r.mat), f = {}; let to = r.part || "";
   modal(h("div", { class: "form" }, h("h2", {}, "Розділити рядок"), h("p", {}, `${m?.name || ""}: ${fmtN(r.qty, 4)} ${m?.unit || ""} у «${anPartTitle(r.part)}»`),
@@ -2646,7 +2688,8 @@ const noteBtn = (obj, title) => h("button", { class: "sm", title: "пам'ятк
 
 async function renderAnal() {
   const box = $("#analBox"); box.innerHTML = "";
-  if (!AN()) { box.append(h("p", { class: "hint" }, "Завантажую вхідні дані НПЛ-10: замовлення 404, 291, 292, склад, калькуляції бака і ящика…")); if (await loadAnalysis()) renderAnal(); return; }
+  if (!AN()) { box.append(h("p", { class: "hint" }, "Завантажую вхідні дані НПЛ-10: замовлення 404, 291, 292, склад, калькуляції бака і ящика…")); if (await loadAnalysis()) { anChecked = true; renderAnal(); } return; }
+  if (!anChecked && await upgradeAnalysis()) return renderAnal();
   cat = effCatalog(); CC = new Map();
   const A = AN();
   if (!anOrder(anSel)) anSel = A.orders[0]?.id;
@@ -2665,8 +2708,8 @@ async function renderAnal() {
         o.id.startsWith("o_") ? h("button", { class: "sm danger", onclick: () => confirmBox(`Видалити замовлення «${o.title}» з аналітики?`, "Видалити", () => { A.orders = A.orders.filter((x) => x !== o); save(); }) }, "Видалити") : null)),
     h("label", {}, "Примітка до замовлення", h("textarea", { rows: 2, style: "width:100%", onchange: (e) => { o.note = e.target.value.trim(); saveAdmin(); } }, o.note || "")),
     h("div", { class: "inline" }, h("span", {}, "Дата"), dateIn(o, "date", "дата"), o.file ? h("span", { class: "hint", style: "margin:0" }, "файл: " + o.file) : null,
-      o.est ? h("span", { class: "badge gray", title: "години в 1С некоректні" }, "години — оцінка") : h("span", { class: "badge gray" }, "години з 1С"),
-      h("span", {}, "Готових виробів у замовленні:"), A.asm.map((a) => h("label", { class: "inline", style: "margin:0" }, a.title.split(" (")[0], h("input", { type: "number", min: 0, value: o.asm?.[a.id] ?? 0, style: "width:56px",
+      o.est ? h("span", { class: "badge gray", title: "у 1С годин немає" }, "години — оцінка") : h("span", { class: "badge gray" }, "години з 1С"),
+      h("span", {}, "Бак і ящики в замовленні:"), A.asm.map((a) => h("label", { class: "inline", style: "margin:0" }, a.title.split(" (")[0], h("input", { type: "number", min: 0, value: o.asm?.[a.id] ?? 0, style: "width:56px",
         onchange: (e) => { (o.asm ??= {})[a.id] = Math.max(0, num(e.target.value) ?? 0); proposeRows(o); proposeHours(o); save(); } }))),
       h("label", { class: "inline", style: "margin:0" }, "коників", h("input", { type: "number", min: 1, value: o.cfg?.stakes ?? 4, style: "width:56px", onchange: (e) => { (o.cfg ??= {}).stakes = num(e.target.value) || 4; save(); } })))));
   // ---- distribution summary
@@ -2676,16 +2719,15 @@ async function renderAnal() {
         h("button", { class: "sm", onclick: () => confirmBox("Скинути і ручні зміни цього замовлення та запропонувати все заново?", "Скинути", () => { o.rows.forEach((r) => delete r.by); o.works.forEach((r) => delete r.by); proposeRows(o); proposeHours(o); save(); }) }, "Скинути ручні"))),
     h("div", { class: "steps" },
       h("div", {}, h("span", {}, "Матеріали в замовленні"), h("b", {}, uah(Math.round(c.matAll))), h("small", {}, `${o.rows.length} рядків`)),
-      h("div", {}, h("span", {}, "1. Готові вироби (за калькуляціями)"), h("b", {}, uah(Math.round(c.stage.asm))), h("small", {}, A.asm.map((a) => `${a.title.split(" (")[0].toLowerCase()} × ${o.asm?.[a.id] ?? 0}`).join(", "))),
+      h("div", {}, h("span", {}, "1. Бак і ящики (за їхніми калькуляціями)"), h("b", {}, uah(Math.round(c.stage.asm))), h("small", {}, A.asm.map((a) => `${a.title.split(" (")[0].toLowerCase()} × ${o.asm?.[a.id] ?? 0}`).join(", "))),
       h("div", {}, h("span", {}, "2. Правила й креслення"), h("b", {}, uah(Math.round(c.stage.rule))), h("small", {}, "листи — за кресленням плазморізу 404")),
       h("div", {}, h("span", {}, "3. Вручну"), h("b", {}, uah(Math.round(c.stage.hand)))),
       h("div", {}, h("span", {}, "Роботи"), h("b", {}, uah(Math.round(c.parts.reduce((s, p) => s + p.labour, 0) + c.none.labour + c.out.labour))), h("small", {}, `${fmtN(c.hoursAll, 1)} год, розподілено ${fmtN(c.hoursAll - c.hoursLeft, 1)}`)),
       h("div", { class: c.none.rows.length || c.hoursLeft > 0.02 ? "warn" : "" }, h("span", {}, "Нерозподілено"), h("b", {}, uah(Math.round(c.none.mat + c.none.labour))), h("small", {}, `${c.none.rows.length} рядків · ${fmtN(c.hoursLeft, 1)} год`)),
-      h("div", {}, h("span", {}, "Не входить у НПЛ"), h("b", {}, uah(Math.round(c.out.mat + c.out.labour))), h("small", {}, `${c.out.rows.length} рядків`)),
       h("div", { class: "tot" }, h("span", {}, "Собівартість НПЛ"), h("b", {}, uah(Math.round(c.total))))),
     miss.length ? h("details", { class: "pinfo" }, h("summary", {}, `Чого з калькуляцій готових виробів немає в замовленні: ${miss.length}`),
       h("ul", {}, miss.map((x) => h("li", {}, `${A.asm.find((a) => a.id === x.asm)?.title.split(" (")[0]}: ${x.name} — ${fmtN(x.qty, 3)}`)))) : null,
-    h("p", { class: "hint" }, "Спершу з замовлення віднімаються матеріали й години готових виробів (бак, ящик) за їхніми калькуляціями, далі рядки розносяться за правилами, листи — за кресленням плазморізу 404, години — за масою, різом і точінням. Будь-який рядок можна перенести чи розділити між складовими; рядки, яких немає в НПЛ (ремонт, інше), позначте «не входить».")));
+    h("p", { class: "hint" }, "Усе з переліку замовлення входить у НПЛ. Бак і ящики, яких немає в переліку готовим виробом, входять матеріалами й годинами — їх спершу виділено в окремі складові за їхніми калькуляціями; готові вироби з переліку (місце оператора, ялинка на насос) — за своєю ціною. Далі рядки розносяться за правилами, листи — за кресленням плазморізу 404, години — за масою, різом і точінням. Будь-який рядок можна перенести чи розділити між складовими.")));
   // ---- rows
   const shown = o.rows.filter((r) => (anFilter === "none" ? !r.part : anFilter === "hand" ? r.by === "hand" : anFilter === "x" ? r.part === "x" : true) && (!anPartF || r.part === anPartF));
   const mats = matMap(), tb = h("tbody");
@@ -2701,7 +2743,7 @@ async function renderAnal() {
   }
   const cnt = (f) => o.rows.filter(f).length;
   box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Рядки замовлення", h("small", {}, `${shown.length} з ${o.rows.length}`)),
-      h("div", { class: "inline", style: "margin:0" }, h("div", { class: "seg" }, [["", "усі"], ["none", `нерозподілені: ${cnt((r) => !r.part)}`], ["hand", `вручну: ${cnt((r) => r.by === "hand")}`], ["x", `не входить: ${cnt((r) => r.part === "x")}`]]
+      h("div", { class: "inline", style: "margin:0" }, h("div", { class: "seg" }, [["", "усі"], ["none", `нерозподілені: ${cnt((r) => !r.part)}`], ["hand", `вручну: ${cnt((r) => r.by === "hand")}`]]
         .map(([k, t]) => h("button", { class: anFilter === k ? "on" : "", onclick: () => { anFilter = k; renderAnal(); } }, t))),
         h("select", { class: "sm", onchange: (e) => { anPartF = e.target.value; renderAnal(); } }, h("option", { value: "" }, "усі складові"), A.parts.map((p) => h("option", { value: p.id, selected: anPartF === p.id }, p.title))))),
     h("div", { class: "tbl-wrap", style: "max-height:60vh" }, h("table", { class: "prices anrows" }, h("thead", {}, h("tr", {}, ["Номенклатура", "К-сть", "Ціна", "Сума", "Кг", "Звідки", "Складова", ""].map((t, i) => h("th", { class: i && i < 5 ? "num" : "" }, t)))), tb))));
@@ -2714,7 +2756,7 @@ async function renderAnal() {
       h("td", {}, h("small", {}, sp.map(([p, v]) => `${anPartTitle(p).split(":")[0].toLowerCase()} ${fmtN(v, 1)}`).join(" · ") || "—"), left > 0.02 ? h("small", { class: "minus", style: "display:block" }, `нерозподілено ${fmtN(left, 1)} год`) : null),
       h("td", {}, h("button", { class: "sm", onclick: () => hoursDialog(o, r) }, "Змінити"))));
   }
-  box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Години за операціями", h("small", {}, o.est ? "оцінка: у 1С години внесено некоректно" : "з 1С"))),
+  box.append(h("div", { class: "sec-card" }, h("div", { class: "head" }, h("h2", {}, "Години за операціями", h("small", {}, o.est ? "оцінка: у 1С годин немає — як пораховано, див. примітку до замовлення" : "з 1С"))),
     h("div", { class: "tbl-wrap" }, h("table", { class: "prices" }, h("thead", {}, h("tr", {}, ["Операція", "Годин", "₴/год", "Розподіл за складовими", ""].map((t, i) => h("th", { class: i === 1 || i === 2 ? "num" : "" }, t)))), th))));
   // ---- components of this order
   const tc = h("tbody");
